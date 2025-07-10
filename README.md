@@ -26,7 +26,7 @@ A sophisticated multi-agent trading analysis system that combines technical indi
 
 ## 🛠️ Prerequisites
 
-- Python 3.10
+- Python 3.10 (highly recommended for compatibility)
 - Conda (recommended) or pip
 - OpenAI API key
 - TA-Lib library
@@ -60,28 +60,7 @@ pip install -r requirements.txt
 
 ### 4. Install TA-Lib
 
-**Note**: TA-Lib can be challenging to install. Follow these steps:
-
-#### Windows:
-1. Download the appropriate wheel file from: https://www.lfd.uci.edu/~gohlke/pythonlibs/#ta-lib
-2. Install the downloaded wheel:
-   ```bash
-   pip install TA_Lib‑0.4.24‑cp310‑cp310‑win_amd64.whl
-   ```
-
-#### macOS:
-```bash
-brew install ta-lib
-pip install TA-Lib
-```
-
-#### Linux (Ubuntu/Debian):
-```bash
-sudo apt-get install ta-lib
-pip install TA-Lib
-```
-
-**Alternative**: If you encounter issues, visit the [TA-Lib Python repository](https://github.com/ta-lib/ta-lib-python) for detailed installation instructions.
+If you encounter issues, visit the [TA-Lib Python repository](https://github.com/ta-lib/ta-lib-python) for detailed installation instructions.
 
 ### 5. Set Up OpenAI API Key
 
@@ -113,67 +92,6 @@ The web application will be available at `http://localhost:5000`
 4. **Real-time Analysis**: Get comprehensive technical analysis with visualizations
 5. **API Key Management**: Update your OpenAI API key through the interface
 
-### Programmatic Usage
-
-```python
-from trading_graph import TradingGraph
-import pandas as pd
-
-# Initialize the trading system
-trading_system = TradingGraph()
-
-# Prepare your data (OHLCV format)
-data = {
-    "Datetime": ["2024-01-01", "2024-01-02", ...],
-    "Open": [100.0, 101.0, ...],
-    "High": [102.0, 103.0, ...],
-    "Low": [99.0, 100.0, ...],
-    "Close": [101.0, 102.0, ...]
-}
-
-# Run analysis
-initial_state = {
-    "kline_data": data,
-    "analysis_results": None,
-    "messages": [],
-    "time_frame": "1d",
-    "stock_name": "AAPL"
-}
-
-results = trading_system.graph.invoke(initial_state)
-```
-
-## 📁 Project Structure
-
-```
-QuantAgents/
-├── web_interface.py      # Flask web application
-├── trading_graph.py      # Main orchestrator for multi-agent system
-├── graph_setup.py        # LangGraph configuration
-├── graph_util.py         # Technical analysis tools
-├── agent_state.py        # Agent state management
-├── decision_agent.py     # Decision-making agent
-├── indicator_agent.py    # Technical indicator agent
-├── pattern_agent.py      # Pattern recognition agent
-├── trend_agent.py        # Trend analysis agent
-├── default_config.py     # Configuration settings
-├── requirements.txt      # Python dependencies
-├── templates/            # HTML templates
-│   ├── index.html
-│   └── test.html
-└── static/              # Static assets
-```
-
-## 🔧 Configuration
-
-The system uses the following configuration in `default_config.py`:
-
-```python
-DEFAULT_CONFIG = {
-    "analyze_LLM": "gpt-4o-mini",
-    "api_key": "",
-}
-```
 
 ## 🤝 Contributing
 
