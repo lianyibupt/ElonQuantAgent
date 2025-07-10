@@ -213,6 +213,12 @@
                 
                 <!-- Date Range Selection -->
                 <div id="dateRangeDiv" class="form-group" style="display: none;">
+                    <div class="alert alert-info mb-3" style="border-left: 4px solid #17a2b8;">
+                        <h6><i class="fas fa-calendar-alt"></i> Analysis Date Range</h6>
+                        <p class="mb-2"><strong>📊 K-Line Data:</strong> Select the date range for historical price data analysis</p>
+                        <p class="mb-0"><strong>🔮 Prediction Basis:</strong> This data will be used to generate trading predictions and technical analysis</p>
+                    </div>
+                    
                     <label for="startDate">Start Date:</label>
                     <input type="date" id="startDate" class="form-control" required>
                     
@@ -370,6 +376,14 @@
                             <div id="apiKeySuccess" class="alert alert-success" style="display: none;">
                                 <i class="fas fa-check-circle"></i>
                                 <span id="apiKeySuccessText"></span>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="alert alert-warning" style="border-left: 4px solid #ffc107;">
+                                <h6><i class="fas fa-shield-alt"></i> Security Information</h6>
+                                <p class="mb-2"><strong>🔒 Localhost Only:</strong> This server runs exclusively on localhost (127.0.0.1)</p>
+                                <p class="mb-2"><strong>🔐 API Key Security:</strong> Your API key is stored locally and never uploaded to external servers</p>
+                                <p class="mb-0"><strong>🛡️ Data Privacy:</strong> All analysis data remains on your local machine</p>
                             </div>
                         </div>
                     </div>
