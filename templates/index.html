@@ -1,0 +1,871 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Trading Analysis Console</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        .main-container {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            backdrop-filter: blur(10px);
+            margin: 20px auto;
+            max-width: 1200px;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            border-radius: 20px 20px 0 0;
+            text-align: center;
+        }
+        
+        .form-section {
+            padding: 30px;
+            border-bottom: 1px solid #eee;
+        }
+        
+        .form-section:last-child {
+            border-bottom: none;
+        }
+        
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border: none;
+            border-radius: 10px;
+            padding: 12px 30px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+        
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
+        }
+        
+        .form-control, .form-select {
+            border-radius: 10px;
+            border: 2px solid #e9ecef;
+            padding: 12px 15px;
+            transition: all 0.3s ease;
+        }
+        
+        .form-control:focus, .form-select:focus {
+            border-color: #667eea;
+            box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
+        }
+        
+        .results-section {
+            padding: 30px;
+            display: none;
+        }
+        
+        .analysis-card {
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+            margin-bottom: 20px;
+            overflow: hidden;
+        }
+        
+        .analysis-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 15px 20px;
+            font-weight: 600;
+        }
+        
+        .analysis-content {
+            padding: 20px;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #667eea;
+        }
+        
+        .spinner-border {
+            width: 3rem;
+            height: 3rem;
+        }
+        
+        .alert {
+            border-radius: 10px;
+            border: none;
+        }
+        
+        .decision-badge {
+            font-size: 1.2em;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-weight: 600;
+        }
+        
+        .decision-long {
+            background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+            color: white;
+        }
+        
+        .decision-short {
+            background: linear-gradient(135deg, #dc3545 0%, #fd7e14 100%);
+            color: white;
+        }
+        
+        .stats-card {
+            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+            border-radius: 10px;
+            padding: 20px;
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        
+        .stats-number {
+            font-size: 2em;
+            font-weight: bold;
+            color: #667eea;
+        }
+        
+        .stats-label {
+            color: #6c757d;
+            font-size: 0.9em;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        
+        .image-container {
+            text-align: center;
+            margin-top: 20px;
+        }
+        
+        .image-placeholder {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 200px;
+            border: 2px dashed #667eea;
+            border-radius: 10px;
+            padding: 20px;
+        }
+        
+        .analysis-image {
+            max-width: 100%;
+            height: auto;
+            border-radius: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container-fluid">
+        <div class="main-container">
+            <!-- Header -->
+            <div class="header">
+                <h1><i class="fas fa-chart-line"></i> Trading Analysis Console</h1>
+                <p class="mb-0">Multi-Agent Trading System with Live Data Support</p>
+            </div>
+            
+            <!-- Analysis Form -->
+            <div class="form-section">
+                <h3><i class="fas fa-cog"></i> Analysis Configuration</h3>
+                
+                <!-- Data Source Selection -->
+                <div class="row mb-4">
+                    <div class="col-md-6">
+                        <label class="form-label">Data Source</label>
+                        <select id="dataSource" class="form-select">
+                            <option value="live">Live Yahoo Finance Data</option>
+                        </select>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Asset</label>
+                        <select class="form-select" id="assetSelect">
+                            {% for asset in assets %}
+                            <option value="{{ asset }}">{{ asset }} - {{ asset_mapping.get(asset, asset) }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+                
+                <!-- Timeframe Selection -->
+                <div class="row mb-4">
+                    <div class="col-md-6">
+                        <label class="form-label">Timeframe</label>
+                        <select class="form-select" id="timeframeSelect">
+                            {% for timeframe in timeframes %}
+                            <option value="{{ timeframe }}">{{ timeframe }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+                
+                <!-- Date Range Selection -->
+                <div id="dateRangeDiv" class="form-group" style="display: none;">
+                    <label for="startDate">Start Date:</label>
+                    <input type="date" id="startDate" class="form-control" required>
+                    
+                    <label for="endDate">End Date:</label>
+                    <input type="date" id="endDate" class="form-control" required>
+                    
+                    <div id="dateRangeInfo" class="alert alert-info mt-2" style="display: none;">
+                        <i class="fas fa-info-circle"></i>
+                        <span id="dateRangeText"></span>
+                    </div>
+                    
+                    <div id="dateRangeError" class="alert alert-danger mt-2" style="display: none;">
+                        <i class="fas fa-exclamation-triangle"></i>
+                        <span id="dateRangeErrorText"></span>
+                    </div>
+                </div>
+                
+                <!-- Analyze Button -->
+                <div class="text-center">
+                    <button class="btn btn-primary btn-lg" id="analyzeBtn" onclick="runAnalysis()">
+                        <i class="fas fa-play"></i> Run Analysis
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Loading Section -->
+            <div class="loading" id="loadingSection" style="display: none;">
+                <div class="spinner-border" role="status">
+                    <span class="visually-hidden">Loading...</span>
+                </div>
+                <h4 class="mt-3">Running Analysis...</h4>
+                <p>This may take a few moments as we analyze the data with our 4-agent system.</p>
+            </div>
+            
+            <!-- Results Section -->
+            <div class="results-section" id="resultsSection">
+                <!-- Summary Stats -->
+                <div class="row mb-4">
+                    <div class="col-md-4">
+                        <div class="stats-card">
+                            <div class="stats-number" id="dataPoints">-</div>
+                            <div class="stats-label">Data Points</div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="stats-card">
+                            <div class="stats-number" id="timeframe">-</div>
+                            <div class="stats-label">Timeframe</div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="stats-card">
+                            <div class="stats-number" id="assetName">-</div>
+                            <div class="stats-label">Asset</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Final Decision -->
+                <div class="analysis-card" id="decisionCard" style="display: none;">
+                    <div class="analysis-header">
+                        <i class="fas fa-bullseye"></i> Final Trading Decision
+                    </div>
+                    <div class="analysis-content">
+                        <div class="text-center mb-3">
+                            <span class="decision-badge" id="decisionBadge"></span>
+                        </div>
+                        <div id="decisionDetails"></div>
+                    </div>
+                </div>
+                
+                <!-- Technical Indicators -->
+                <div class="analysis-card" id="technicalCard" style="display: none;">
+                    <div class="analysis-header">
+                        <i class="fas fa-chart-bar"></i> Technical Indicators Analysis
+                    </div>
+                    <div class="analysis-content" id="technicalContent">
+                    </div>
+                </div>
+                
+                <!-- Pattern Analysis -->
+                <div class="analysis-card" id="patternCard" style="display: none;">
+                    <div class="analysis-header">
+                        <i class="fas fa-shapes"></i> Pattern Recognition Analysis
+                    </div>
+                    <div class="analysis-content">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div id="patternContent"></div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="image-container">
+                                    <h5>Pattern Chart</h5>
+                                    <img id="patternImage" src="" alt="Pattern Chart" class="img-fluid analysis-image" style="display: none;">
+                                    <div id="patternImagePlaceholder" class="image-placeholder">
+                                        <i class="fas fa-chart-line"></i>
+                                        <p>Pattern chart will appear here</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Trend Analysis -->
+                <div class="analysis-card" id="trendCard" style="display: none;">
+                    <div class="analysis-header">
+                        <i class="fas fa-trending-up"></i> Trend Analysis
+                    </div>
+                    <div class="analysis-content">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div id="trendContent"></div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="image-container">
+                                    <h5>Trend Chart</h5>
+                                    <img id="trendImage" src="" alt="Trend Chart" class="img-fluid analysis-image" style="display: none;">
+                                    <div id="trendImagePlaceholder" class="image-placeholder">
+                                        <i class="fas fa-chart-line"></i>
+                                        <p>Trend chart will appear here</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Settings Section -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-cog"></i> Settings
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h6>OpenAI API Key</h6>
+                            <div class="input-group mb-3">
+                                <input type="password" class="form-control" id="apiKeyInput" placeholder="Enter your OpenAI API key">
+                                <button class="btn btn-outline-primary" type="button" onclick="updateApiKey()">
+                                    <i class="fas fa-save"></i> Update
+                                </button>
+                            </div>
+                            <div id="apiKeyStatus" class="alert alert-info" style="display: none;">
+                                <i class="fas fa-info-circle"></i>
+                                <span id="apiKeyStatusText"></span>
+                            </div>
+                            <div id="apiKeyError" class="alert alert-danger" style="display: none;">
+                                <i class="fas fa-exclamation-triangle"></i>
+                                <span id="apiKeyErrorText"></span>
+                            </div>
+                            <div id="apiKeySuccess" class="alert alert-success" style="display: none;">
+                                <i class="fas fa-check-circle"></i>
+                                <span id="apiKeySuccessText"></span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Global variables
+        let currentAsset = '';
+        let currentTimeframe = '';
+        
+        // Initialize page
+        document.addEventListener('DOMContentLoaded', function() {
+            // Default dates are already set by the server in the HTML
+            // No need to set them here as they come from Flask template
+            
+            // Event listeners
+            document.getElementById('dataSource').addEventListener('change', updateDataSource);
+            document.getElementById('assetSelect').addEventListener('change', updateFileSelection);
+            document.getElementById('timeframeSelect').addEventListener('change', function() {
+                updateFileSelection();
+                if (document.getElementById('dataSource').value === 'live') {
+                    updateTimeframeLimits();
+                }
+            });
+            
+            // Date validation listeners
+            document.getElementById('startDate').addEventListener('change', validateDateRange);
+            document.getElementById('endDate').addEventListener('change', validateDateRange);
+            
+            // Initial setup
+            updateDataSource();
+            checkApiKeyStatus();
+        });
+        
+        function updateDataSource() {
+            const dataSource = document.getElementById('dataSource').value;
+            const dateRangeDiv = document.getElementById('dateRangeDiv');
+            
+            if (dataSource === 'live') {
+                dateRangeDiv.style.display = 'block';
+            } else {
+                dateRangeDiv.style.display = 'none';
+            }
+        }
+        
+        function updateFileSelection() {
+            const asset = document.getElementById('assetSelect').value;
+            const timeframe = document.getElementById('timeframeSelect').value;
+            
+            if (asset && timeframe) {
+                fetch(`/api/files/${asset}/${timeframe}`)
+                    .then(response => response.json())
+                    .then(data => {
+                        const fileSelect = document.getElementById('fileSelect');
+                        fileSelect.innerHTML = '';
+                        
+                        if (data.files && data.files.length > 0) {
+                            data.files.forEach(file => {
+                                const option = document.createElement('option');
+                                option.value = file.index;
+                                option.textContent = `File ${file.number}`;
+                                fileSelect.appendChild(option);
+                            });
+                        } else {
+                            const option = document.createElement('option');
+                            option.value = '';
+                            option.textContent = 'No files available';
+                            fileSelect.appendChild(option);
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error fetching files:', error);
+                    });
+            }
+        }
+        
+        function runAnalysis() {
+            console.log("runAnalysis called");
+            // Reset UI to initial state
+            document.getElementById('loadingSection').style.display = 'block';
+            document.getElementById('resultsSection').style.display = 'none';
+            // Hide any error bar/message if present
+            var errorBar = document.getElementById('errorBar');
+            if (errorBar) errorBar.style.display = 'none';
+
+            const dataSource = document.getElementById('dataSource').value;
+            const asset = document.getElementById('assetSelect').value;
+            const timeframe = document.getElementById('timeframeSelect').value;
+
+            if (!asset || !timeframe) {
+                console.log("Missing asset or timeframe");
+                alert('Please select both asset and timeframe.');
+                return;
+            }
+            console.log("Passed asset/timeframe check");
+
+            if (dataSource === 'live') {
+                const startDate = document.getElementById('startDate').value;
+                const endDate = document.getElementById('endDate').value;
+
+                // Frontend date check: prevent future dates
+                const today = new Date();
+                today.setHours(0,0,0,0);
+                let startDt = null, endDt = null;
+                if (startDate) {
+                    startDt = new Date(startDate + 'T00:00:00');
+                    if (isNaN(startDt.getTime())) {
+                        alert('Invalid start date.');
+                        document.getElementById('loadingSection').style.display = 'none';
+                        document.getElementById('resultsSection').style.display = 'none';
+                        return;
+                    }
+                    if (startDt > today) {
+                        alert('Start date cannot be later than today.');
+                        document.getElementById('loadingSection').style.display = 'none';
+                        document.getElementById('resultsSection').style.display = 'none';
+                        return;
+                    }
+                }
+                if (endDate) {
+                    endDt = new Date(endDate + 'T00:00:00');
+                    if (isNaN(endDt.getTime())) {
+                        alert('Invalid end date.');
+                        document.getElementById('loadingSection').style.display = 'none';
+                        document.getElementById('resultsSection').style.display = 'none';
+                        return;
+                    }
+                    if (endDt > today) {
+                        alert('End date cannot be later than today.');
+                        document.getElementById('loadingSection').style.display = 'none';
+                        document.getElementById('resultsSection').style.display = 'none';
+                        return;
+                    }
+                }
+                // New check: end date cannot be earlier than start date
+                if (startDt && endDt && endDt < startDt) {
+                    alert('End date cannot be earlier than start date.');
+                    document.getElementById('loadingSection').style.display = 'none';
+                    document.getElementById('resultsSection').style.display = 'none';
+                    return;
+                }
+                console.log("Passed date checks");
+
+                if (!startDate || !endDate) {
+                    alert('Please select both start and end dates.');
+                    return;
+                }
+                // Check if there's a validation error
+                const errorDiv = document.getElementById('dateRangeError');
+                if (errorDiv.style.display !== 'none') {
+                    alert('Please fix the date range errors before running analysis.');
+                    return;
+                }
+            }
+            
+            // First validate API key
+            fetch('/api/validate-api-key', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                }
+            })
+            .then(response => response.json())
+            .then(validation => {
+                if (!validation.valid) {
+                    document.getElementById('loadingSection').style.display = 'none';
+                    alert(validation.error);
+                    return;
+                }
+                
+                // API key is valid, proceed with analysis
+                const requestData = {
+                    data_source: dataSource,
+                    asset: asset,
+                    timeframe: timeframe
+                };
+                
+                if (dataSource === 'live') {
+                    requestData.start_date = document.getElementById('startDate').value;
+                    requestData.end_date = document.getElementById('endDate').value;
+                } else {
+                    const fileNumber = parseInt(document.getElementById('fileSelect').value);
+                    if (isNaN(fileNumber)) {
+                        alert('Please select a data file.');
+                        document.getElementById('loadingSection').style.display = 'none';
+                        return;
+                    }
+                    requestData.file_number = fileNumber;
+                }
+                
+                // Send analysis request
+                console.log('Sending analysis request:', requestData);
+                return fetch('/api/analyze', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(requestData)
+                });
+            })
+            .then(response => {
+                if (!response) return; // API key validation failed
+                console.log('Response status:', response.status);
+                return response.json();
+            })
+            .then(data => {
+                if (!data) return; // API key validation failed
+                console.log('Analysis response:', data);
+                document.getElementById('loadingSection').style.display = 'none';
+                
+                if (data.error) {
+                    alert('Error: ' + data.error);
+                    return;
+                }
+                
+                displayResults(data);
+            })
+            .catch(error => {
+                console.error('Fetch error:', error);
+                document.getElementById('loadingSection').style.display = 'none';
+                alert('An error occurred during analysis: ' + error.message);
+            });
+        }
+        
+        function displayResults(data) {
+            console.log('Displaying results:', data);
+            
+            // Update summary stats
+            document.getElementById('dataPoints').textContent = data.data_length || '-';
+            document.getElementById('timeframe').textContent = data.timeframe || '-';
+            document.getElementById('assetName').textContent = data.asset_name || '-';
+            
+            // Display final decision
+            if (data.final_decision) {
+                const decisionCard = document.getElementById('decisionCard');
+                const decisionBadge = document.getElementById('decisionBadge');
+                const decisionDetails = document.getElementById('decisionDetails');
+                
+                if (data.final_decision.decision) {
+                    decisionBadge.textContent = data.final_decision.decision;
+                    decisionBadge.className = 'decision-badge ' + 
+                        (data.final_decision.decision.toUpperCase() === 'LONG' ? 'decision-long' : 'decision-short');
+                    
+                    let detailsHtml = '';
+                    if (data.final_decision.forecast_horizon) {
+                        detailsHtml += `<p><strong>Forecast Horizon:</strong> ${data.final_decision.forecast_horizon}</p>`;
+                    }
+                    if (data.final_decision.risk_reward_ratio) {
+                        detailsHtml += `<p><strong>Risk/Reward Ratio:</strong> ${data.final_decision.risk_reward_ratio}</p>`;
+                    }
+                    if (data.final_decision.justification) {
+                        detailsHtml += `<p><strong>Justification:</strong></p><p>${data.final_decision.justification}</p>`;
+                    }
+                    
+                    decisionDetails.innerHTML = detailsHtml;
+                    decisionCard.style.display = 'block';
+                }
+            }
+            
+            // Display technical indicators
+            if (data.technical_indicators) {
+                document.getElementById('technicalContent').innerHTML = formatAnalysisText(data.technical_indicators);
+                document.getElementById('technicalCard').style.display = 'block';
+            }
+            
+            // Display pattern analysis
+            if (data.pattern_analysis) {
+                document.getElementById('patternContent').innerHTML = formatAnalysisText(data.pattern_analysis);
+                document.getElementById('patternCard').style.display = 'block';
+                // Load pattern image
+                loadImage('pattern', 'patternImage', 'patternImagePlaceholder');
+            }
+            
+            // Display trend analysis
+            if (data.trend_analysis) {
+                document.getElementById('trendContent').innerHTML = formatAnalysisText(data.trend_analysis);
+                document.getElementById('trendCard').style.display = 'block';
+                // Load trend image
+                loadImage('trend', 'trendImage', 'trendImagePlaceholder');
+            }
+            
+            // Show results section
+            document.getElementById('resultsSection').style.display = 'block';
+            
+            // Scroll to results
+            document.getElementById('resultsSection').scrollIntoView({ behavior: 'smooth' });
+        }
+        
+        function formatAnalysisText(text) {
+            // Convert plain text to formatted HTML
+            return text.replace(/\n/g, '<br>').replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+        }
+        
+        function loadImage(type, imageId, placeholderId) {
+            const imageElement = document.getElementById(imageId);
+            const placeholderElement = document.getElementById(placeholderId);
+            
+            // Add timestamp to prevent caching
+            const timestamp = new Date().getTime();
+            const imageUrl = `/api/images/${type}?t=${timestamp}`;
+            
+            imageElement.onload = function() {
+                placeholderElement.style.display = 'none';
+                imageElement.style.display = 'block';
+            };
+            
+            imageElement.onerror = function() {
+                console.error(`Failed to load ${type} image`);
+                placeholderElement.innerHTML = '<i class="fas fa-exclamation-triangle"></i><p>Image not available</p>';
+            };
+            
+            imageElement.src = imageUrl;
+        }
+        
+        function updateTimeframeLimits() {
+            const timeframe = document.getElementById('timeframeSelect').value;
+            if (!timeframe) return;
+            
+            fetch(`/api/timeframe-limits/${timeframe}`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.error) {
+                        console.error('Error fetching timeframe limits:', data.error);
+                        return;
+                    }
+                    
+                    // Update date range info
+                    const infoDiv = document.getElementById('dateRangeInfo');
+                    const infoText = document.getElementById('dateRangeText');
+                    infoText.textContent = data.description;
+                    infoDiv.style.display = 'block';
+                    
+                    // Store limits for validation
+                    window.currentTimeframeLimits = data;
+                    
+                    // Update default dates based on limits
+                    updateDefaultDates(data.max_days);
+                })
+                .catch(error => {
+                    console.error('Error fetching timeframe limits:', error);
+                });
+        }
+        
+        function updateDefaultDates(maxDays) {
+            const endDate = new Date();
+            const startDate = new Date();
+            startDate.setDate(endDate.getDate() - Math.min(maxDays, 30)); // Use 30 days or max, whichever is smaller
+            
+            document.getElementById('endDate').value = endDate.toISOString().split('T')[0];
+            document.getElementById('startDate').value = startDate.toISOString().split('T')[0];
+        }
+        
+        function validateDateRange() {
+            const startDate = document.getElementById('startDate').value;
+            const endDate = document.getElementById('endDate').value;
+            const timeframe = document.getElementById('timeframeSelect').value;
+            
+            if (!startDate || !endDate || !timeframe) {
+                hideDateValidation();
+                return;
+            }
+            
+            fetch('/api/validate-date-range', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    start_date: startDate,
+                    end_date: endDate,
+                    timeframe: timeframe
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                const errorDiv = document.getElementById('dateRangeError');
+                const errorText = document.getElementById('dateRangeErrorText');
+                const infoDiv = document.getElementById('dateRangeInfo');
+                
+                if (data.valid) {
+                    // Hide error, show info
+                    errorDiv.style.display = 'none';
+                    infoDiv.style.display = 'block';
+                    
+                    // Update info text to show current range
+                    const infoText = document.getElementById('dateRangeText');
+                    const limits = window.currentTimeframeLimits;
+                    infoText.textContent = `${limits.description} | Current range: ${data.days} days`;
+                } else {
+                    // Show error, hide info
+                    errorDiv.style.display = 'block';
+                    infoDiv.style.display = 'none';
+                    errorText.textContent = data.error;
+                }
+            })
+            .catch(error => {
+                console.error('Error validating date range:', error);
+            });
+        }
+        
+        function hideDateValidation() {
+            document.getElementById('dateRangeError').style.display = 'none';
+            document.getElementById('dateRangeInfo').style.display = 'none';
+        }
+        
+        function checkApiKeyStatus() {
+            fetch('/api/get-api-key-status')
+                .then(response => response.json())
+                .then(data => {
+                    const statusDiv = document.getElementById('apiKeyStatus');
+                    const statusText = document.getElementById('apiKeyStatusText');
+                    
+                    if (data.has_key) {
+                        statusText.textContent = `API key is set: ${data.masked_key}`;
+                        statusDiv.className = 'alert alert-success';
+                        statusDiv.style.display = 'block';
+                    } else {
+                        statusText.textContent = 'No API key set. Please enter your OpenAI API key to use the analysis features.';
+                        statusDiv.className = 'alert alert-warning';
+                        statusDiv.style.display = 'block';
+                    }
+                })
+                .catch(error => {
+                    console.error('Error checking API key status:', error);
+                });
+        }
+        
+        function updateApiKey() {
+            const apiKey = document.getElementById('apiKeyInput').value.trim();
+            
+            if (!apiKey) {
+                showApiKeyError('Please enter an API key');
+                return;
+            }
+            
+            // Hide previous messages
+            hideApiKeyMessages();
+            
+            fetch('/api/update-api-key', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    api_key: apiKey
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    showApiKeySuccess(data.message);
+                    document.getElementById('apiKeyInput').value = '';
+                    // Refresh status
+                    setTimeout(checkApiKeyStatus, 1000);
+                } else {
+                    showApiKeyError(data.error || 'Failed to update API key');
+                }
+            })
+            .catch(error => {
+                console.error('Error updating API key:', error);
+                showApiKeyError('An error occurred while updating the API key');
+            });
+        }
+        
+        function showApiKeySuccess(message) {
+            const successDiv = document.getElementById('apiKeySuccess');
+            const successText = document.getElementById('apiKeySuccessText');
+            successText.textContent = message;
+            successDiv.style.display = 'block';
+            
+            // Hide after 5 seconds
+            setTimeout(() => {
+                successDiv.style.display = 'none';
+            }, 5000);
+        }
+        
+        function showApiKeyError(message) {
+            const errorDiv = document.getElementById('apiKeyError');
+            const errorText = document.getElementById('apiKeyErrorText');
+            errorText.textContent = message;
+            errorDiv.style.display = 'block';
+            
+            // Hide after 5 seconds
+            setTimeout(() => {
+                errorDiv.style.display = 'none';
+            }, 5000);
+        }
+        
+        function hideApiKeyMessages() {
+            document.getElementById('apiKeyError').style.display = 'none';
+            document.getElementById('apiKeySuccess').style.display = 'none';
+        }
+    </script>
+</body>
+</html> 
