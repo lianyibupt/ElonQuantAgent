@@ -191,11 +191,23 @@
                     </div>
                     <div class="col-md-6">
                         <label class="form-label">Asset</label>
-                        <select class="form-select" id="assetSelect">
+                        <select class="form-select" id="assetSelect" onchange="handleAssetSelection()">
                             {% for asset in assets %}
                             <option value="{{ asset }}">{{ asset }} - {{ asset_mapping.get(asset, asset) }}</option>
                             {% endfor %}
+                            <option value="other">Other Asset (Custom Symbol)</option>
                         </select>
+                        
+                        <!-- Custom Asset Input -->
+                        <div id="customAssetDiv" class="mt-2" style="display: none;">
+                            <div class="alert alert-info" style="border-left: 4px solid #17a2b8;">
+                                <h6><i class="fas fa-plus-circle"></i> Custom Asset Symbol</h6>
+                                <p class="mb-2"><strong>💡 Examples:</strong> NQ (Nasdaq-100 Futures), ZN (10-Year Treasury), etc.</p>
+                                <p class="mb-0"><strong>📝 Format:</strong> Enter the Yahoo Finance symbol for your asset</p>
+                            </div>
+                            <input type="text" class="form-control" id="customAssetInput" placeholder="Enter symbol (e.g., NQ=F, ZN=F, ^VIX)">
+                            <small class="form-text text-muted">Use Yahoo Finance symbols. For futures, add =F suffix (e.g., NQ=F)</small>
+                        </div>
                     </div>
                 </div>
                 
@@ -464,6 +476,21 @@
             }
         }
         
+        function handleAssetSelection() {
+            const assetSelect = document.getElementById('assetSelect');
+            const customAssetDiv = document.getElementById('customAssetDiv');
+            const customAssetInput = document.getElementById('customAssetInput');
+            
+            if (assetSelect.value === 'other') {
+                customAssetDiv.style.display = 'block';
+                customAssetInput.required = true;
+            } else {
+                customAssetDiv.style.display = 'none';
+                customAssetInput.required = false;
+                customAssetInput.value = '';
+            }
+        }
+        
         function runAnalysis() {
             console.log("runAnalysis called");
             // Reset UI to initial state
@@ -474,8 +501,18 @@
             if (errorBar) errorBar.style.display = 'none';
 
             const dataSource = document.getElementById('dataSource').value;
-            const asset = document.getElementById('assetSelect').value;
+            let asset = document.getElementById('assetSelect').value;
             const timeframe = document.getElementById('timeframeSelect').value;
+
+            // Handle custom asset input
+            if (asset === 'other') {
+                const customAsset = document.getElementById('customAssetInput').value.trim();
+                if (!customAsset) {
+                    alert('Please enter a custom asset symbol.');
+                    return;
+                }
+                asset = customAsset;
+            }
 
             if (!asset || !timeframe) {
                 console.log("Missing asset or timeframe");

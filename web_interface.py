@@ -530,7 +530,7 @@ def get_api_key_status():
         api_key = os.environ.get("OPENAI_API_KEY")
         if api_key and api_key != "your-openai-api-key-here":
             # Return masked version for security
-            masked_key = api_key[:8] + "..." + api_key[-4:] if len(api_key) > 12 else "***"
+            masked_key = api_key[:3] + "..." + api_key[-3:] if len(api_key) > 12 else "***"
             return jsonify({"has_key": True, "masked_key": masked_key})
         else:
             return jsonify({"has_key": False})
