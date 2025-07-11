@@ -101,8 +101,7 @@ The web application will be available at `http://localhost:5000`
 
 ## 📺 Demo
 
-<video src="asset/demo.mp4" autoplay loop muted playsinline width="480"></video>
-
+![Quick preview](assets/demo.gif)
 
 
 
