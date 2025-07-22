@@ -52,7 +52,14 @@ pip install -r requirements.txt
 ```
 
 
-If you encounter issues with TA-lib-python, visit the [TA-Lib Python repository](https://github.com/ta-lib/ta-lib-python) for detailed installation instructions.
+If you encounter issues with TA-lib-python, 
+try
+
+```bash
+conda install -c conda-forge ta-lib
+```
+
+Or visit the [TA-Lib Python repository](https://github.com/ta-lib/ta-lib-python) for detailed installation instructions.
 
 ### 3. Set Up OpenAI API Key
 You can set it in our Web InterFace Later,
