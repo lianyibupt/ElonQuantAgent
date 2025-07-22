@@ -322,8 +322,19 @@ class TechnicalTools:
             addplot=apds,
             alines=dict(alines=all_segments, colors=colors, linewidths=1),
             returnfig=True,
-            savefig="trend_graph.png"
+            figsize=(12, 6),
+            block=False,
         )
+
+        #save fig locally
+        fig.savefig(
+            "trend_graph.png",
+            format="png",
+            dpi=600,
+            bbox_inches="tight",
+            pad_inches=0.1
+        )
+        plt.close(fig) 
 
         # Add legend manually
         axlist[0].legend(loc='upper left')
@@ -358,7 +369,6 @@ class TechnicalTools:
             dict: Dictionary containing base64-encoded image string and local file path.
         """
 
-
         df = pd.DataFrame(kline_data)
         # take recent 40
         df = df.tail(40)
@@ -372,11 +382,26 @@ class TechnicalTools:
 
 
         # Save image locally
-        mpf.plot(df[["Open", "High", "Low", "Close"]], type='candle', style='charles', savefig="kline_chart.png")
+        fig, _ = mpf.plot(
+            df[["Open", "High", "Low", "Close"]],
+            type="candle",
+            style="charles",
+            figsize=(12, 6),
+            returnfig=True,           
+            block=False,             
+            savefig=dict(             
+                fname="kline_chart.png",
+                dpi=600,
+                bbox_inches="tight",
+                pad_inches=0.1,
+            ),
+        )
 
-        # Save image to buffer for base64 encoding
+        # ---------- Encode to base64 -----------------
         buf = io.BytesIO()
-        mpf.plot(df[["Open", "High", "Low", "Close"]], type='candle', style='charles', savefig=buf)
+        fig.savefig(buf, format="png", dpi=600, bbox_inches="tight", pad_inches=0.1)
+        plt.close(fig)                # release memory
+
         buf.seek(0)
         img_b64 = base64.b64encode(buf.read()).decode("utf-8")
 
