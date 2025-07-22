@@ -61,23 +61,20 @@ python --version
 pip install -r requirements.txt
 ```
 
-### 4. Install TA-Lib
 
-If you encounter issues, visit the [TA-Lib Python repository](https://github.com/ta-lib/ta-lib-python) for detailed installation instructions.
+If you encounter issues with TA-lib-python, visit the [TA-Lib Python repository](https://github.com/ta-lib/ta-lib-python) for detailed installation instructions.
 
-### 5. Set Up OpenAI API Key
+### 4. Set Up OpenAI API Key
+You can set it in our Web InterFace Later,
+![alt text](assets/apibox.png)
 
-Create a `.env` file in the project root:
-```bash
-echo "OPENAI_API_KEY=your_api_key_here" > .env
-```
 
 Or set it as an environment variable:
 ```bash
 export OPENAI_API_KEY="your_api_key_here"
 ```
-Or set it using front end textbox:
-![alt text](assets/apibox.png)
+
+
 
 
 ## 🚀 Usage
