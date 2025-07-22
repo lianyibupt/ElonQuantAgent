@@ -82,7 +82,7 @@ export OPENAI_API_KEY="your_api_key_here"
 python web_interface.py
 ```
 
-The web application will be available at `http://localhost:5000`
+The web application will be available at `http://127.0.0.1:5000`
 
 ### Web Interface Features
 
