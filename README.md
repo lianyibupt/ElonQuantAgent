@@ -43,19 +43,9 @@ conda create -n quantagents python=3.10
 conda activate quantagents
 ```
 
-### 2. Verify Environment Setup
 
-```bash
-conda info --envs
-```
-*Look for an asterisk (*) next to `quantagents` to confirm it's active*
 
-```bash
-python --version
-```
-*Should display: Python 3.10.18*
-
-### 3. Install Dependencies
+### 2. Install Dependencies
 
 ```bash
 pip install -r requirements.txt
@@ -64,7 +54,7 @@ pip install -r requirements.txt
 
 If you encounter issues with TA-lib-python, visit the [TA-Lib Python repository](https://github.com/ta-lib/ta-lib-python) for detailed installation instructions.
 
-### 4. Set Up OpenAI API Key
+### 3. Set Up OpenAI API Key
 You can set it in our Web InterFace Later,
 ![alt text](assets/apibox.png)
 
