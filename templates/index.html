@@ -8,7 +8,7 @@
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <style>
         body {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: #57068c;
             min-height: 100vh;
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
         }
@@ -23,7 +23,7 @@
         }
         
         .header {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: #57068c;
             color: white;
             padding: 30px;
             border-radius: 20px 20px 0 0;
@@ -40,7 +40,7 @@
         }
         
         .btn-primary {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: #57068c;
             border: none;
             border-radius: 10px;
             padding: 12px 30px;
@@ -50,7 +50,7 @@
         
         .btn-primary:hover {
             transform: translateY(-2px);
-            box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
+            box-shadow: 0 10px 20px rgba(87, 6, 140, 0.3);
         }
         
         .form-control, .form-select {
@@ -61,8 +61,8 @@
         }
         
         .form-control:focus, .form-select:focus {
-            border-color: #667eea;
-            box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
+            border-color: #57068c;
+            box-shadow: 0 0 0 0.2rem rgba(87, 6, 140, 0.25);
         }
         
         .results-section {
@@ -79,7 +79,7 @@
         }
         
         .analysis-header {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: #57068c;
             color: white;
             padding: 15px 20px;
             font-weight: 600;
@@ -94,7 +94,7 @@
         .loading {
             text-align: center;
             padding: 40px;
-            color: #667eea;
+            color: #57068c;
         }
         
         .spinner-border {
@@ -135,7 +135,7 @@
         .stats-number {
             font-size: 2em;
             font-weight: bold;
-            color: #667eea;
+            color: #57068c;
         }
         
         .stats-label {
@@ -156,7 +156,7 @@
             align-items: center;
             justify-content: center;
             height: 200px;
-            border: 2px dashed #667eea;
+            border: 2px dashed #57068c;
             border-radius: 10px;
             padding: 20px;
         }
@@ -223,19 +223,69 @@
                     </div>
                 </div>
                 
-                <!-- Date Range Selection -->
+                <!-- Date and Time Range Selection -->
                 <div id="dateRangeDiv" class="form-group" style="display: none;">
                     <div class="alert alert-info mb-3" style="border-left: 4px solid #17a2b8;">
-                        <h6><i class="fas fa-calendar-alt"></i> Analysis Date Range</h6>
-                        <p class="mb-2"><strong>📊 K-Line Data:</strong> Select the date range for historical price data analysis</p>
-                        <p class="mb-0"><strong>🔮 Prediction Basis:</strong> This data will be used to generate trading predictions and technical analysis</p>
+                        <h6><i class="fas fa-calendar-alt"></i> Analysis Date & Time Range</h6>
+                        <p class="mb-2"><strong>📊 K-Line Data:</strong> Select the date and time range for historical price data analysis</p>
+                        <p class="mb-1"><strong>🔮 Prediction Basis:</strong> This data will be used to generate trading predictions and technical analysis</p>
+                        <p class="mb-0"><strong>⏰ Time Precision:</strong> yfinance supports exact time specification for more precise data retrieval</p>
                     </div>
                     
-                    <label for="startDate">Start Date:</label>
-                    <input type="date" id="startDate" class="form-control" required>
+                    <!-- Start Date and Time -->
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label for="startDate">Start Date:</label>
+                            <input type="date" id="startDate" class="form-control" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label for="startTime">Start Time:</label>
+                            <input type="time" id="startTime" class="form-control" value="00:00" step="60">
+                            <small class="form-text text-muted">Leave as 00:00 for start of day</small>
+                        </div>
+                    </div>
                     
-                    <label for="endDate">End Date:</label>
-                    <input type="date" id="endDate" class="form-control" required>
+                    <!-- End Date and Time -->
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label for="endDate">End Date:</label>
+                            <input type="date" id="endDate" class="form-control" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label for="endTime">End Time:</label>
+                            <input type="time" id="endTime" class="form-control" value="23:59" step="60">
+                            <small class="form-text text-muted">Leave as 23:59 for end of day, or use "Use Current Time" checkbox for latest data</small>
+                        </div>
+                    </div>
+                    
+                    <!-- Time Zone Selection -->
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label for="timezoneSelect">Time Zone:</label>
+                            <select id="timezoneSelect" class="form-select">
+                                <option value="UTC">UTC (Recommended)</option>
+                                <option value="US/Eastern">US Eastern</option>
+                                <option value="US/Central">US Central</option>
+                                <option value="US/Mountain">US Mountain</option>
+                                <option value="US/Pacific">US Pacific</option>
+                                <option value="Europe/London">Europe/London</option>
+                                <option value="Asia/Tokyo">Asia/Tokyo</option>
+                                <option value="Asia/Shanghai">Asia/Shanghai</option>
+                            </select>
+                            <small class="form-text text-muted">yfinance converts all times to UTC internally</small>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mt-4 pt-2">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="useCurrentTime" checked>
+                                    <label class="form-check-label" for="useCurrentTime">
+                                        <i class="fas fa-clock"></i> Use current date/time for end (get latest k-line)
+                                    </label>
+                                </div>
+                                <small class="form-text text-muted">When checked, both end date and time will be locked to current values and updated automatically</small>
+                            </div>
+                        </div>
+                    </div>
                     
                     <div id="dateRangeInfo" class="alert alert-info mt-2" style="display: none;">
                         <i class="fas fa-info-circle"></i>
@@ -245,6 +295,26 @@
                     <div id="dateRangeError" class="alert alert-danger mt-2" style="display: none;">
                         <i class="fas fa-exclamation-triangle"></i>
                         <span id="dateRangeErrorText"></span>
+                    </div>
+                </div>
+                
+                <!-- Analysis Methodology Notice -->
+                <div class="alert alert-warning mb-4" style="border-left: 4px solid #ffc107; background-color: rgba(255, 193, 7, 0.1);">
+                    <div class="d-flex align-items-start">
+                        <i class="fas fa-brain me-3 mt-1" style="color: #856404; font-size: 1.2em;"></i>
+                        <div>
+                            <h6 class="alert-heading mb-2" style="color: #856404;">
+                                <i class="fas fa-chart-line"></i> LLM Analysis Methodology
+                            </h6>
+                            <p class="mb-2" style="color: #856404;">
+                                <strong>📊 Data Optimization:</strong> To ensure optimal accuracy in our Large Language Model (LLM) chart analysis, 
+                                the system automatically utilizes the most recent 30 candlesticks from your selected time range.
+                            </p>
+                            <p class="mb-0" style="color: #856404;">
+                                <strong>🎯 Why 30 Candlesticks?</strong> This focused dataset provides sufficient market context while maintaining 
+                                computational efficiency and reducing noise from older, potentially irrelevant price movements.
+                            </p>
+                        </div>
                     </div>
                 </div>
                 
@@ -429,6 +499,17 @@
             document.getElementById('startDate').addEventListener('change', validateDateRange);
             document.getElementById('endDate').addEventListener('change', validateDateRange);
             
+            // Time input listeners
+            document.getElementById('startTime').addEventListener('change', validateDateRange);
+            document.getElementById('endTime').addEventListener('change', validateDateRange);
+            document.getElementById('useCurrentTime').addEventListener('change', handleUseCurrentTimeChange);
+            
+            // Initialize time inputs
+            handleUseCurrentTimeChange();
+            
+            // Update current time every minute if checkbox is checked
+            setInterval(updateCurrentTime, 60000);
+            
             // Initial setup
             updateDataSource();
             checkApiKeyStatus();
@@ -523,50 +604,63 @@
 
             if (dataSource === 'live') {
                 const startDate = document.getElementById('startDate').value;
+                const startTime = document.getElementById('startTime').value;
                 const endDate = document.getElementById('endDate').value;
+                const endTime = document.getElementById('endTime').value;
+                const useCurrentTime = document.getElementById('useCurrentTime').checked;
+                const timezone = document.getElementById('timezoneSelect').value;
 
                 // Frontend date check: prevent future dates
                 const today = new Date();
                 today.setHours(0,0,0,0);
                 let startDt = null, endDt = null;
+                
                 if (startDate) {
-                    startDt = new Date(startDate + 'T00:00:00');
+                    startDt = new Date(startDate + 'T' + startTime);
                     if (isNaN(startDt.getTime())) {
-                        alert('Invalid start date.');
+                        alert('Invalid start date or time.');
                         document.getElementById('loadingSection').style.display = 'none';
                         document.getElementById('resultsSection').style.display = 'none';
                         return;
                     }
-                    if (startDt > today) {
-                        alert('Start date cannot be later than today.');
+                    if (startDt > new Date()) {
+                        alert('Start date/time cannot be in the future.');
                         document.getElementById('loadingSection').style.display = 'none';
                         document.getElementById('resultsSection').style.display = 'none';
                         return;
                     }
                 }
+                
                 if (endDate) {
-                    endDt = new Date(endDate + 'T00:00:00');
+                    if (useCurrentTime) {
+                        // Use current time for end
+                        endDt = new Date();
+                    } else {
+                        endDt = new Date(endDate + 'T' + endTime);
+                    }
+                    
                     if (isNaN(endDt.getTime())) {
-                        alert('Invalid end date.');
+                        alert('Invalid end date or time.');
                         document.getElementById('loadingSection').style.display = 'none';
                         document.getElementById('resultsSection').style.display = 'none';
                         return;
                     }
-                    if (endDt > today) {
-                        alert('End date cannot be later than today.');
+                    if (endDt > new Date()) {
+                        alert('End date/time cannot be in the future.');
                         document.getElementById('loadingSection').style.display = 'none';
                         document.getElementById('resultsSection').style.display = 'none';
                         return;
                     }
                 }
-                // New check: end date cannot be earlier than start date
+                
+                // Check: end date cannot be earlier than start date
                 if (startDt && endDt && endDt < startDt) {
-                    alert('End date cannot be earlier than start date.');
+                    alert('End date/time cannot be earlier than start date/time.');
                     document.getElementById('loadingSection').style.display = 'none';
                     document.getElementById('resultsSection').style.display = 'none';
                     return;
                 }
-                console.log("Passed date checks");
+                console.log("Passed date/time checks");
 
                 if (!startDate || !endDate) {
                     alert('Please select both start and end dates.');
@@ -604,7 +698,11 @@
                 
                 if (dataSource === 'live') {
                     requestData.start_date = document.getElementById('startDate').value;
+                    requestData.start_time = document.getElementById('startTime').value;
                     requestData.end_date = document.getElementById('endDate').value;
+                    requestData.end_time = document.getElementById('endTime').value;
+                    requestData.use_current_time = document.getElementById('useCurrentTime').checked;
+                    requestData.timezone = document.getElementById('timezoneSelect').value;
                 } else {
                     const fileNumber = parseInt(document.getElementById('fileSelect').value);
                     if (isNaN(fileNumber)) {
@@ -779,7 +877,9 @@
         
         function validateDateRange() {
             const startDate = document.getElementById('startDate').value;
+            const startTime = document.getElementById('startTime').value;
             const endDate = document.getElementById('endDate').value;
+            const endTime = document.getElementById('endTime').value;
             const timeframe = document.getElementById('timeframeSelect').value;
             
             if (!startDate || !endDate || !timeframe) {
@@ -794,7 +894,9 @@
                 },
                 body: JSON.stringify({
                     start_date: startDate,
+                    start_time: startTime,
                     end_date: endDate,
+                    end_time: endTime,
                     timeframe: timeframe
                 })
             })
@@ -812,7 +914,8 @@
                     // Update info text to show current range
                     const infoText = document.getElementById('dateRangeText');
                     const limits = window.currentTimeframeLimits;
-                    infoText.textContent = `${limits.description} | Current range: ${data.days} days`;
+                    const daysText = data.days === 0 ? "Same day" : `${data.days} days`;
+                    infoText.textContent = `${limits.description} | Current range: ${daysText}`;
                 } else {
                     // Show error, hide info
                     errorDiv.style.display = 'block';
@@ -828,6 +931,54 @@
         function hideDateValidation() {
             document.getElementById('dateRangeError').style.display = 'none';
             document.getElementById('dateRangeInfo').style.display = 'none';
+        }
+        
+        function handleUseCurrentTimeChange() {
+            const useCurrentTime = document.getElementById('useCurrentTime');
+            const endTimeInput = document.getElementById('endTime');
+            const endDateInput = document.getElementById('endDate');
+            
+            if (useCurrentTime.checked) {
+                // Lock both end date and end time
+                endTimeInput.disabled = true;
+                endDateInput.disabled = true;
+                endTimeInput.style.opacity = '0.5';
+                endDateInput.style.opacity = '0.5';
+                
+                // Set to current date and time
+                const now = new Date();
+                const currentDate = now.toISOString().split('T')[0];
+                const currentTime = now.toTimeString().slice(0, 5); // HH:MM format
+                
+                endDateInput.value = currentDate;
+                endTimeInput.value = currentTime;
+                
+                // Add visual indication
+                endDateInput.title = 'Locked: Using current date/time';
+                endTimeInput.title = 'Locked: Using current date/time';
+            } else {
+                // Unlock both inputs
+                endTimeInput.disabled = false;
+                endDateInput.disabled = false;
+                endTimeInput.style.opacity = '1';
+                endDateInput.style.opacity = '1';
+                
+                // Remove visual indication
+                endDateInput.title = '';
+                endTimeInput.title = '';
+            }
+        }
+        
+        function updateCurrentTime() {
+            const useCurrentTime = document.getElementById('useCurrentTime');
+            if (useCurrentTime.checked) {
+                const now = new Date();
+                const currentDate = now.toISOString().split('T')[0];
+                const currentTime = now.toTimeString().slice(0, 5); // HH:MM format
+                
+                document.getElementById('endDate').value = currentDate;
+                document.getElementById('endTime').value = currentTime;
+            }
         }
         
         function checkApiKeyStatus() {
