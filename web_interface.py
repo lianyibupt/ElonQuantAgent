@@ -62,7 +62,7 @@ class WebTradingAnalyzer:
             '15m': '15m',
             '30m': '30m',
             '1h': '1h',
-            '4h': '1h',  # Yahoo Finance doesn't have 4h, use 1h
+            '4h': '4h',  # yfinance supports 4h natively!
             '1d': '1d'
         }
     
@@ -121,6 +121,78 @@ class WebTradingAnalyzer:
         except Exception as e:
             print(f"Error fetching data for {symbol}: {e}")
             return pd.DataFrame()
+    
+    def fetch_yfinance_data_with_datetime(self, symbol: str, interval: str, start_datetime: datetime, end_datetime: datetime) -> pd.DataFrame:
+        """Fetch OHLCV data from Yahoo Finance using datetime objects for exact time precision."""
+        try:
+            yf_symbol = self.yfinance_symbols.get(symbol, symbol)
+            yf_interval = self.yfinance_intervals.get(interval, interval)
+            
+            print(f"Fetching {yf_symbol} from {start_datetime} to {end_datetime} with interval {yf_interval}")
+            
+            # Use datetime objects directly for yfinance
+            df = yf.download(
+                tickers=yf_symbol, 
+                start=start_datetime, 
+                end=end_datetime, 
+                interval=yf_interval,
+                auto_adjust=True,
+                prepost=False
+            )
+            
+            if df is None or df.empty:
+                print(f"No data returned for {symbol}")
+                return pd.DataFrame()
+            
+            # Ensure df is a DataFrame, not a Series
+            if isinstance(df, pd.Series):
+                df = df.to_frame()
+            
+            # Reset index to ensure we have a clean DataFrame
+            df = df.reset_index()
+            
+            # Ensure we have a DataFrame
+            if not isinstance(df, pd.DataFrame):
+                return pd.DataFrame()
+            
+            # Handle potential MultiIndex columns
+            if isinstance(df.columns, pd.MultiIndex):
+                df.columns = df.columns.get_level_values(0)
+            
+            # Rename columns if needed
+            column_mapping = {
+                'Date': 'Datetime',
+                'Open': 'Open',
+                'High': 'High',
+                'Low': 'Low',
+                'Close': 'Close',
+                'Volume': 'Volume'
+            }
+            
+            # Only rename columns that exist
+            existing_columns = {old: new for old, new in column_mapping.items() if old in df.columns}
+            df = df.rename(columns=existing_columns)
+            
+            # Ensure we have the required columns
+            required_columns = ["Datetime", "Open", "High", "Low", "Close"]
+            if not all(col in df.columns for col in required_columns):
+                print(f"Warning: Missing columns. Available: {list(df.columns)}")
+                return pd.DataFrame()
+            
+            # Select only the required columns
+            df = df[required_columns]
+            df['Datetime'] = pd.to_datetime(df['Datetime'])
+            
+            print(f"Successfully fetched {len(df)} data points for {symbol}")
+            print(f"Date range: {df['Datetime'].min()} to {df['Datetime'].max()}")
+            
+            return df
+            
+        except Exception as e:
+            print(f"Error fetching data for {symbol}: {e}")
+            return pd.DataFrame()
+    
+
     
     def get_available_assets(self) -> list:
         """Get list of available assets from the asset mapping dictionary."""
@@ -295,6 +367,7 @@ class WebTradingAnalyzer:
             "60m": {"max_days": 730, "description": "1 hour data: max 730 days"},
             "90m": {"max_days": 60, "description": "90 minute data: max 60 days"},
             "1h": {"max_days": 730, "description": "1 hour data: max 730 days"},
+            "4h": {"max_days": 730, "description": "4 hour data: max 730 days"},
             "1d": {"max_days": 730, "description": "1 day data: max 730 days"},
             "5d": {"max_days": 60, "description": "5 day data: max 60 days"},
             "1wk": {"max_days": 730, "description": "1 week data: max 730 days"},
@@ -304,34 +377,40 @@ class WebTradingAnalyzer:
         
         return limits.get(timeframe, {"max_days": 730, "description": "Default: max 730 days"})
     
-    def validate_date_range(self, start_date: str, end_date: str, timeframe: str) -> Dict[str, Any]:
-        """Validate date range for the given timeframe."""
+    def validate_date_range(self, start_date: str, end_date: str, timeframe: str, 
+                           start_time: str = "00:00", end_time: str = "23:59") -> Dict[str, Any]:
+        """Validate date and time range for the given timeframe."""
         try:
-            start = datetime.strptime(start_date, '%Y-%m-%d')
-            end = datetime.strptime(end_date, '%Y-%m-%d')
+            # Create datetime objects with time
+            start_datetime_str = f"{start_date} {start_time}"
+            end_datetime_str = f"{end_date} {end_time}"
+            
+            start = datetime.strptime(start_datetime_str, '%Y-%m-%d %H:%M')
+            end = datetime.strptime(end_datetime_str, '%Y-%m-%d %H:%M')
             
             if start >= end:
-                return {"valid": False, "error": "Start date must be before end date"}
+                return {"valid": False, "error": "Start date/time must be before end date/time"}
             
             # Get timeframe limits
             limits = self.get_timeframe_date_limits(timeframe)
             max_days = limits["max_days"]
             
-            # Calculate days difference
-            days_diff = (end - start).days
+            # Calculate time difference in days (including fractional days)
+            time_diff = end - start
+            days_diff = time_diff.total_seconds() / (24 * 3600)  # Convert to days
             
             if days_diff > max_days:
                 return {
                     "valid": False, 
-                    "error": f"Date range too large. {limits['description']}. Please select a smaller range.",
+                    "error": f"Time range too large. {limits['description']}. Please select a smaller range.",
                     "max_days": max_days,
-                    "current_days": days_diff
+                    "current_days": round(days_diff, 2)
                 }
             
-            return {"valid": True, "days": days_diff}
+            return {"valid": True, "days": round(days_diff, 2)}
             
         except ValueError as e:
-            return {"valid": False, "error": f"Invalid date format: {str(e)}"}
+            return {"valid": False, "error": f"Invalid date/time format: {str(e)}"}
 
     def validate_api_key(self) -> Dict[str, Any]:
         """Validate the current API key by making a simple test call."""
@@ -407,22 +486,47 @@ def analyze():
         timeframe = data.get('timeframe')
         if data_source != 'live':
             return jsonify({"error": "Only live Yahoo Finance data is supported."})
+        
         # Live Yahoo Finance data only
         start_date = data.get('start_date')
+        start_time = data.get('start_time', '00:00')
         end_date = data.get('end_date')
-        today = date.today()
-        # Parse dates and check if they are in the future
+        end_time = data.get('end_time', '23:59')
+        use_current_time = data.get('use_current_time', False)
+        timezone = data.get('timezone', 'UTC')
+        
+        # Create datetime objects for validation
         if start_date:
-            start_dt = datetime.strptime(start_date, "%Y-%m-%d").date()
-            if start_dt > today:
-                return jsonify({"error": "Start date cannot be later than today."})
+            start_datetime_str = f"{start_date} {start_time}"
+            try:
+                start_dt = datetime.strptime(start_datetime_str, "%Y-%m-%d %H:%M")
+            except ValueError:
+                return jsonify({"error": "Invalid start date/time format."})
+            
+            if start_dt > datetime.now():
+                return jsonify({"error": "Start date/time cannot be in the future."})
+        
         if end_date:
-            end_dt = datetime.strptime(end_date, "%Y-%m-%d").date()
-            if end_dt > today:
-                return jsonify({"error": "End date cannot be later than today."})
-        df = analyzer.fetch_yfinance_data(asset, timeframe, start_date, end_date)
+            if use_current_time:
+                end_dt = datetime.now()
+            else:
+                end_datetime_str = f"{end_date} {end_time}"
+                try:
+                    end_dt = datetime.strptime(end_datetime_str, "%Y-%m-%d %H:%M")
+                except ValueError:
+                    return jsonify({"error": "Invalid end date/time format."})
+                
+                if end_dt > datetime.now():
+                    return jsonify({"error": "End date/time cannot be in the future."})
+            
+            if start_date and start_dt and end_dt and end_dt < start_dt:
+                return jsonify({"error": "End date/time cannot be earlier than start date/time."})
+        
+        # Fetch data with datetime objects
+        df = analyzer.fetch_yfinance_data_with_datetime(asset, timeframe, start_dt, end_dt)
         if df.empty:
             return jsonify({"error": "No data available for the specified parameters"})
+        
         display_name = analyzer.asset_mapping.get(asset, asset)
         if display_name is None:
             display_name = asset
@@ -482,17 +586,19 @@ def get_timeframe_limits(timeframe):
 
 @app.route('/api/validate-date-range', methods=['POST'])
 def validate_date_range():
-    """API endpoint to validate date range for a timeframe."""
+    """API endpoint to validate date and time range for a timeframe."""
     try:
         data = request.get_json()
         start_date = data.get('start_date')
         end_date = data.get('end_date')
         timeframe = data.get('timeframe')
+        start_time = data.get('start_time', '00:00')
+        end_time = data.get('end_time', '23:59')
         
         if not all([start_date, end_date, timeframe]):
             return jsonify({"error": "Missing required parameters"})
         
-        validation = analyzer.validate_date_range(start_date, end_date, timeframe)
+        validation = analyzer.validate_date_range(start_date, end_date, timeframe, start_time, end_time)
         return jsonify(validation)
         
     except Exception as e:
