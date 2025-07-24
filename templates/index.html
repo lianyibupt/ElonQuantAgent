@@ -8,26 +8,42 @@
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <style>
         body {
-            background: #57068c;
+            padding-top: 50px;
+            background: #8900e1;
             min-height: 100vh;
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
         }
         
         .main-container {
-            background: rgba(255, 255, 255, 0.95);
+            /* background: rgba(255, 255, 255, 0.95); */
+            background: #ffffff;
+            background-color: rgba(255, 255, 255, 0.95);
             border-radius: 20px;
             box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            margin: 50px auto 20px;
             backdrop-filter: blur(10px);
-            margin: 20px auto;
+            /* margin: 20px auto; */
             max-width: 1200px;
         }
         
         .header {
-            background: #57068c;
-            color: white;
+            /* background: rgba(255, 255, 255, 0.95); */
+            color: rgba(255, 255, 255, 0.95);
+            /* background-color: rgba(255, 255, 255, 0.95); */
+            background: transparent;
             padding: 30px;
+            /* backdrop-filter: blur(10px); */
             border-radius: 20px 20px 0 0;
             text-align: center;
+        }
+        
+        .title-background {
+            background-color: #57068c;
+            padding: 25px 80px;
+            border-radius: 8px;
+            display: inline-block;
+            margin: 0 40px 10px 40px;
+            box-shadow: 0 8px 25px rgba(87, 6, 140, 0.4);
         }
         
         .form-section {
@@ -37,10 +53,11 @@
         
         .form-section:last-child {
             border-bottom: none;
+            
         }
         
         .btn-primary {
-            background: #57068c;
+            background: #8900e1;
             border: none;
             border-radius: 10px;
             padding: 12px 30px;
@@ -61,7 +78,7 @@
         }
         
         .form-control:focus, .form-select:focus {
-            border-color: #57068c;
+            border-color: #8900e1;
             box-shadow: 0 0 0 0.2rem rgba(87, 6, 140, 0.25);
         }
         
@@ -79,7 +96,7 @@
         }
         
         .analysis-header {
-            background: #57068c;
+            background: #8900e1;
             color: white;
             padding: 15px 20px;
             font-weight: 600;
@@ -94,7 +111,7 @@
         .loading {
             text-align: center;
             padding: 40px;
-            color: #57068c;
+            color: #8900e1;
         }
         
         .spinner-border {
@@ -135,7 +152,7 @@
         .stats-number {
             font-size: 2em;
             font-weight: bold;
-            color: #57068c;
+            color: #8900e1;
         }
         
         .stats-label {
@@ -156,7 +173,7 @@
             align-items: center;
             justify-content: center;
             height: 200px;
-            border: 2px dashed #57068c;
+            border: 2px dashed #8900e1;
             border-radius: 10px;
             padding: 20px;
         }
@@ -173,8 +190,10 @@
         <div class="main-container">
             <!-- Header -->
             <div class="header">
-                <h1><i class="fas fa-chart-line"></i> Quant Agent</h1>
-                <p class="mb-0">Multi-Agent Trading System with Live Data Support</p>
+                <div class="title-background">
+                    <h1 class="mb-2"><i class="fas fa-chart-line"></i> Quant Agent</h1>
+                    <p class="mb-0">Multi-Agent Trading System with Live Data Support</p>
+                </div>
             </div>
             
             <!-- Analysis Form -->
@@ -278,11 +297,13 @@
                             <div class="mt-4 pt-2">
                                 <div class="form-check">
                                     <input class="form-check-input" type="checkbox" id="useCurrentTime" checked>
-                                    <label class="form-check-label" for="useCurrentTime">
-                                        <i class="fas fa-clock"></i> Use current date/time for end (get latest k-line)
+                                    <label class="form-check-label fw-bold" for="useCurrentTime" style="color: #d63384;">
+                                        <i class="fas fa-clock"></i> ⚠️ Use current date/time for end (get latest k-line)
                                     </label>
                                 </div>
-                                <small class="form-text text-muted">When checked, both end date and time will be locked to current values and updated automatically</small>
+                                <small class="form-text fw-bold" style="color: #dc3545;">
+                                    <i class="fas fa-exclamation-triangle"></i> When checked, both end date and time will be locked to current values and updated automatically
+                                </small>
                             </div>
                         </div>
                     </div>

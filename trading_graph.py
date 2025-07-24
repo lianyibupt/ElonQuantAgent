@@ -14,11 +14,19 @@ class TradingGraph:
     Main orchestrator for the multi-agent trading system.
     Sets up LLMs, toolkits, and agent nodes for indicator, pattern, and trend analysis.
     """
-    def __init__(self):
+    def __init__(self, config=None):
         # --- Configuration and LLMs ---
-        self.config = DEFAULT_CONFIG
-        self.agent_llm = ChatOpenAI(model="gpt-4o-mini", temperature=0.1)
-        self.graph_llm = ChatOpenAI(model="gpt-4o", temperature=0.1)
+        self.config = config if config is not None else DEFAULT_CONFIG.copy()
+        
+        # Initialize LLMs with config values
+        self.agent_llm = ChatOpenAI(
+            model=self.config.get("agent_llm_model", "gpt-4o-mini"),
+            temperature=self.config.get("agent_llm_temperature", 0.1)
+        )
+        self.graph_llm = ChatOpenAI(
+            model=self.config.get("graph_llm_model", "gpt-4o"),
+            temperature=self.config.get("graph_llm_temperature", 0.1)
+        )
         self.toolkit = TechnicalTools()
 
         # --- Create tool nodes for each agent ---
@@ -66,9 +74,15 @@ class TradingGraph:
         Refresh the LLM objects with the current API key from environment.
         This is called when the API key is updated.
         """
-        # Recreate LLM objects with current environment API key
-        self.agent_llm = ChatOpenAI(model="gpt-4o-mini", temperature=0.1)
-        self.graph_llm = ChatOpenAI(model="gpt-4o", temperature=0.1)
+        # Recreate LLM objects with current environment API key and config values
+        self.agent_llm = ChatOpenAI(
+            model=self.config.get("agent_llm_model", "gpt-4o-mini"),
+            temperature=self.config.get("agent_llm_temperature", 0.1)
+        )
+        self.graph_llm = ChatOpenAI(
+            model=self.config.get("graph_llm_model", "gpt-4o"),
+            temperature=self.config.get("graph_llm_temperature", 0.1)
+        )
         
         # Recreate the graph setup with new LLMs
         self.graph_setup = SetGraph(
