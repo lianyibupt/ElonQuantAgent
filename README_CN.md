@@ -1,3 +1,18 @@
+<div align="center">
+
+<div style="display: flex; justify-content: center; align-items: center; gap: 16px;">
+  <img src="assets/logoyai.png" style="width: 15%; height: auto;">
+  <span style="font-size: 36px; font-weight: bold;">You Lab</span>
+</div>
+
+<div align="center">
+  <!-- Language options for documentation -->
+  <a href="README.md">English</a> | 
+  <a href="README_CN.md">中文</a>
+</div>
+
+</div>
+
 # QuantAgents
 
 一个复杂的多智能体交易分析系统，结合了技术指标、模式识别和趋势分析，使用 LangChain 和 LangGraph。该系统提供网络界面和程序化访问，用于全面的市场分析。
