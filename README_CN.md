@@ -1,8 +1,8 @@
 <div align="center">
 
 <div style="display: flex; justify-content: center; align-items: center; gap: 16px;">
-  <img src="assets/logoyai.png" style="width: 15%; height: auto;">
-  <span style="font-size: 36px; font-weight: bold;">You Lab</span>
+  <img src="assets/logo.png" style="width: 12%; height: auto;">
+  <span style="font-size: 36px; font-weight: bold;">Y-Research</span>
 </div>
 
 <div align="center">
