@@ -1,17 +1,4 @@
-<div align="center">
 
-<div style="display: flex; justify-content: center; align-items: center; gap: 16px;">
-  <img src="assets/logo.png" style="width: 12%; height: auto;">
-  <span style="font-size: 36px; font-weight: bold;">Y-Research</span>
-</div>
-
-<div align="center">
-  <!-- Language options for documentation -->
-  <a href="README.md">English</a> | 
-  <a href="README_CN.md">中文</a>
-</div>
-
-</div>
 
 # QuantAgents
 
