@@ -5,7 +5,18 @@ A sophisticated multi-agent trading analysis system that combines technical indi
 
 <div align="center">
 
-🚀 [Features](#-Features) | ⚡ [Installation](#-Installation) | 🎬 [Usage](#-usage) | 🔧 [Implementation Details](#-implementation-details) | 📊 [Benchmark](#-benchmark) | 🤝 [Contributing](#-contributing) | 📄 [License](#-license)
+[![GitHub stars](https://img.shields.io/github/stars/your-username/QuantAgents)](https://github.com/Y-Research-SBU/QuantAgent/stargazers)
+[![GitHub forks](https://img.shields.io/github/forks/your-username/QuantAgents)](https://github.com/Y-Research-SBU/QuantAgent/forks)
+[![GitHub pull requests](https://img.shields.io/github/issues-pr/your-username/QuantAgents)](https://github.com/Y-Research-SBU/QuantAgent/pulls)
+[![GitHub issues](https://img.shields.io/github/issues/your-username/QuantAgents)](https://github.com/Y-Research-SBU/QuantAgent/issues)
+[![GitHub contributors](https://img.shields.io/github/contributors/your-username/QuantAgents?color=2b9348)](https://github.com/your-username/QuantAgents/graphs/contributors)
+[![GitHub license](https://img.shields.io/github/license/your-username/QuantAgents?color=2b9348)](https://github.com/Y-Research-SBU/QuantAgent/blob/main/LICENSE)
+
+</div>
+
+<div align="center">
+
+🚀 [Features](#-features) | ⚡ [Installation](#-installation) | 🎬 [Usage](#-usage) | 🔧 [Implementation Details](#-implementation-details) | 📊 [Benchmark](#-benchmark) | 🤝 [Contributing](#-contributing) | 📄 [License](#-license)
 
 </div>
 
@@ -40,14 +51,11 @@ conda create -n quantagents python=3.10
 conda activate quantagents
 ```
 
-
-
 ### 2. Install Dependencies
 
 ```bash
 pip install -r requirements.txt
 ```
-
 
 If you encounter issues with TA-lib-python, 
 try
@@ -62,13 +70,10 @@ Or visit the [TA-Lib Python repository](https://github.com/ta-lib/ta-lib-python)
 You can set it in our Web InterFace Later,
 ![alt text](assets/apibox.png)
 
-
 Or set it as an environment variable:
 ```bash
 export OPENAI_API_KEY="your_api_key_here"
 ```
-
-
 
 ## 🔧 Implementation Details
 
@@ -165,9 +170,6 @@ Each CSV file contains 4-hour candlestick data with OHLCV (Open, High, Low, Clos
 - OpenAI API key
 - TA-Lib library
 
-
-
-
 ## 🚀 Usage
 
 ### Start the Web Interface
@@ -186,12 +188,9 @@ The web application will be available at `http://127.0.0.1:5000`
 4. **Real-time Analysis**: Get comprehensive technical analysis with visualizations
 5. **API Key Management**: Update your OpenAI API key through the interface
 
-
 ## 📺 Demo
 
 ![Quick preview](assets/demo.gif)
-
-
 
 ## 🤝 Contributing
 
