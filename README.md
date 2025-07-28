@@ -5,12 +5,12 @@ A sophisticated multi-agent trading analysis system that combines technical indi
 
 <div align="center">
 
-[![Repository Status](https://img.shields.io/badge/status-private-red)](https://github.com/Y-Research-SBU/QuantAgent)
-[![License](https://img.shields.io/badge/license-MIT-green)](https://github.com/Y-Research-SBU/QuantAgent/blob/main/LICENSE)
-[![Python](https://img.shields.io/badge/python-3.10-blue)](https://python.org)
-[![OpenAI](https://img.shields.io/badge/OpenAI-GPT--4o-orange)](https://openai.com)
-[![LangGraph](https://img.shields.io/badge/LangGraph-Powered-purple)](https://github.com/langchain-ai/langgraph)
-[![Flask](https://img.shields.io/badge/Flask-Web%20Interface-lightgrey)](https://flask.palletsprojects.com/)
+[![GitHub stars](https://img.shields.io/github/stars/your-username/QuantAgents)](https://github.com/Y-Research-SBU/QuantAgent/stargazers)
+[![GitHub forks](https://img.shields.io/github/forks/your-username/QuantAgents)](https://github.com/Y-Research-SBU/QuantAgent/forks)
+[![GitHub pull requests](https://img.shields.io/github/issues-pr/your-username/QuantAgents)](https://github.com/Y-Research-SBU/QuantAgent/pulls)
+[![GitHub issues](https://img.shields.io/github/issues/your-username/QuantAgents)](https://github.com/Y-Research-SBU/QuantAgent/issues)
+[![GitHub contributors](https://img.shields.io/github/contributors/your-username/QuantAgents?color=2b9348)](https://github.com/your-username/QuantAgents/graphs/contributors)
+[![GitHub license](https://img.shields.io/github/license/your-username/QuantAgents?color=2b9348)](https://github.com/Y-Research-SBU/QuantAgent/blob/main/LICENSE)
 
 </div>
 
