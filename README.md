@@ -25,20 +25,34 @@ A sophisticated multi-agent trading analysis system that combines technical indi
 
 ## 🚀 Features
 
-- **Multi-Agent Analysis**: Four specialized agents working together:
+<!-- - **Multi-Agent Analysis**: Four specialized agents working together: -->
   
-  - **Indicator Agent**: Computes technical indicators (MACD, RSI, Stochastic, etc.)
+  ### Indicator Agent
+  
+  • Computes a suite of technical indicators—including RSI to assess momentum extremes, MACD to quantify convergence–divergence dynamics, and the Stochastic Oscillator to measure closing prices against recent trading ranges—on each incoming K‑line, converting raw OHLC data into precise, signal-ready metrics.
+
   ![indicator agent](assets/indicator.png)
-  - **Pattern Agent**: Identifies candlestick patterns and generates visual charts
+  
+ ### Pattern Agent
+  
+  • Upon a pattern query, the Pattern Agent first uses the agent draws the recent price chart, spots its main highs, lows, and general up‑or‑down moves, compares that shape to a set of familiar patterns, and returns a short, plain‑language description of the best match.
+  
   ![indicator agent](assets/pattern.png)
-  - **Trend Agent**: Analyzes market trends and generates trend visualizations
+  
+  ### Trend Agent
+  
+  • Leverages tool-generated annotated K‑line charts overlaid with fitted trend channels—upper and lower boundary lines tracing recent highs and lows—to quantify market direction, channel slope, and consolidation zones, then delivers a concise, professional summary of the prevailing trend.
+  
   ![trend agent](assets/trend.png)
-  - **Risk Agent**: Aggregates the Indicator, Pattern, and Trend reports to quantify potential drawdowns, recommend position sizing, and define stop‑loss thresholds for comprehensive risk management.
-  ![alt text](assets/risk.png)
-  - **Decision Agent**: Integrates the Indicator, Pattern, Trend, and Risk reports to issue final trade directives—specifying LONG/SHORT signals and justification.
+
+  ### Decision Agent
+  
+  • Synthesizes outputs from the Indicator, Pattern, Trend, and Risk agents—including momentum metrics, detected chart formations, channel analysis, and risk–reward assessments—to formulate actionable trade directives, clearly specifying LONG or SHORT positions, recommended entry and exit points, stop‑loss thresholds, and concise rationale grounded in each agent’s findings.
+  
   ![alt text](assets/decision.png)
 
-- **Web Interface**: Modern Flask-based web application with:
+### Web Interface
+Modern Flask-based web application with:
   - Real-time market data from Yahoo Finance
   - Interactive asset selection (stocks, crypto, commodities, indices)
   - Multiple timeframe analysis (1m to 1d)
@@ -165,13 +179,6 @@ From this data, we randomly sample 100 evaluation segments per asset. Each segme
 - **SPX**: S&P 500 (100 CSV files)
 
 Each CSV file contains 4-hour candlestick data with OHLCV (Open, High, Low, Close, Volume) information for evaluation and backtesting purposes.
-
-## 🛠️ Prerequisites
-
-- Python 3.10 (highly recommended for compatibility)
-- Conda (recommended) or pip
-- OpenAI API key
-- TA-Lib library
 
 ## 🚀 Usage
 
