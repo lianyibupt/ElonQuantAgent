@@ -11,6 +11,7 @@ import mplfinance as mpf
 import base64
 import io
 import mplfinance as mpf 
+import color_style as color
 
 
 
@@ -318,13 +319,16 @@ class TechnicalTools:
         fig, axlist = mpf.plot(
             candles,
             type='candle',
-            style='charles',
+            style=color.my_color_style,
             addplot=apds,
             alines=dict(alines=all_segments, colors=colors, linewidths=1),
             returnfig=True,
             figsize=(12, 6),
             block=False,
         )
+
+        axlist[0].set_ylabel('Price', fontweight='normal')
+        axlist[0].set_xlabel('Datetime', fontweight='normal')
 
         #save fig locally
         fig.savefig(
@@ -372,6 +376,8 @@ class TechnicalTools:
         df = pd.DataFrame(kline_data)
         # take recent 40
         df = df.tail(40)
+
+        df.to_csv("record.csv", index=False, date_format="%Y-%m-%d %H:%M:%S")
         try:
             # df.index = pd.to_datetime(df["Datetime"])
             df.index = pd.to_datetime(df["Datetime"], format="%Y-%m-%d %H:%M:%S")
@@ -382,21 +388,25 @@ class TechnicalTools:
 
 
         # Save image locally
-        fig, _ = mpf.plot(
+        fig, axlist = mpf.plot(
             df[["Open", "High", "Low", "Close"]],
             type="candle",
-            style="charles",
+            style=color.my_color_style,
             figsize=(12, 6),
             returnfig=True,           
             block=False,             
-            savefig=dict(             
-                fname="kline_chart.png",
-                dpi=600,
-                bbox_inches="tight",
-                pad_inches=0.1,
-            ),
+            
         )
+        axlist[0].set_ylabel('Price', fontweight='normal')
+        axlist[0].set_xlabel('Datetime', fontweight='normal')
 
+        fig.savefig(             
+            fname="kline_chart.png",
+            dpi=600,
+            bbox_inches="tight",
+            pad_inches=0.1,
+        )
+        plt.close(fig)
         # ---------- Encode to base64 -----------------
         buf = io.BytesIO()
         fig.savefig(buf, format="png", dpi=600, bbox_inches="tight", pad_inches=0.1)

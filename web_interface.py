@@ -493,7 +493,6 @@ def analyze():
         end_date = data.get('end_date')
         end_time = data.get('end_time', '23:59')
         use_current_time = data.get('use_current_time', False)
-        timezone = data.get('timezone', 'UTC')
         
         # Create datetime objects for validation
         if start_date:
