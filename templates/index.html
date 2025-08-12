@@ -9,7 +9,7 @@
     <style>
         body {
             padding-top: 50px;
-            background: #8900e1;
+            background: #57068c;
             min-height: 100vh;
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
         }
@@ -18,7 +18,7 @@
             /* background: rgba(255, 255, 255, 0.95); */
             background: #ffffff;
             background-color: rgba(255, 255, 255, 0.95);
-            border-radius: 20px;
+            border-radius: 15px;
             box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
             margin: 50px auto 20px;
             backdrop-filter: blur(10px);
@@ -33,14 +33,14 @@
             background: transparent;
             padding: 30px;
             /* backdrop-filter: blur(10px); */
-            border-radius: 20px 20px 0 0;
+            border-radius: 15px 15px 0 0;
             text-align: center;
         }
         
         .title-background {
             background-color: #57068c;
             padding: 25px 80px;
-            border-radius: 8px;
+            border-radius: 15px;
             display: inline-block;
             margin: 0 40px 10px 40px;
             box-shadow: 0 8px 25px rgba(87, 6, 140, 0.4);
@@ -57,9 +57,9 @@
         }
         
         .btn-primary {
-            background: #8900e1;
+            background: #57068c;
             border: none;
-            border-radius: 10px;
+            border-radius: 15px;
             padding: 12px 30px;
             font-weight: 600;
             transition: all 0.3s ease;
@@ -71,14 +71,14 @@
         }
         
         .form-control, .form-select {
-            border-radius: 10px;
+            border-radius: 15px;
             border: 2px solid #e9ecef;
             padding: 12px 15px;
             transition: all 0.3s ease;
         }
         
         .form-control:focus, .form-select:focus {
-            border-color: #8900e1;
+            border-color: #57068c;
             box-shadow: 0 0 0 0.2rem rgba(87, 6, 140, 0.25);
         }
         
@@ -96,7 +96,7 @@
         }
         
         .analysis-header {
-            background: #8900e1;
+            background: #57068c;
             color: white;
             padding: 15px 20px;
             font-weight: 600;
@@ -111,7 +111,7 @@
         .loading {
             text-align: center;
             padding: 40px;
-            color: #8900e1;
+            color: #57068c;
         }
         
         .spinner-border {
@@ -120,14 +120,14 @@
         }
         
         .alert {
-            border-radius: 10px;
+            border-radius: 15px;
             border: none;
         }
         
         .decision-badge {
             font-size: 1.2em;
             padding: 8px 16px;
-            border-radius: 20px;
+            border-radius: 15px;
             font-weight: 600;
         }
         
@@ -143,16 +143,22 @@
         
         .stats-card {
             background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
-            border-radius: 10px;
+            border-radius: 15px;
             padding: 20px;
             text-align: center;
             margin-bottom: 20px;
+            height: 120px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            min-height: 120px;
         }
         
         .stats-number {
             font-size: 2em;
             font-weight: bold;
-            color: #8900e1;
+            color: #57068c;
         }
         
         .stats-label {
@@ -173,15 +179,15 @@
             align-items: center;
             justify-content: center;
             height: 200px;
-            border: 2px dashed #8900e1;
-            border-radius: 10px;
+            border: 2px dashed #57068c;
+            border-radius: 15px;
             padding: 20px;
         }
         
         .analysis-image {
             max-width: 100%;
             height: auto;
-            border-radius: 10px;
+            border-radius: 15px;
         }
     </style>
 </head>
@@ -248,7 +254,7 @@
                         <h6><i class="fas fa-calendar-alt"></i> Analysis Date & Time Range</h6>
                         <p class="mb-2"><strong>📊 K-Line Data:</strong> Select the date and time range for historical price data analysis</p>
                         <p class="mb-1"><strong>🔮 Prediction Basis:</strong> This data will be used to generate trading predictions and technical analysis</p>
-                        <p class="mb-0"><strong>⏰ Time Precision:</strong> yfinance supports exact time specification for more precise data retrieval</p>
+                                                 <p class="mb-0"><strong>⏰ Time Precision:</strong> yfinance supports exact time specification for more precise data retrieval. All times are handled in UTC.</p>
                     </div>
                     
                     <!-- Start Date and Time -->
@@ -277,34 +283,18 @@
                         </div>
                     </div>
                     
-                    <!-- Time Zone Selection -->
+                    <!-- Use Current Time Option -->
                     <div class="row mb-3">
-                        <div class="col-md-6">
-                            <label for="timezoneSelect">Time Zone:</label>
-                            <select id="timezoneSelect" class="form-select">
-                                <option value="UTC">UTC (Recommended)</option>
-                                <option value="US/Eastern">US Eastern</option>
-                                <option value="US/Central">US Central</option>
-                                <option value="US/Mountain">US Mountain</option>
-                                <option value="US/Pacific">US Pacific</option>
-                                <option value="Europe/London">Europe/London</option>
-                                <option value="Asia/Tokyo">Asia/Tokyo</option>
-                                <option value="Asia/Shanghai">Asia/Shanghai</option>
-                            </select>
-                            <small class="form-text text-muted">yfinance converts all times to UTC internally</small>
-                        </div>
-                        <div class="col-md-6">
-                            <div class="mt-4 pt-2">
-                                <div class="form-check">
-                                    <input class="form-check-input" type="checkbox" id="useCurrentTime" checked>
-                                    <label class="form-check-label fw-bold" for="useCurrentTime" style="color: #d63384;">
-                                        <i class="fas fa-clock"></i> ⚠️ Use current date/time for end (get latest k-line)
-                                    </label>
-                                </div>
-                                <small class="form-text fw-bold" style="color: #dc3545;">
-                                    <i class="fas fa-exclamation-triangle"></i> When checked, both end date and time will be locked to current values and updated automatically
-                                </small>
+                        <div class="col-md-12">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="useCurrentTime" checked>
+                                <label class="form-check-label fw-bold" for="useCurrentTime" style="color: #d63384;">
+                                    <i class="fas fa-clock"></i> ⚠️ Use current date/time for end (get latest k-line)
+                                </label>
                             </div>
+                            <small class="form-text fw-bold" style="color: #dc3545;">
+                                <i class="fas fa-exclamation-triangle"></i> When checked, both end date and time will be locked to current values and updated automatically
+                            </small>
                         </div>
                     </div>
                     
@@ -329,10 +319,10 @@
                             </h6>
                             <p class="mb-2" style="color: #856404;">
                                 <strong>📊 Data Optimization:</strong> To ensure optimal accuracy in our Large Language Model (LLM) chart analysis, 
-                                the system automatically utilizes the most recent 30 candlesticks from your selected time range.
+                                the system automatically utilizes the most recent 40~50 candlesticks from your selected time range.
                             </p>
                             <p class="mb-0" style="color: #856404;">
-                                <strong>🎯 Why 30 Candlesticks?</strong> This focused dataset provides sufficient market context while maintaining 
+                                <strong>🎯 Why 40~50 Candlesticks?</strong> This focused dataset provides sufficient market context while maintaining 
                                 computational efficiency and reducing noise from older, potentially irrelevant price movements.
                             </p>
                         </div>
@@ -359,21 +349,21 @@
             <!-- Results Section -->
             <div class="results-section" id="resultsSection">
                 <!-- Summary Stats -->
-                <div class="row mb-4">
-                    <div class="col-md-4">
-                        <div class="stats-card">
+                <div class="row mb-4 align-items-stretch">
+                    <div class="col-md-4 d-flex">
+                        <div class="stats-card w-100">
                             <div class="stats-number" id="dataPoints">-</div>
                             <div class="stats-label">Data Points</div>
                         </div>
                     </div>
-                    <div class="col-md-4">
-                        <div class="stats-card">
+                    <div class="col-md-4 d-flex">
+                        <div class="stats-card w-100">
                             <div class="stats-number" id="timeframe">-</div>
                             <div class="stats-label">Timeframe</div>
                         </div>
                     </div>
-                    <div class="col-md-4">
-                        <div class="stats-card">
+                    <div class="col-md-4 d-flex">
+                        <div class="stats-card w-100">
                             <div class="stats-number" id="assetName">-</div>
                             <div class="stats-label">Asset</div>
                         </div>
@@ -629,7 +619,6 @@
                 const endDate = document.getElementById('endDate').value;
                 const endTime = document.getElementById('endTime').value;
                 const useCurrentTime = document.getElementById('useCurrentTime').checked;
-                const timezone = document.getElementById('timezoneSelect').value;
 
                 // Frontend date check: prevent future dates
                 const today = new Date();
@@ -723,7 +712,6 @@
                     requestData.end_date = document.getElementById('endDate').value;
                     requestData.end_time = document.getElementById('endTime').value;
                     requestData.use_current_time = document.getElementById('useCurrentTime').checked;
-                    requestData.timezone = document.getElementById('timezoneSelect').value;
                 } else {
                     const fileNumber = parseInt(document.getElementById('fileSelect').value);
                     if (isNaN(fileNumber)) {
