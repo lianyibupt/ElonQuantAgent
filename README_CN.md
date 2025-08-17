@@ -191,7 +191,7 @@ python web_interface.py
 
 ## 🙏 致谢
 
-此仓库基于 [**LangGraph**](https://github.com/langchain-ai/langgraph)、[**OpenAI**](https://github.com/openai/openai-python)、[**yfinance**](https://github.com/ranaroussi/yfinance)、[**Flask**](https://github.com/pallets/flask) 和 [**TechnicalAnalysisAutomation**](https://github.com/neurotrader888/TechnicalAnalysisAutomation/tree/main) 构建。
+此仓库基于 [**LangGraph**](https://github.com/langchain-ai/langgraph)、[**OpenAI**](https://github.com/openai/openai-python)、[**yfinance**](https://github.com/ranaroussi/yfinance)、[**Flask**](https://github.com/pallets/flask) 、[**tvdatafeed**](https://github.com/rongardF/tvdatafeed) 和 [**TechnicalAnalysisAutomation**](https://github.com/neurotrader888/TechnicalAnalysisAutomation/tree/main) 构建。
 
 ## ⚠️ 免责声明
 
