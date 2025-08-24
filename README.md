@@ -1,9 +1,7 @@
-
-# QuantAgent
-
 <div align="center">
 
 ![QuantAgent Banner](assets/banner.png)
+<h2>QuantAgent: Price-Driven Multi-Agent LLMs for High-Frequency Trading</h2>
 
 [![GitHub stars](https://img.shields.io/github/stars/your-username/QuantAgents)](https://github.com/Y-Research-SBU/QuantAgent/stargazers)
 [![GitHub forks](https://img.shields.io/github/forks/your-username/QuantAgents)](https://github.com/Y-Research-SBU/QuantAgent/forks)
