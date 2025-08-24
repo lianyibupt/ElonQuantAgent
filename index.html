@@ -1,0 +1,862 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>QuantAgents: Multi-Agent Trading System</title>
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Playfair+Display:ital,wght@0,700;1,400&display=fallback" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        /* Base styles */
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            line-height: 1.6;
+            color: #1e293b;
+            background-color: #ffffff;
+        }
+
+        /* Header styles */
+        .header {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-bottom: 1px solid #e2e8f0;
+            z-index: 1000;
+            padding: 1rem 0;
+        }
+
+        .header-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .logo {
+            width: 40px;
+            height: 40px;
+            background: linear-gradient(135deg, #3b82f6 0%, #06b6d4 50%, #10b981 100%);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: transform 0.3s ease;
+        }
+
+        .logo:hover {
+            transform: scale(1.1);
+        }
+
+        .logo i {
+            color: white;
+            font-size: 1.2rem;
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 2rem;
+            list-style: none;
+        }
+
+        .nav-links a {
+            color: #64748b;
+            text-decoration: none;
+            font-weight: 500;
+            transition: color 0.3s ease;
+        }
+
+        .nav-links a:hover {
+            color: #3b82f6;
+        }
+
+        /* Main content */
+        .main-content {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 120px 2rem 4rem;
+        }
+
+        /* Title section */
+        .title-section {
+            text-align: center;
+            margin-bottom: 4rem;
+        }
+
+        .main-title {
+            font-size: 3rem;
+            font-weight: 800;
+            color: #1e293b;
+            margin-bottom: 1rem;
+        }
+
+        .subtitle {
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: #475569;
+            margin-bottom: 2rem;
+        }
+
+        .authors {
+            font-size: 1.1rem;
+            color: #64748b;
+            margin-bottom: 1rem;
+            display: flex;
+            justify-content: center;
+            gap: 2rem;
+            flex-wrap: wrap;
+        }
+
+        .affiliations {
+            font-size: 0.9rem;
+            color: #94a3b8;
+            line-height: 1.8;
+        }
+
+        .author-link {
+            color: #3b82f6;
+            text-decoration: none;
+            font-weight: 500;
+            transition: color 0.3s ease;
+        }
+
+        .author-link:hover {
+            color: #1d4ed8;
+            text-decoration: underline;
+        }
+
+        .action-buttons {
+            display: flex;
+            justify-content: center;
+            gap: 1.5rem;
+            margin-top: 2rem;
+        }
+
+        .action-btn {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.75rem 1.5rem;
+            background: #3b82f6;
+            color: white;
+            text-decoration: none;
+            border-radius: 8px;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            box-shadow: 0 2px 4px rgba(59, 130, 246, 0.2);
+        }
+
+        .action-btn:hover {
+            background: #1d4ed8;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(59, 130, 246, 0.3);
+        }
+
+        .action-btn i {
+            font-size: 1.1rem;
+        }
+
+        /* Method overview */
+        .method-overview {
+            background: #f8fafc;
+            padding: 3rem;
+            border-radius: 16px;
+            margin-bottom: 4rem;
+            border-left: 4px solid #3b82f6;
+        }
+
+        .method-overview h2 {
+            font-size: 2rem;
+            font-weight: 700;
+            color: #1e293b;
+            margin-bottom: 1.5rem;
+        }
+
+                 .method-overview p {
+             font-size: 1.8rem;
+             color: #475569;
+             line-height: 1.8;
+         }
+
+        /* Interactive Agent sections */
+        .agents-section {
+            margin-bottom: 4rem;
+        }
+
+        .interactive-agents-container {
+            display: flex;
+            flex-direction: column;
+            gap: 2rem;
+            margin-top: 2rem;
+        }
+
+        .agent-selection {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+
+        .agent-selector-card {
+            background: #f8fafc;
+            padding: 1rem;
+            border-radius: 12px;
+            border: 1px solid #e2e8f0;
+            transition: all 0.3s ease;
+            position: relative;
+            cursor: pointer;
+            text-align: center;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            min-height: 120px;
+        }
+
+        .agent-selector-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+        }
+
+        .agent-selector-card.active {
+            background: #3b82f6;
+            color: white;
+            border-color: #3b82f6;
+        }
+
+        .agent-selector-card.active h3,
+        .agent-selector-card.active p {
+            color: white;
+        }
+
+        .agent-selector-card h3 {
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: #1e293b;
+            margin-bottom: 0.5rem;
+        }
+
+        .agent-selector-card p {
+            color: #64748b;
+            line-height: 1.4;
+            font-size: 0.85rem;
+            margin-bottom: 0;
+        }
+
+        .agent-icon {
+            position: absolute;
+            bottom: 0.5rem;
+            right: 0.5rem;
+            font-size: 1rem;
+            opacity: 0.7;
+        }
+
+        .agent-detail-display {
+            background: #f8fafc;
+            border-radius: 12px;
+            padding: 2rem;
+            border: 1px solid #e2e8f0;
+            min-height: 300px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 100%;
+        }
+
+        .agent-detail {
+            display: none;
+            width: 100%;
+            height: 100%;
+        }
+
+        .agent-detail.active {
+            display: block;
+        }
+
+        .agent-detail-content {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 100%;
+            height: 100%;
+        }
+
+        .agent-visualization {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+
+        /* Legacy agent card styles for other sections */
+        .agents-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 2rem;
+            margin-top: 2rem;
+        }
+
+        .agent-card {
+            background: #f8fafc;
+            padding: 2rem;
+            border-radius: 12px;
+            border: 1px solid #e2e8f0;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            position: relative;
+        }
+
+        .agent-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+        }
+
+        .agent-card h3 {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: #1e293b;
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .agent-card h3 i {
+            color: #3b82f6;
+            font-size: 1.2rem;
+        }
+
+        .agent-card p {
+            color: #64748b;
+            line-height: 1.6;
+        }
+
+        /* Evaluation metrics */
+        .evaluation-section {
+            background: #f8fafc;
+            padding: 3rem;
+            border-radius: 16px;
+            margin-bottom: 4rem;
+        }
+
+        .evaluation-section h2 {
+            font-size: 2rem;
+            font-weight: 700;
+            color: #1e293b;
+            margin-bottom: 2rem;
+            text-align: center;
+        }
+
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 2rem;
+        }
+
+        .metric-card {
+            background: white;
+            padding: 2rem;
+            border-radius: 12px;
+            text-align: center;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+
+        .metric-value {
+            font-size: 2.5rem;
+            font-weight: 800;
+            color: #3b82f6;
+            margin-bottom: 0.5rem;
+        }
+
+        .metric-label {
+            font-size: 1rem;
+            color: #64748b;
+            font-weight: 500;
+        }
+
+        /* Results section */
+        .results-section {
+            margin-bottom: 4rem;
+        }
+
+        .results-section h2 {
+            font-size: 2rem;
+            font-weight: 700;
+            color: #1e293b;
+            margin-bottom: 2rem;
+            text-align: center;
+        }
+
+        .results-content {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 3rem;
+            align-items: start;
+        }
+
+        .results-text {
+            background: #f8fafc;
+            padding: 2rem;
+            border-radius: 12px;
+        }
+
+        .results-text h3 {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: #1e293b;
+            margin-bottom: 1rem;
+        }
+
+                 .results-text p {
+             color: #475569;
+             line-height: 1.8;
+             margin-bottom: 1rem;
+             font-size: 1.8rem;
+         }
+
+        .results-image {
+            background: #f8fafc;
+            padding: 2rem;
+            border-radius: 12px;
+            text-align: center;
+            min-height: 300px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .results-image i {
+            font-size: 4rem;
+            color: #94a3b8;
+        }
+
+        /* Bibliography */
+        .bibliography-section {
+            background: #f8fafc;
+            padding: 3rem;
+            border-radius: 16px;
+        }
+
+        .bibliography-section h2 {
+            font-size: 2rem;
+            font-weight: 700;
+            color: #1e293b;
+            margin-bottom: 2rem;
+        }
+
+        .bib-item {
+            background: white;
+            padding: 1.5rem;
+            border-radius: 8px;
+            margin-bottom: 1rem;
+            border-left: 4px solid #3b82f6;
+        }
+
+        .bib-item:last-child {
+            margin-bottom: 0;
+        }
+
+        .bib-citation {
+            font-weight: 600;
+            color: #1e293b;
+            margin-bottom: 0.5rem;
+        }
+
+        .bib-details {
+            color: #64748b;
+            font-size: 0.9rem;
+            line-height: 1.6;
+        }
+
+        /* Section headers */
+        .section-header {
+            font-size: 3.2rem;
+            font-weight: 700;
+            color: #1e293b;
+            margin-bottom: 2rem;
+            text-align: center;
+        }
+
+        /* Responsive design */
+        @media (max-width: 768px) {
+            .main-title {
+                font-size: 2rem;
+            }
+
+            .subtitle {
+                font-size: 1.2rem;
+            }
+
+            .authors {
+                font-size: 1rem;
+            }
+
+            .action-buttons {
+                flex-direction: column;
+                align-items: center;
+                gap: 1rem;
+            }
+
+            .action-btn {
+                width: 200px;
+                justify-content: center;
+            }
+
+            .agents-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .interactive-agents-container {
+                gap: 1.5rem;
+            }
+
+            .agent-selection {
+                grid-template-columns: 1fr;
+                gap: 0.75rem;
+            }
+
+            .agent-selector-card {
+                min-height: 100px;
+            }
+
+            .agent-detail-display {
+                min-height: 250px;
+            }
+
+            .results-content {
+                grid-template-columns: 1fr;
+            }
+
+            .metrics-grid {
+                grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            }
+
+            .nav-links {
+                gap: 1rem;
+            }
+
+            .nav-links a {
+                font-size: 0.9rem;
+            }
+        }
+
+        /* Smooth scrolling */
+        html {
+            scroll-behavior: smooth;
+        }
+
+        /* Section IDs for navigation */
+        #abstract, #method, #evaluation, #results {
+            scroll-margin-top: 100px;
+        }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <header class="header">
+        <div class="header-container">
+            <div class="logo" onclick="scrollToTop()">
+                <i class="fas fa-chart-line"></i>
+            </div>
+            <nav>
+                <ul class="nav-links">
+                    <li><a href="#abstract">Abstract</a></li>
+                    <li><a href="#method">Method</a></li>
+                    <li><a href="#evaluation">Evaluation</a></li>
+                    <li><a href="#results">Results</a></li>
+                </ul>
+            </nav>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="main-content">
+        <!-- Title Section -->
+        <section class="title-section">
+            <h1 class="main-title">QuantAgent: Price-Driven Multi-Agent LLMs for High-Frequency Trading</h1>
+            <div class="authors">
+                <span>Fei Xiong<sup>1,2</sup> *</span>
+                <span>Xiang Zhang<sup>3</sup> *</span>
+                <span>Siqi Sun<sup>4</sup></span>
+                <span>Chenyu You<sup>1</sup></span>
+            </div>
+            <div class="affiliations">
+                <div><sup>1</sup>Stony Brook University, <sup>2</sup>Carnegie Mellon University</div>
+                <div><sup>3</sup>University of British Columbia, <sup>4</sup>Fudan University</div>
+                <div>*Equal Contribution</div>
+            </div>
+            <div class="action-buttons">
+                <a href="#" class="action-btn paper-btn">
+                    <i class="fas fa-file-alt"></i>
+                    Paper
+                </a>
+                <a href="#" class="action-btn code-btn">
+                    <i class="fab fa-github"></i>
+                    Code
+                </a>
+            </div>
+        </section>
+
+                 <!-- Abstract Section -->
+         <section id="abstract">
+             <h2 class="section-header">Abstract</h2>
+                           <div style="background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%); padding: 3rem; border-radius: 20px; box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1); margin-bottom: 4rem;">
+                 <p style="font-size: 1.3rem; color: #1e293b; line-height: 1.8; margin-bottom: 1.5rem; font-weight: 500;">
+                     Recent advances in Large Language Models (LLMs) have demonstrated impressive capabilities in financial reasoning 
+                     and market understanding. However, existing LLM frameworks for High-Frequency Trading (HFT) face significant 
+                     limitations in terms of latency, interpretability, and the ability to handle real-time market dynamics. 
+                     We introduce QuantAgent, the first multi-agent LLM framework specifically designed for HFT, which decomposes 
+                     trading into four specialized agents: Indicator, Pattern, Trend, and Risk.
+                 </p>
+                 <p style="font-size: 1.3rem; color: #1e293b; line-height: 1.8; font-weight: 500;">
+                     Our framework leverages structured financial priors and language-native reasoning to achieve superior performance 
+                     in zero-shot evaluations across ten financial instruments, including Bitcoin and Nasdaq futures, in terms of 
+                     predictive accuracy and cumulative return over 4-hour trading intervals. The results suggest that combining 
+                     structured financial priors with language-native reasoning unlocks new potential for traceable, real-time 
+                     decision systems in high-frequency financial markets.
+                 </p>
+             </div>
+         </section>
+
+        <!-- Method Overview -->
+        <section id="method">
+            <h2 class="section-header">Method</h2>
+            <div class="method-overview">
+                <h2>Method Overview</h2>
+                <p>
+                    Our method embeds specialized analysis principles as core logic within each agent to establish 
+                    a cascade of structured trading constraints. Each agent operates independently on specific aspects 
+                    of market data while contributing to a unified decision-making framework. The system processes 
+                    live data from multiple sources, applies advanced technical analysis, and generates actionable 
+                    trading signals through coordinated agent interactions.
+                </p>
+                <p>
+                    The system is grounded in the belief that price action alone encapsulates all available market 
+                    information, enabling efficient and noise-resistant decision-making. By assuming that all available 
+                    information is already incorporated into price data, and that human reactions to price movements 
+                    tend to follow consistent patterns, it becomes possible for our agents to forecast future price 
+                    directions without relying on external inputs.
+                </p>
+            </div>
+
+            <!-- Interactive Agent Section -->
+            <div class="agents-section">
+                <h2 class="section-header">Multi-Agent Architecture</h2>
+                                 <p class="method-overview" style="margin-bottom: 2rem; font-size: 1.3rem;">
+                     Our method embeds specialized analysis principles as core logic within each agent to establish 
+                     a cascade of structured trading constraints. Each agent operates independently on specific aspects 
+                     of market data while contributing to a unified decision-making framework.
+                 </p>
+                
+                <div class="interactive-agents-container">
+                    <!-- Agent Selection Cards -->
+                    <div class="agent-selection">
+                                                 <div class="agent-selector-card active" data-agent="indicator">
+                             <h3>Indicator Agent</h3>
+                             <p>Computes RSI, MACD, Stochastic, and ROC indicators to assess momentum and oscillator dynamics.</p>
+                             <div class="agent-icon">⚡</div>
+                         </div>
+                         
+                         <div class="agent-selector-card" data-agent="pattern">
+                             <h3>Pattern Agent</h3>
+                             <p>Identifies chart patterns like triangles, flags, and candlestick formations for trend prediction.</p>
+                             <div class="agent-icon">⚡</div>
+                         </div>
+                         
+                         <div class="agent-selector-card" data-agent="trend">
+                             <h3>Trend Agent</h3>
+                             <p>Analyzes trend channels and support/resistance levels to quantify market direction.</p>
+                             <div class="agent-icon">⚡</div>
+                         </div>
+                         
+                         <div class="agent-selector-card" data-agent="decision">
+                             <h3>Decision Agent</h3>
+                             <p>Synthesizes all agent outputs to generate actionable LONG/SHORT trading signals.</p>
+                             <div class="agent-icon">⚡</div>
+                         </div>
+                    </div>
+                    
+                                         <!-- Agent Detail Display -->
+                     <div class="agent-detail-display">
+                         <div class="agent-detail active" id="indicator-detail">
+                             <div class="agent-detail-content">
+                                 <img src="assets/indicator.png" alt="Indicator Agent" class="agent-visualization">
+                             </div>
+                         </div>
+                         
+                         <div class="agent-detail" id="pattern-detail">
+                             <div class="agent-detail-content">
+                                 <img src="assets/pattern.png" alt="Pattern Agent" class="agent-visualization">
+                             </div>
+                         </div>
+                         
+                         <div class="agent-detail" id="trend-detail">
+                             <div class="agent-detail-content">
+                                 <img src="assets/trend.png" alt="Trend Agent" class="agent-visualization">
+                             </div>
+                         </div>
+                         
+                         <div class="agent-detail" id="decision-detail">
+                             <div class="agent-detail-content">
+                                 <img src="assets/decision.png" alt="Decision Agent" class="agent-visualization">
+                             </div>
+                         </div>
+                     </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Evaluation Section -->
+        <section id="evaluation">
+            <h2 class="section-header">Evaluation Metrics</h2>
+            <div class="results-content" style="grid-template-columns: 1fr;">
+                <div class="results-image" style="max-width: 100%; margin: 0 auto;">
+                    <img src="assets/benchmark.png" alt="Benchmark Asset Properties" style="width: 100%; height: auto; border-radius: 8px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);">
+                </div>
+                <div style="text-align: center; margin-top: 0.25rem;">
+                    <p class="figure-caption" style="font-size: 1.4rem; color: #64748b; line-height: 1.6; max-width: 900px; margin: 0 auto;">Overview of benchmark asset properties. Each asset is characterized by its name, market type, the start and end dates of the data collection window, and the total number of bars sampled. All assets are sampled using 4-hour OHLC intervals, with a fixed total of 5,000 bars per asset to ensure comparability.</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Results Section -->
+        <section id="results" style="margin-top: 6rem;">
+            <h2 class="section-header">Quantitative Results</h2>
+            <div class="results-content" style="grid-template-columns: 1fr;">
+                <div class="results-image" style="max-width: 100%; margin: 0 auto;">
+                    <img src="assets/table.png" alt="Performance Comparison Table" style="width: 100%; height: auto; border-radius: 8px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);">
+                </div>
+                <div style="text-align: center; margin-top: 0.25rem;">
+                    <p class="figure-caption" style="font-size: 1.4rem; color: #64748b; line-height: 1.6; max-width: 900px; margin: 0 auto;">Performance comparison across trading symbols. Results are shown for a random baseline and our method (highlighted in Green). Bold values indicate improvements, and upward arrows denote metrics where higher values are better.</p>
+                </div>
+            </div>
+        </section>
+
+                 <!-- Demo Section -->
+         <section style="margin-top: 6rem;">
+             <h2 class="section-header">Web Interface Demo</h2>
+             <div class="results-content" style="grid-template-columns: 1fr;">
+                                   <div class="results-text" style="margin-bottom: 1rem;">
+                      <h3>Interactive Trading System</h3>
+                      <p>
+                          QuantAgents provides a comprehensive web interface for real-time market analysis, supporting multiple assets including cryptocurrencies (BTC), equity indices (NQ, ES, SPX, QQQ), and commodities (GC, CL). The system features multiple timeframes from 1-minute to daily intervals with precise date/time selection, secure API key management, real-time data fetching from Yahoo Finance, and comprehensive analysis results with visualizations from all four specialized agents using the most recent 40-50 candlesticks for optimal accuracy.
+                      </p>
+                  </div>
+                                   <div class="results-image" style="max-width: 100%; margin: 0 auto;">
+                      <img src="assets/demo.gif" alt="QuantAgents Demo" style="width: 100%; height: auto; border-radius: 8px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);">
+                  </div>
+                  <div style="text-align: center; margin-top: 0.25rem;">
+                      <p class="figure-caption" style="font-size: 1.4rem; color: #64748b; line-height: 1.6; max-width: 900px; margin: 0 auto;">QuantAgents Interactive Demo</p>
+                  </div>
+             </div>
+         </section>
+
+        <!-- Bibliography -->
+        <section style="margin-top: 6rem;">
+            <h2 class="section-header">BibTeX</h2>
+            <div style="display: flex; justify-content: center; margin-top: 2rem;">
+                <div style="background: #f8f9fa; padding: 2rem; border-radius: 8px; font-family: 'Courier New', monospace; font-size: 0.9rem; color: #495057; line-height: 1.6; max-width: 800px; width: 100%;">
+                    <pre style="margin: 0; white-space: pre-wrap;">@article{xiong2025quantagent,
+  title={QuantAgent: Price-Driven Multi-Agent LLMs for High-Frequency Trading},
+  author={Xiong, Fei and Zhang, Xiang and Sun, Siqi and You, Chenyu},
+  journal={arXiv preprint arXiv:2XXX.XXXXX},
+  year={2025}
+}</pre>
+                </div>
+            </div>
+        </section>
+    </main>
+
+         <!-- Footer -->
+     <footer style="background: #f8fafc; padding: 2rem; margin-top: 4rem; border-top: 1px solid #e2e8f0;">
+         <div style="max-width: 1200px; margin: 0 auto; text-align: center;">
+             <div style="font-size: 0.9rem; color: #64748b;">
+                 © 2025 QuantAgent. All Rights Reserved.
+             </div>
+         </div>
+     </footer>
+
+    <script>
+        // Smooth scrolling for navigation links
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function (e) {
+                e.preventDefault();
+                const target = document.querySelector(this.getAttribute('href'));
+                if (target) {
+                    target.scrollIntoView({
+                        behavior: 'smooth',
+                        block: 'start'
+                    });
+                }
+            });
+        });
+
+        // Scroll to top function
+        function scrollToTop() {
+            window.scrollTo({
+                top: 0,
+                behavior: 'smooth'
+            });
+        }
+
+        // Add scroll effect to header
+        window.addEventListener('scroll', function() {
+            const header = document.querySelector('.header');
+            if (window.scrollY > 100) {
+                header.style.background = 'rgba(255, 255, 255, 0.98)';
+                header.style.boxShadow = '0 2px 10px rgba(0, 0, 0, 0.1)';
+            } else {
+                header.style.background = 'rgba(255, 255, 255, 0.95)';
+                header.style.boxShadow = 'none';
+            }
+        });
+
+        // Add hover effects to agent cards
+        document.querySelectorAll('.agent-card').forEach(card => {
+            card.addEventListener('mouseenter', function() {
+                this.style.transform = 'translateY(-8px)';
+            });
+            
+            card.addEventListener('mouseleave', function() {
+                this.style.transform = 'translateY(0)';
+            });
+        });
+
+        // Interactive agent switching functionality
+        document.querySelectorAll('.agent-selector-card').forEach(card => {
+            card.addEventListener('click', function() {
+                const agentType = this.getAttribute('data-agent');
+                
+                // Remove active class from all selector cards
+                document.querySelectorAll('.agent-selector-card').forEach(c => {
+                    c.classList.remove('active');
+                });
+                
+                // Add active class to clicked card
+                this.classList.add('active');
+                
+                // Hide all agent details
+                document.querySelectorAll('.agent-detail').forEach(detail => {
+                    detail.classList.remove('active');
+                });
+                
+                // Show selected agent detail
+                const targetDetail = document.getElementById(agentType + '-detail');
+                if (targetDetail) {
+                    targetDetail.classList.add('active');
+                }
+            });
+        });
+    </script>
+</body>
+</html>
