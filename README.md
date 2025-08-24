@@ -3,6 +3,24 @@
 ![QuantAgent Banner](assets/banner.png)
 <h2>QuantAgent: Price-Driven Multi-Agent LLMs for High-Frequency Trading</h2>
 
+<div style="position: relative; text-align: center; margin: 20px 0;">
+  <div style="position: absolute; top: -10px; right: 20%; font-size: 1.2em;"></div>
+  <p>
+    <a href="">Fei Xiong</a><sup>1,2 ★</sup>&nbsp;
+    <a href="https://wyattz23.github.io">Xiang Zhang</a><sup>3 ★</sup>&nbsp;
+    <a href="">Siqi Sun</a><sup>4</sup>&nbsp;
+    <a href="https://chenyuyou.me/">Chenyu You</a><sup>1</sup>
+  </p>
+  
+  <p>
+    <sup>1</sup> Stony Brook University &nbsp;&nbsp; 
+    <sup>2</sup> Carnegie Mellon University &nbsp;&nbsp;
+    <sup>3</sup> University of British Columbia &nbsp;&nbsp; <br>
+    <sup>4</sup> Fudan University &nbsp;&nbsp; 
+    ★ Equal Contribution <br>
+  </p>
+</div>
+
 [![GitHub stars](https://img.shields.io/github/stars/your-username/QuantAgents)](https://github.com/Y-Research-SBU/QuantAgent/stargazers)
 [![GitHub forks](https://img.shields.io/github/forks/your-username/QuantAgents)](https://github.com/Y-Research-SBU/QuantAgent/forks)
 [![GitHub pull requests](https://img.shields.io/github/issues-pr/your-username/QuantAgents)](https://github.com/Y-Research-SBU/QuantAgent/pulls)
