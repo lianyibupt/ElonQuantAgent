@@ -1,6 +1,3 @@
-
-# QuantAgent
-
 <div align="center">
 
 ![QuantAgent Banner](assets/banner.png)
