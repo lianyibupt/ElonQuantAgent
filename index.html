@@ -95,21 +95,22 @@
         }
 
         .main-title {
-            font-size: 3rem;
-            font-weight: 800;
+            font-size: 4.5rem;
+            font-weight: 900;
             color: #1e293b;
-            margin-bottom: 1rem;
+            margin-bottom: 0.5rem;
         }
 
         .subtitle {
-            font-size: 1.5rem;
-            font-weight: 600;
-            color: #475569;
+            font-size: 3rem;
+            font-weight: 900;
+            color: #1e293b;
             margin-bottom: 2rem;
+            white-space: nowrap;
         }
 
         .authors {
-            font-size: 1.1rem;
+            font-size: 2.5rem;
             color: #64748b;
             margin-bottom: 1rem;
             display: flex;
@@ -119,7 +120,7 @@
         }
 
         .affiliations {
-            font-size: 0.9rem;
+            font-size: 2.5rem;
             color: #94a3b8;
             line-height: 1.8;
         }
@@ -184,7 +185,7 @@
         }
 
                  .method-overview p {
-             font-size: 1.8rem;
+             font-size: 2.8rem;
              color: #475569;
              line-height: 1.8;
          }
@@ -571,7 +572,6 @@
             <nav>
                 <ul class="nav-links">
                     <li><a href="#abstract">Abstract</a></li>
-                    <li><a href="#method">Method</a></li>
                     <li><a href="#evaluation">Evaluation</a></li>
                     <li><a href="#results">Results</a></li>
                 </ul>
@@ -583,18 +583,18 @@
     <main class="main-content">
         <!-- Title Section -->
         <section class="title-section">
-            <h1 class="main-title">QuantAgent: Price-Driven Multi-Agent LLMs for High-Frequency Trading</h1>
+                         <h1 class="main-title">QuantAgent: Price-Driven Multi-Agent LLMs</h1>
+             <h2 class="subtitle">for High-Frequency Trading</h2>
             <div class="authors">
                 <span>Fei Xiong<sup>1,2</sup> *</span>
                 <span>Xiang Zhang<sup>3</sup> *</span>
                 <span>Siqi Sun<sup>4</sup></span>
                 <span>Chenyu You<sup>1</sup></span>
             </div>
-            <div class="affiliations">
-                <div><sup>1</sup>Stony Brook University, <sup>2</sup>Carnegie Mellon University</div>
-                <div><sup>3</sup>University of British Columbia, <sup>4</sup>Fudan University</div>
-                <div>*Equal Contribution</div>
-            </div>
+                         <div class="affiliations">
+                 <div><sup>1</sup>Stony Brook University, <sup>2</sup>Carnegie Mellon University, <sup>3</sup>University of British Columbia</div>
+                 <div><sup>4</sup>Fudan University, ★ Equal Contribution</div>
+             </div>
             <div class="action-buttons">
                 <a href="#" class="action-btn paper-btn">
                     <i class="fas fa-file-alt"></i>
@@ -628,93 +628,7 @@
              </div>
          </section>
 
-        <!-- Method Overview -->
-        <section id="method">
-            <h2 class="section-header">Method</h2>
-            <div class="method-overview">
-                <h2>Method Overview</h2>
-                <p>
-                    Our method embeds specialized analysis principles as core logic within each agent to establish 
-                    a cascade of structured trading constraints. Each agent operates independently on specific aspects 
-                    of market data while contributing to a unified decision-making framework. The system processes 
-                    live data from multiple sources, applies advanced technical analysis, and generates actionable 
-                    trading signals through coordinated agent interactions.
-                </p>
-                <p>
-                    The system is grounded in the belief that price action alone encapsulates all available market 
-                    information, enabling efficient and noise-resistant decision-making. By assuming that all available 
-                    information is already incorporated into price data, and that human reactions to price movements 
-                    tend to follow consistent patterns, it becomes possible for our agents to forecast future price 
-                    directions without relying on external inputs.
-                </p>
-            </div>
 
-            <!-- Interactive Agent Section -->
-            <div class="agents-section">
-                <h2 class="section-header">Multi-Agent Architecture</h2>
-                                 <p class="method-overview" style="margin-bottom: 2rem; font-size: 1.3rem;">
-                     Our method embeds specialized analysis principles as core logic within each agent to establish 
-                     a cascade of structured trading constraints. Each agent operates independently on specific aspects 
-                     of market data while contributing to a unified decision-making framework.
-                 </p>
-                
-                <div class="interactive-agents-container">
-                    <!-- Agent Selection Cards -->
-                    <div class="agent-selection">
-                                                 <div class="agent-selector-card active" data-agent="indicator">
-                             <h3>Indicator Agent</h3>
-                             <p>Computes RSI, MACD, Stochastic, and ROC indicators to assess momentum and oscillator dynamics.</p>
-                             <div class="agent-icon">⚡</div>
-                         </div>
-                         
-                         <div class="agent-selector-card" data-agent="pattern">
-                             <h3>Pattern Agent</h3>
-                             <p>Identifies chart patterns like triangles, flags, and candlestick formations for trend prediction.</p>
-                             <div class="agent-icon">⚡</div>
-                         </div>
-                         
-                         <div class="agent-selector-card" data-agent="trend">
-                             <h3>Trend Agent</h3>
-                             <p>Analyzes trend channels and support/resistance levels to quantify market direction.</p>
-                             <div class="agent-icon">⚡</div>
-                         </div>
-                         
-                         <div class="agent-selector-card" data-agent="decision">
-                             <h3>Decision Agent</h3>
-                             <p>Synthesizes all agent outputs to generate actionable LONG/SHORT trading signals.</p>
-                             <div class="agent-icon">⚡</div>
-                         </div>
-                    </div>
-                    
-                                         <!-- Agent Detail Display -->
-                     <div class="agent-detail-display">
-                         <div class="agent-detail active" id="indicator-detail">
-                             <div class="agent-detail-content">
-                                 <img src="assets/indicator.png" alt="Indicator Agent" class="agent-visualization">
-                             </div>
-                         </div>
-                         
-                         <div class="agent-detail" id="pattern-detail">
-                             <div class="agent-detail-content">
-                                 <img src="assets/pattern.png" alt="Pattern Agent" class="agent-visualization">
-                             </div>
-                         </div>
-                         
-                         <div class="agent-detail" id="trend-detail">
-                             <div class="agent-detail-content">
-                                 <img src="assets/trend.png" alt="Trend Agent" class="agent-visualization">
-                             </div>
-                         </div>
-                         
-                         <div class="agent-detail" id="decision-detail">
-                             <div class="agent-detail-content">
-                                 <img src="assets/decision.png" alt="Decision Agent" class="agent-visualization">
-                             </div>
-                         </div>
-                     </div>
-                </div>
-            </div>
-        </section>
 
         <!-- Evaluation Section -->
         <section id="evaluation">
@@ -742,24 +656,7 @@
             </div>
         </section>
 
-                 <!-- Demo Section -->
-         <section style="margin-top: 6rem;">
-             <h2 class="section-header">Web Interface Demo</h2>
-             <div class="results-content" style="grid-template-columns: 1fr;">
-                                   <div class="results-text" style="margin-bottom: 1rem;">
-                      <h3>Interactive Trading System</h3>
-                      <p>
-                          QuantAgents provides a comprehensive web interface for real-time market analysis, supporting multiple assets including cryptocurrencies (BTC), equity indices (NQ, ES, SPX, QQQ), and commodities (GC, CL). The system features multiple timeframes from 1-minute to daily intervals with precise date/time selection, secure API key management, real-time data fetching from Yahoo Finance, and comprehensive analysis results with visualizations from all four specialized agents using the most recent 40-50 candlesticks for optimal accuracy.
-                      </p>
-                  </div>
-                                   <div class="results-image" style="max-width: 100%; margin: 0 auto;">
-                      <img src="assets/demo.gif" alt="QuantAgents Demo" style="width: 100%; height: auto; border-radius: 8px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);">
-                  </div>
-                  <div style="text-align: center; margin-top: 0.25rem;">
-                      <p class="figure-caption" style="font-size: 1.4rem; color: #64748b; line-height: 1.6; max-width: 900px; margin: 0 auto;">QuantAgents Interactive Demo</p>
-                  </div>
-             </div>
-         </section>
+
 
         <!-- Bibliography -->
         <section style="margin-top: 6rem;">
