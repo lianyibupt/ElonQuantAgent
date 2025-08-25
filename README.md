@@ -58,7 +58,7 @@ A sophisticated multi-agent trading analysis system that combines technical indi
   
   ### Indicator Agent
   
-  • Computes a suite of technical indicators—including RSI to assess momentum extremes, MACD to quantify convergence–divergence dynamics, and the Stochastic Oscillator to measure closing prices against recent trading ranges—on each incoming K‑line, converting raw OHLC data into precise, signal-ready metrics.
+  • Computes five technical indicators—including RSI to assess momentum extremes, MACD to quantify convergence–divergence dynamics, and the Stochastic Oscillator to measure closing prices against recent trading ranges—on each incoming K‑line, converting raw OHLC data into precise, signal-ready metrics.
 
   ![indicator agent](assets/indicator.png)
   
