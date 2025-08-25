@@ -3,9 +3,13 @@
 ![QuantAgent Banner](assets/banner.png)
 <h2>QuantAgent: 基于价格驱动的多智能体大语言模型高频交易系统</h2>
 
-<div style="margin: 20px 0; margin-bottom: 40px;">
+</div>
+
+<div align="center" style="margin: 20px 0;">
   <a href="README.md">English</a> | <a href="README_CN.md">中文</a>
 </div>
+
+<div align="center">
 
 <div style="position: relative; text-align: center; margin: 20px 0;">
   <div style="position: absolute; top: -10px; right: 20%; font-size: 1.2em;"></div>
