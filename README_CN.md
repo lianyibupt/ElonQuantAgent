@@ -1,32 +1,109 @@
+<div align="center">
 
+![QuantAgent Banner](assets/banner.png)
+<h2>QuantAgent: 基于价格驱动的多智能体大语言模型高频交易系统</h2>
 
-# QuantAgents
+<div style="position: relative; text-align: center; margin: 20px 0;">
+  <div style="position: absolute; top: -10px; right: 20%; font-size: 1.2em;"></div>
+  <p>
+    <a href="https://machineily.github.io/">Fei Xiong</a><sup>1,2 ★</sup>&nbsp;
+    <a href="https://wyattz23.github.io">Xiang Zhang</a><sup>3 ★</sup>&nbsp;
+    <a href="https://intersun.github.io/">Siqi Sun</a><sup>4</sup>&nbsp;
+    <a href="https://chenyuyou.me/">Chenyu You</a><sup>1</sup>
+  </p>
+  
+  
+  <p>
+    <sup>1</sup> Stony Brook University &nbsp;&nbsp; 
+    <sup>2</sup> Carnegie Mellon University &nbsp;&nbsp;
+    <sup>3</sup> University of British Columbia &nbsp;&nbsp; <br>
+    <sup>4</sup> Fudan University &nbsp;&nbsp; 
+    ★ Equal Contribution <br>
+  </p>
+</div>
+
+[![GitHub stars](https://img.shields.io/github/stars/your-username/QuantAgents)](https://github.com/Y-Research-SBU/QuantAgent/stargazers)
+[![GitHub forks](https://img.shields.io/github/forks/your-username/QuantAgents)](https://github.com/Y-Research-SBU/QuantAgent/forks)
+[![GitHub pull requests](https://img.shields.io/github/issues-pr/your-username/QuantAgents)](https://github.com/Y-Research-SBU/QuantAgent/pulls)
+[![GitHub issues](https://img.shields.io/github/issues/your-username/QuantAgents)](https://github.com/Y-Research-SBU/QuantAgent/issues)
+[![GitHub contributors](https://img.shields.io/github/contributors/your-username/QuantAgents?color=2b9348)](https://github.com/your-username/QuantAgents/graphs/contributors)
+[![GitHub license](https://img.shields.io/github/license/your-username/QuantAgents?color=2b9348)](https://github.com/Y-Research-SBU/QuantAgent/blob/main/LICENSE)
+
+</div>
 
 一个复杂的多智能体交易分析系统，结合了技术指标、模式识别和趋势分析，使用 LangChain 和 LangGraph。该系统提供网络界面和程序化访问，用于全面的市场分析。
 
-> QuantAgent 是一个研究导向的工具，旨在探索金融环境中的算法决策制定。其性能取决于多种变量，包括所选的语言模型、参数调优、数据完整性、市场波动性和其他随机因素。QuantAgent 生成的结果本质上是实验性的，不应被解释为实际交易或投资活动的建议。
+<div align="center">
+
+🚀 [功能特性](#-功能特性) | ⚡ [安装](#-安装) | 🎬 [使用](#-使用) | 🔧 [实现细节](#-实现细节) | 📊 [基准测试](#-基准测试) | 🤝 [贡献](#-贡献) | 📄 [许可证](#-许可证)
+
+</div>
 
 ## 🚀 功能特性
 
-- **多智能体分析**：四个专业智能体协同工作：
-  
-  - **指标智能体**：计算技术指标（MACD、RSI、随机指标等）
-  ![指标智能体](assets/indicator.png)
-  - **模式智能体**：识别蜡烛图模式并生成可视化图表
-  ![模式智能体](assets/pattern.png)
-  - **趋势智能体**：分析市场趋势并生成趋势可视化
-  ![趋势智能体](assets/trend.png)
-  - **风险智能体**：汇总指标、模式和趋势报告，量化潜在回撤，推荐仓位大小，并定义止损阈值，实现全面的风险管理。
-  ![风险智能体](assets/risk.png)
-  - **决策智能体**：整合指标、模式、趋势和风险报告，发布最终交易指令——指定做多/做空信号和理由。
-  ![决策智能体](assets/decision.png)
+### 指标智能体
 
-- **网络界面**：基于 Flask 的现代网络应用程序，具有：
+• 计算一套技术指标——包括用于评估动量极值的 RSI、用于量化收敛-发散动态的 MACD，以及用于测量收盘价相对于最近交易范围的随机振荡器——在每个传入的 K 线上，将原始 OHLC 数据转换为精确的、信号就绪的指标。
+
+![指标智能体](assets/indicator.png)
+  
+### 模式智能体
+
+• 在模式查询时，模式智能体首先绘制最近的价格图表，识别其主要高点、低点和总体上升或下降走势，将该形状与一组熟悉的模式进行比较，并返回最佳匹配的简短、通俗语言描述。
+
+![模式智能体](assets/pattern.png)
+  
+### 趋势智能体
+
+• 利用工具生成的带注释的 K 线图表，叠加拟合的趋势通道——追踪最近高点和低点的上下边界线——来量化市场方向、通道斜率和盘整区域，然后提供当前趋势的简洁、专业的总结。
+
+![趋势智能体](assets/trend.png)
+
+### 决策智能体
+
+• 综合指标、模式、趋势和风险智能体的输出——包括动量指标、检测到的图表形态、通道分析和风险-回报评估——制定可操作的交易指令，明确指定做多或做空头寸、推荐的入场和出场点、止损阈值，以及基于每个智能体发现的简洁理由。
+
+![决策智能体](assets/decision.png)
+
+### 网络界面
+基于 Flask 的现代网络应用程序，具有：
   - 来自雅虎财经的实时市场数据
   - 交互式资产选择（股票、加密货币、商品、指数）
   - 多时间框架分析（1分钟到1天）
   - 动态图表生成
   - API 密钥管理
+
+## 📦 安装
+
+### 1. 创建并激活 Conda 环境
+
+```bash
+conda create -n quantagents python=3.10
+conda activate quantagents
+```
+
+### 2. 安装依赖
+
+```bash
+pip install -r requirements.txt
+```
+
+如果您遇到 TA-lib-python 的问题，请尝试：
+
+```bash
+conda install -c conda-forge ta-lib
+```
+
+或访问 [TA-Lib Python 仓库](https://github.com/ta-lib/ta-lib-python) 获取详细的安装说明。
+
+### 3. 设置 OpenAI API 密钥
+您可以在我们的网络界面中稍后设置它，
+![API 密钥设置](assets/apibox.png)
+
+或将其设置为环境变量：
+```bash
+export OPENAI_API_KEY="your_api_key_here"
+```
 
 ## 🔧 实现细节
 
@@ -116,45 +193,6 @@ final_state = trading_graph.graph.invoke(initial_state)
 
 每个 CSV 文件包含 4 小时蜡烛图数据，具有 OHLCV（开盘、最高、最低、收盘、成交量）信息，用于评估和回测目的。
 
-## 🛠️ 先决条件
-
-- Python 3.10（强烈推荐用于兼容性）
-- Conda（推荐）或 pip
-- OpenAI API 密钥
-- TA-Lib 库
-
-## 📦 安装
-
-### 1. 创建并激活 Conda 环境
-
-```bash
-conda create -n quantagents python=3.10
-conda activate quantagents
-```
-
-### 2. 安装依赖
-
-```bash
-pip install -r requirements.txt
-```
-
-如果您遇到 TA-lib-python 的问题，请尝试：
-
-```bash
-conda install -c conda-forge ta-lib
-```
-
-或访问 [TA-Lib Python 仓库](https://github.com/ta-lib/ta-lib-python) 获取详细的安装说明。
-
-### 3. 设置 OpenAI API 密钥
-您可以在我们的网络界面中稍后设置它，
-![API 密钥设置](assets/apibox.png)
-
-或将其设置为环境变量：
-```bash
-export OPENAI_API_KEY="your_api_key_here"
-```
-
 ## 🚀 使用
 
 ### 启动网络界面
@@ -191,7 +229,7 @@ python web_interface.py
 
 ## 🙏 致谢
 
-此仓库基于 [**LangGraph**](https://github.com/langchain-ai/langgraph)、[**OpenAI**](https://github.com/openai/openai-python)、[**yfinance**](https://github.com/ranaroussi/yfinance)、[**Flask**](https://github.com/pallets/flask) 、[**tvdatafeed**](https://github.com/rongardF/tvdatafeed) 和 [**TechnicalAnalysisAutomation**](https://github.com/neurotrader888/TechnicalAnalysisAutomation/tree/main) 构建。
+此仓库基于 [**LangGraph**](https://github.com/langchain-ai/langgraph)、[**OpenAI**](https://github.com/openai/openai-python)、[**yfinance**](https://github.com/ranaroussi/yfinance)、[**Flask**](https://github.com/pallets/flask)、[**TechnicalAnalysisAutomation**](https://github.com/neurotrader888/TechnicalAnalysisAutomation/tree/main) 和 [**tvdatafeed**](https://github.com/rongardF/tvdatafeed) 构建。
 
 ## ⚠️ 免责声明
 

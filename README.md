@@ -6,7 +6,7 @@
 <div style="position: relative; text-align: center; margin: 20px 0;">
   <div style="position: absolute; top: -10px; right: 20%; font-size: 1.2em;"></div>
   <p>
-    <a href="">Fei Xiong</a><sup>1,2 ★</sup>&nbsp;
+    <a href="https://machineily.github.io/">Fei Xiong</a><sup>1,2 ★</sup>&nbsp;
     <a href="https://wyattz23.github.io">Xiang Zhang</a><sup>3 ★</sup>&nbsp;
     <a href="https://intersun.github.io/">Siqi Sun</a><sup>4</sup>&nbsp;
     <a href="https://chenyuyou.me/">Chenyu You</a><sup>1</sup>
