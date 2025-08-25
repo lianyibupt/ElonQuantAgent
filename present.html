@@ -35,12 +35,13 @@
         }
 
         .header-container {
-            max-width: 1200px;
+            max-width: 2000px;
             margin: 0 auto;
             padding: 0 2rem;
             display: flex;
             justify-content: space-between;
             align-items: center;
+            padding-left: 3rem;
         }
 
         .logo {
@@ -74,6 +75,7 @@
             color: #64748b;
             text-decoration: none;
             font-weight: 500;
+            font-size: 1.3rem;
             transition: color 0.3s ease;
         }
 
@@ -99,21 +101,23 @@
         }
 
         .main-title {
-            font-size: 3.8rem;
+            font-size: 4.0rem;
             font-weight: 900;
             color: #1e293b;
             margin-bottom: 0.5rem;
+            line-height: 1.0;
         }
 
         .subtitle {
-            font-size: 3.8rem;
+            font-size: 4.0rem;
             font-weight: 900;
             color: #1e293b;
             margin-bottom: 2rem;
+            line-height: 1.0;
         }
 
         .authors {
-            font-size: 2.2rem;
+            font-size: 1.5rem;
             color: #64748b;
             margin-bottom: 1rem;
             display: flex;
@@ -123,7 +127,7 @@
         }
 
         .affiliations {
-            font-size: 2.0rem;
+            font-size: 1.3rem;
             color: #94a3b8;
             line-height: 1.8;
         }
@@ -137,7 +141,7 @@
 
         .author-link:hover {
             color: #1d4ed8;
-            text-decoration: underline;
+            text-decoration: none;
         }
 
         .action-buttons {
@@ -157,6 +161,7 @@
             text-decoration: none;
             border-radius: 8px;
             font-weight: 500;
+            font-size: 1.125rem;
             transition: all 0.3s ease;
             box-shadow: 0 2px 4px rgba(59, 130, 246, 0.2);
         }
@@ -174,7 +179,7 @@
         /* Method overview */
         .method-overview {
             background: #f8fafc;
-            padding: 3rem;
+            padding: 2rem;
             border-radius: 16px;
             margin-bottom: 4rem;
             border-left: 4px solid #3b82f6;
@@ -348,7 +353,7 @@
         /* Evaluation metrics */
         .evaluation-section {
             background: #f8fafc;
-            padding: 3rem;
+            padding: 2rem;
             border-radius: 16px;
             margin-bottom: 4rem;
         }
@@ -410,7 +415,7 @@
 
         .results-text {
             background: #f8fafc;
-            padding: 2rem;
+            padding: 1.5rem;
             border-radius: 12px;
         }
 
@@ -430,10 +435,10 @@
 
         .results-image {
             background: #f8fafc;
-            padding: 2rem;
+            padding: 1.5rem;
             border-radius: 12px;
             text-align: center;
-            min-height: 300px;
+            min-height: 250px;
             display: flex;
             align-items: center;
             justify-content: center;
@@ -447,7 +452,7 @@
         /* Bibliography */
         .bibliography-section {
             background: #f8fafc;
-            padding: 3rem;
+            padding: 2rem;
             border-radius: 16px;
         }
 
@@ -484,7 +489,7 @@
 
         /* Section headers */
         .section-header {
-            font-size: 3.2rem;
+            font-size: 2.5rem;
             font-weight: 700;
             color: #1e293b;
             margin-bottom: 2rem;
@@ -577,6 +582,7 @@
                     <li><a href="#abstract">Abstract</a></li>
                     <li><a href="#evaluation">Evaluation</a></li>
                     <li><a href="#results">Results</a></li>
+                    <li><a href="#bibtex">BibTeX</a></li>
                 </ul>
             </nav>
         </div>
@@ -586,12 +592,15 @@
     <main class="main-content">
         <!-- Title Section -->
         <section class="title-section">
-            <h1 class="main-title">QuantAgent: Price-Driven Multi-Agent LLMs for High-Frequency Trading</h1>
+            <h1 class="main-title">
+                <span style="display: block; font-size: 4.0rem; font-weight: 900; color: #1e293b; line-height: 1.0;">QuantAgent:</span>
+                <span style="display: block; font-size: 3.2rem; font-weight: 900; color: #1e293b; line-height: 1.0; margin-top: 0.5rem;">Price-Driven Multi-Agent LLMs for High-Frequency Trading</span>
+            </h1>
             <div class="authors">
-                <span>Fei Xiong<sup>1,2</sup> *</span>
-                <span>Xiang Zhang<sup>3</sup> *</span>
-                <span>Siqi Sun<sup>4</sup></span>
-                <span>Chenyu You<sup>1</sup></span>
+                <span><a href="" class="author-link">Fei Xiong</a><sup>1,2 ★</sup></span>
+                <span><a href="https://wyattz23.github.io" class="author-link">Xiang Zhang</a><sup>3 ★</sup></span>
+                <span><a href="https://intersun.github.io/" class="author-link">Siqi Sun</a><sup>4</sup></span>
+                <span><a href="https://chenyuyou.me/" class="author-link">Chenyu You</a><sup>1</sup></span>
             </div>
                          <div class="affiliations">
                  <div><sup>1</sup>Stony Brook University, <sup>2</sup>Carnegie Mellon University, <sup>3</sup>University of British Columbia</div>
@@ -602,7 +611,7 @@
                     <i class="fas fa-file-alt"></i>
                     Paper
                 </a>
-                <a href="#" class="action-btn code-btn">
+                <a href="https://github.com/Y-Research-SBU/QuantAgent" class="action-btn code-btn">
                     <i class="fab fa-github"></i>
                     Code
                 </a>
@@ -612,15 +621,15 @@
                  <!-- Abstract Section -->
          <section id="abstract">
              <h2 class="section-header">Abstract</h2>
-                           <div style="background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%); padding: 3rem; border-radius: 20px; box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1); margin-bottom: 4rem;">
-                 <p style="font-size: 1.3rem; color: #1e293b; line-height: 1.8; margin-bottom: 1.5rem; font-weight: 500;">
+                           <div style="background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%); padding: 2rem; border-radius: 20px; box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1); margin-bottom: 4rem; max-width: 1200px; margin-left: auto; margin-right: auto;">
+                 <p style="font-size: 1.6rem; color: #1e293b; line-height: 1.8; margin-bottom: 1.5rem; font-weight: 500;">
                      Recent advances in Large Language Models (LLMs) have demonstrated impressive capabilities in financial reasoning 
                      and market understanding. However, existing LLM frameworks for High-Frequency Trading (HFT) face significant 
                      limitations in terms of latency, interpretability, and the ability to handle real-time market dynamics. 
                      We introduce QuantAgent, the first multi-agent LLM framework specifically designed for HFT, which decomposes 
                      trading into four specialized agents: Indicator, Pattern, Trend, and Risk.
                  </p>
-                 <p style="font-size: 1.3rem; color: #1e293b; line-height: 1.8; font-weight: 500;">
+                 <p style="font-size: 1.6rem; color: #1e293b; line-height: 1.8; font-weight: 500;">
                      Our framework leverages structured financial priors and language-native reasoning to achieve superior performance 
                      in zero-shot evaluations across ten financial instruments, including Bitcoin and Nasdaq futures, in terms of 
                      predictive accuracy and cumulative return over 4-hour trading intervals. The results suggest that combining 
@@ -630,30 +639,192 @@
              </div>
          </section>
 
+        <!-- Interactive Tabs Section -->
+        <section id="interactive-tabs" style="margin-bottom: 4rem;">
+            <h2 class="section-header">Multi-Agent Interaction</h2>
+            
+            <!-- Tab Navigation -->
+            <div class="tab-navigation" style="display: flex; justify-content: center; margin-bottom: 2rem; gap: 0.5rem;">
+                <button class="tab-btn active" data-tab="indicator" style="padding: 1rem 2rem; background: #3b82f6; color: white; border: none; border-radius: 8px; font-weight: 600; font-size: 1.4rem; cursor: pointer; transition: all 0.3s ease;">
+                    <i class="fas fa-chart-bar" style="margin-right: 0.5rem;"></i>
+                    Indicator Agent
+                </button>
+                <button class="tab-btn" data-tab="pattern" style="padding: 1rem 2rem; background: #e2e8f0; color: #64748b; border: none; border-radius: 8px; font-weight: 600; font-size: 1.4rem; cursor: pointer; transition: all 0.3s ease;">
+                    <i class="fas fa-shapes" style="margin-right: 0.5rem;"></i>
+                    Pattern Agent
+                </button>
+                <button class="tab-btn" data-tab="trend" style="padding: 1rem 2rem; background: #e2e8f0; color: #64748b; border: none; border-radius: 8px; font-weight: 600; font-size: 1.4rem; cursor: pointer; transition: all 0.3s ease;">
+                    <i class="fas fa-chart-line" style="margin-right: 0.5rem;"></i>
+                    Trend Agent
+                </button>
+                <button class="tab-btn" data-tab="decision" style="padding: 1rem 2rem; background: #e2e8f0; color: #64748b; border: none; border-radius: 8px; font-weight: 600; font-size: 1.4rem; cursor: pointer; transition: all 0.3s ease;">
+                    <i class="fas fa-cogs" style="margin-right: 0.5rem;"></i>
+                    Decision Agent
+                </button>
+            </div>
+            
+            <!-- Tab Content -->
+            <div class="tab-content"
+            style="background: #f8fafc;
+                   border-radius: 16px;
+                   padding: 2rem;
+                   min-height: 400px;
+                   display: flex;
+                   align-items: center;
+                   justify-content: center;
+                   max-width: 1600px;
+                   width: 100%;
+                   margin: 0 auto;">
+       
 
+                <!-- Indicator Tab -->
+                <div class="tab-pane active" id="indicator-tab" style="display: block; width: 100%;">
+                    <div style="text-align: center; max-width: 100%; margin: 0 auto;">
+                        <img src="assets/indicator.png" alt="Indicator Agent" style="max-width: 100%; height: auto; border-radius: 12px; box-shadow: 0 8px 25px -5px rgba(0, 0, 0, 0.1); margin-bottom: 2rem;">
+                        <h3 style="font-size: 2rem; font-weight: 700; color: #1e293b; margin-bottom: 1rem;">Technical Indicators</h3>
+                        <p style="font-size: 1.6rem; color: #64748b; line-height: 1.6; max-width: 1100px; margin: 0 auto;">
+                            Comprehensive technical analysis using multiple indicators including RSI, MACD, and Bollinger Bands 
+                            to generate robust trading signals with high accuracy.
+                        </p>
+                    </div>
+                </div>
+                
+                <!-- Pattern Tab -->
+                <div class="tab-pane" id="pattern-tab" style="display: none; width: 100%;">
+                    <div style="text-align: center; max-width: 100%; margin: 0 auto;">
+                        <img src="assets/pattern.png" alt="Pattern Agent" style="max-width: 100%; height: auto; border-radius: 12px; box-shadow: 0 8px 25px -5px rgba(0, 0, 0, 0.1); margin-bottom: 2rem;">
+                        <h3 style="font-size: 2rem; font-weight: 700; color: #1e293b; margin-bottom: 1rem;">Pattern Recognition</h3>
+                        <p style="font-size: 1.6rem; color: #64748b; line-height: 1.6; max-width: 1100px; margin: 0 auto;">
+                            Sophisticated pattern recognition systems detect classic chart patterns and market structures, 
+                            providing reliable signals for trading decisions.
+                        </p>
+                    </div>
+                </div>
+                
+                <!-- Trend Tab -->
+                <div class="tab-pane" id="trend-tab" style="display: none; width: 100%;">
+                    <div style="text-align: center; max-width: 100%; margin: 0 auto;">
+                        <img src="assets/trend.png" alt="Trend Agent" style="max-width: 100%; height: auto; border-radius: 12px; box-shadow: 0 8px 25px -5px rgba(0, 0, 0, 0.1); margin-bottom: 2rem;">
+                        <h3 style="font-size: 2rem; font-weight: 700; color: #1e293b; margin-bottom: 1rem;">Trend Analysis</h3>
+                        <p style="font-size: 1.6rem; color: #64748b; line-height: 1.6; max-width: 1100px; margin: 0 auto;">
+                            Advanced trend detection algorithms identify market direction and momentum patterns, 
+                            enabling precise entry and exit timing for optimal trading performance.
+                        </p>
+                    </div>
+                </div>
+                
+                <!-- Decision Tab -->
+                <div class="tab-pane" id="decision-tab" style="display: none; width: 100%;">
+                    <div style="text-align: center; max-width: 100%; margin: 0 auto;">
+                        <img src="assets/decision.png" alt="Decision Agent" style="max-width: 100%; height: auto; border-radius: 12px; box-shadow: 0 8px 25px -5px rgba(0, 0, 0, 0.1); margin-bottom: 2rem;">
+                        <h3 style="font-size: 2rem; font-weight: 700; color: #1e293b; margin-bottom: 1rem;">Decision Making</h3>
+                        <p style="font-size: 1.6rem; color: #64748b; line-height: 1.6; max-width: 1100px; margin: 0 auto;">
+                            Intelligent decision-making systems combine multiple data sources and analysis methods 
+                            to generate optimal trading strategies with risk management considerations.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </section>
 
         <!-- Evaluation Section -->
         <section id="evaluation">
             <h2 class="section-header">Evaluation Metrics</h2>
-            <div class="results-content" style="grid-template-columns: 1fr;">
+            <div class="results-content"
+     style="display: grid;
+            grid-template-columns: 1fr;
+            max-width: 1200px;
+            width: 100%;
+            margin: 0 auto;">
+
                 <div class="results-image" style="max-width: 100%; margin: 0 auto;">
                     <img src="assets/benchmark.png" alt="Benchmark Asset Properties" style="width: 100%; height: auto; border-radius: 8px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);">
                 </div>
                 <div style="text-align: center; margin-top: 0.25rem;">
-                    <p class="figure-caption" style="font-size: 1.4rem; color: #64748b; line-height: 1.6; max-width: 900px; margin: 0 auto;">Overview of benchmark asset properties. Each asset is characterized by its name, market type, the start and end dates of the data collection window, and the total number of bars sampled. All assets are sampled using 4-hour OHLC intervals, with a fixed total of 5,000 bars per asset to ensure comparability.</p>
+                    <p class="figure-caption" style="font-size: 1.6rem; color: #64748b; line-height: 1.6; max-width: 1000px; margin: 0 auto;">Overview of benchmark asset properties. Each asset is characterized by its name, market type, the start and end dates of the data collection window, and the total number of bars sampled. All assets are sampled using 4-hour OHLC intervals, with a fixed total of 5,000 bars per asset to ensure comparability.</p>
                 </div>
             </div>
         </section>
 
         <!-- Results Section -->
         <section id="results" style="margin-top: 6rem;">
-            <h2 class="section-header">Quantitative Results</h2>
-            <div class="results-content" style="grid-template-columns: 1fr;">
+            <h2 class="section-header">Main Results</h2>
+            <div class="results-content"
+            style="display: grid;
+                    grid-template-columns: 1fr;
+                    max-width: 1200px;
+                    width: 100%;
+                    margin: 0 auto;">
+
                 <div class="results-image" style="max-width: 100%; margin: 0 auto;">
                     <img src="assets/table.png" alt="Performance Comparison Table" style="width: 100%; height: auto; border-radius: 8px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);">
                 </div>
                 <div style="text-align: center; margin-top: 0.25rem;">
-                    <p class="figure-caption" style="font-size: 1.4rem; color: #64748b; line-height: 1.6; max-width: 900px; margin: 0 auto;">Performance comparison across trading symbols. Results are shown for a random baseline and our method (highlighted in Green). Bold values indicate improvements, and upward arrows denote metrics where higher values are better.</p>
+                    <p class="figure-caption" style="font-size: 1.6rem; color: #64748b; line-height: 1.6; max-width: 1000px; margin: 0 auto;">Performance comparison across trading symbols. Results are shown for a random baseline and our method (highlighted in Green). Bold values indicate improvements, and upward arrows denote metrics where higher values are better.</p>
+                </div>
+            </div>
+            
+            <!-- Results Tabs Section -->
+            <div style="margin-top: 4rem;">
+                <h3 style="font-size: 2rem; font-weight: 700; color: #1e293b; margin-bottom: 2rem; text-align: center;">Detailed Analysis</h3>
+                
+                <!-- Results Tab Navigation -->
+                <div class="results-tab-navigation" style="display: flex; justify-content: center; margin-bottom: 2rem; gap: 0.5rem;">
+                    <button class="results-tab-btn active" data-results-tab="rolling" style="padding: 1rem 2rem; background: #3b82f6; color: white; border: none; border-radius: 8px; font-weight: 600; font-size: 1.4rem; cursor: pointer; transition: all 0.3s ease;">
+                        <i class="fas fa-chart-area" style="margin-right: 0.5rem;"></i>
+                        Rolling Performance
+                    </button>
+                    <button class="results-tab-btn" data-results-tab="trendcase" style="padding: 1rem 2rem; background: #e2e8f0; color: #64748b; border: none; border-radius: 8px; font-weight: 600; font-size: 1.4rem; cursor: pointer; transition: all 0.3s ease;">
+                        <i class="fas fa-chart-line" style="margin-right: 0.5rem;"></i>
+                        Trend Case Study
+                    </button>
+                    <button class="results-tab-btn" data-results-tab="patterncase" style="padding: 1rem 2rem; background: #e2e8f0; color: #64748b; border: none; border-radius: 8px; font-weight: 600; font-size: 1.4rem; cursor: pointer; transition: all 0.3s ease;">
+                        <i class="fas fa-shapes" style="margin-right: 0.5rem;"></i>
+                        Pattern Case Study
+                    </button>
+                </div>
+                
+                <!-- Results Tab Content -->
+                <div class="results-tab-content"
+                style="background: #f8fafc;
+                        border-radius: 16px;
+                        padding: 2rem;
+                        min-height: 400px;
+                        max-width: 1400px;
+                        width: 100%;
+                        margin: 0 auto;">
+
+                    <!-- Rolling Performance Tab -->
+                    <div class="results-tab-pane active" id="rolling-tab" style="display: block;">
+                        <div style="text-align: center;">
+                            <img src="assets/rolling.png" alt="Rolling Performance" style="max-width: 100%; height: auto; border-radius: 12px; box-shadow: 0 8px 25px -5px rgba(0, 0, 0, 0.1); margin-bottom: 2rem;">
+                            <h4 style="font-size: 2rem; font-weight: 700; color: #1e293b; margin-bottom: 1rem;">Rolling Performance Analysis</h4>
+                            <p style="font-size: 1.6rem; color: #64748b; line-height: 1.6; max-width: 1100px; margin: 0 auto;">
+                                Sample-based verification accuracy on SPX (2025). During the highlighted window, the LLM generated 10 directional signals. Correct predictions are shown in color (green/red), while grey indicates errors. The model achieved 80% accuracy in this segment.
+                            </p>
+                        </div>
+                    </div>
+                    
+                    <!-- Trend Case Study Tab -->
+                    <div class="results-tab-pane" id="trendcase-tab" style="display: none;">
+                        <div style="text-align: center;">
+                            <img src="assets/trend case.png" alt="Trend Case Study" style="max-width: 100%; height: auto; border-radius: 12px; box-shadow: 0 8px 25px -5px rgba(0, 0, 0, 0.1); margin-bottom: 2rem;">
+                            <h4 style="font-size: 2rem; font-weight: 700; color: #1e293b; margin-bottom: 1rem;">Trend Case Study</h4>
+                            <p style="font-size: 1.6rem; color: #64748b; line-height: 1.6; max-width: 1100px; margin: 0 auto;">
+                                TrendAgent case sample on DJI (2022). The agent identifies an upward-sloping resistance and flat support, confirms higher highs and lows, and outputs three structured summaries. A green "Bullish Signal" badge reflects its overall bullish interpretation.
+                            </p>
+                        </div>
+                    </div>
+                    
+                    <!-- Pattern Case Study Tab -->
+                    <div class="results-tab-pane" id="patterncase-tab" style="display: none;">
+                        <div style="text-align: center;">
+                            <img src="assets/pattern case.png" alt="Pattern Case Study" style="max-width: 100%; height: auto; border-radius: 12px; box-shadow: 0 8px 25px -5px rgba(0, 0, 0, 0.1); margin-bottom: 2rem;">
+                            <h4 style="font-size: 2rem; font-weight: 700; color: #1e293b; margin-bottom: 1rem;">Pattern Case Study</h4>
+                            <p style="font-size: 1.6rem; color: #64748b; line-height: 1.6; max-width: 1100px; margin: 0 auto;">
+                                PatternAgent case sample on CL (2024). The agent detects a Descending Triangle by identifying lower highs against flat support near 78. It outputs structured summaries on pattern structure, bearish trend bias, and geometric symmetry. Visual overlays aid interpretation; classification is based purely on bar geometry.                    </p>
+                        </div>
+                    </div>
                 </div>
             </div>
         </section>
@@ -661,10 +832,10 @@
 
 
         <!-- Bibliography -->
-        <section style="margin-top: 6rem;">
+        <section id="bibtex" style="margin-top: 6rem;">
             <h2 class="section-header">BibTeX</h2>
             <div style="display: flex; justify-content: center; margin-top: 2rem;">
-                <div style="background: #f8f9fa; padding: 2rem; border-radius: 8px; font-family: 'Courier New', monospace; font-size: 0.9rem; color: #495057; line-height: 1.6; max-width: 800px; width: 100%;">
+                <div style="background: #f8f9fa; padding: 2rem; border-radius: 8px; font-family: 'Courier New', monospace; font-size: 1.2rem; color: #495057; line-height: 1.6; max-width: 800px; width: 100%;">
                     <pre style="margin: 0; white-space: pre-wrap;">@article{xiong2025quantagent,
   title={QuantAgent: Price-Driven Multi-Agent LLMs for High-Frequency Trading},
   author={Xiong, Fei and Zhang, Xiang and Sun, Siqi and You, Chenyu},
@@ -753,6 +924,66 @@
                 const targetDetail = document.getElementById(agentType + '-detail');
                 if (targetDetail) {
                     targetDetail.classList.add('active');
+                }
+            });
+        });
+
+        // Tab switching functionality
+        document.querySelectorAll('.tab-btn').forEach(button => {
+            button.addEventListener('click', function() {
+                const tabName = this.getAttribute('data-tab');
+                
+                // Remove active class from all tab buttons
+                document.querySelectorAll('.tab-btn').forEach(btn => {
+                    btn.classList.remove('active');
+                    btn.style.background = '#e2e8f0';
+                    btn.style.color = '#64748b';
+                });
+                
+                // Add active class to clicked button
+                this.classList.add('active');
+                this.style.background = '#3b82f6';
+                this.style.color = 'white';
+                
+                // Hide all tab panes
+                document.querySelectorAll('.tab-pane').forEach(pane => {
+                    pane.style.display = 'none';
+                });
+                
+                // Show selected tab pane
+                const targetPane = document.getElementById(tabName + '-tab');
+                if (targetPane) {
+                    targetPane.style.display = 'block';
+                }
+            });
+        });
+
+        // Results tab switching functionality
+        document.querySelectorAll('.results-tab-btn').forEach(button => {
+            button.addEventListener('click', function() {
+                const tabName = this.getAttribute('data-results-tab');
+                
+                // Remove active class from all results tab buttons
+                document.querySelectorAll('.results-tab-btn').forEach(btn => {
+                    btn.classList.remove('active');
+                    btn.style.background = '#e2e8f0';
+                    btn.style.color = '#64748b';
+                });
+                
+                // Add active class to clicked button
+                this.classList.add('active');
+                this.style.background = '#3b82f6';
+                this.style.color = 'white';
+                
+                // Hide all results tab panes
+                document.querySelectorAll('.results-tab-pane').forEach(pane => {
+                    pane.style.display = 'none';
+                });
+                
+                // Show selected results tab pane
+                const targetPane = document.getElementById(tabName + '-tab');
+                if (targetPane) {
+                    targetPane.style.display = 'block';
                 }
             });
         });
