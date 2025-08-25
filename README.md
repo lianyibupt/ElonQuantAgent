@@ -3,7 +3,13 @@
 ![QuantAgent Banner](assets/banner.png)
 <h2>QuantAgent: Price-Driven Multi-Agent LLMs for High-Frequency Trading</h2>
 
+</div>
 
+<div align="center" style="margin: 20px 0;">
+  <a href="README.md">English</a> | <a href="README_CN.md">中文</a>
+</div>
+
+<div align="center">
 
 <div style="position: relative; text-align: center; margin: 20px 0;">
   <div style="position: absolute; top: -10px; right: 20%; font-size: 1.2em;"></div>
@@ -23,18 +29,12 @@
   </p>
 </div>
 
-<div style="margin: 20px 0; margin-bottom: 40px;">
-  <a href="README.md">English</a> | <a href="README_CN.md">中文</a>
-</div>
-
 [![GitHub stars](https://img.shields.io/github/stars/your-username/QuantAgents)](https://github.com/Y-Research-SBU/QuantAgent/stargazers)
 [![GitHub forks](https://img.shields.io/github/forks/your-username/QuantAgents)](https://github.com/Y-Research-SBU/QuantAgent/forks)
 [![GitHub pull requests](https://img.shields.io/github/issues-pr/your-username/QuantAgents)](https://github.com/Y-Research-SBU/QuantAgent/pulls)
 [![GitHub issues](https://img.shields.io/github/issues/your-username/QuantAgents)](https://github.com/Y-Research-SBU/QuantAgent/issues)
 [![GitHub contributors](https://img.shields.io/github/contributors/your-username/QuantAgents?color=2b9348)](https://github.com/your-username/QuantAgents/graphs/contributors)
 [![GitHub license](https://img.shields.io/github/license/your-username/QuantAgents?color=2b9348)](https://github.com/Y-Research-SBU/QuantAgent/blob/main/LICENSE)
-
-
 
 </div>
 
