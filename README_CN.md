@@ -32,6 +32,8 @@
   <a href="README.md">English</a> | <a href="README_CN.md">中文</a>
 </div>
 
+<br>
+
 [![GitHub stars](https://img.shields.io/github/stars/your-username/QuantAgents)](https://github.com/Y-Research-SBU/QuantAgent/stargazers)
 [![GitHub forks](https://img.shields.io/github/forks/your-username/QuantAgents)](https://github.com/Y-Research-SBU/QuantAgent/forks)
 [![GitHub pull requests](https://img.shields.io/github/issues-pr/your-username/QuantAgents)](https://github.com/Y-Research-SBU/QuantAgent/pulls)
