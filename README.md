@@ -5,9 +5,7 @@
 
 </div>
 
-<div align="center" style="margin: 20px 0;">
-  <a href="README.md">English</a> | <a href="README_CN.md">中文</a>
-</div>
+
 
 <div align="center">
 
@@ -27,6 +25,10 @@
     <sup>4</sup> Fudan University &nbsp;&nbsp; 
     ★ Equal Contribution <br>
   </p>
+</div>
+
+<div align="center" style="margin: 20px 0;">
+  <a href="README.md">English</a> | <a href="README_CN.md">中文</a>
 </div>
 
 [![GitHub stars](https://img.shields.io/github/stars/your-username/QuantAgents)](https://github.com/Y-Research-SBU/QuantAgent/stargazers)
