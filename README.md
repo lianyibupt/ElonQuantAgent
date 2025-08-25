@@ -3,6 +3,8 @@
 ![QuantAgent Banner](assets/banner.png)
 <h2>QuantAgent: Price-Driven Multi-Agent LLMs for High-Frequency Trading</h2>
 
+
+
 <div style="position: relative; text-align: center; margin: 20px 0;">
   <div style="position: absolute; top: -10px; right: 20%; font-size: 1.2em;"></div>
   <p>
@@ -28,7 +30,12 @@
 [![GitHub contributors](https://img.shields.io/github/contributors/your-username/QuantAgents?color=2b9348)](https://github.com/your-username/QuantAgents/graphs/contributors)
 [![GitHub license](https://img.shields.io/github/license/your-username/QuantAgents?color=2b9348)](https://github.com/Y-Research-SBU/QuantAgent/blob/main/LICENSE)
 
+<div style="margin: 20px 0;">
+  <a href="README.md">English</a> | <a href="README_CN.md">中文</a>
 </div>
+
+</div>
+
 
 A sophisticated multi-agent trading analysis system that combines technical indicators, pattern recognition, and trend analysis using LangChain and LangGraph. The system provides both a web interface and programmatic access for comprehensive market analysis.
 
