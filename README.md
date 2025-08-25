@@ -23,7 +23,7 @@
   </p>
 </div>
 
-<div style="margin: 20px 0;">
+<div style="margin: 20px 0; margin-bottom: 40px;">
   <a href="README.md">English</a> | <a href="README_CN.md">中文</a>
 </div>
 
