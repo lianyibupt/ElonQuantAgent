@@ -13,6 +13,26 @@ import io
 import mplfinance as mpf 
 import color_style as color
 
+# 设置matplotlib以处理中文和编码问题
+plt.rcParams['font.sans-serif'] = ['Arial', 'DejaVu Sans', 'Liberation Sans', 'Bitstream Vera Sans', 'sans-serif']
+plt.rcParams['axes.unicode_minus'] = False
+matplotlib.rcParams['font.family'] = 'sans-serif'
+
+def safe_str(obj):
+    """Safely convert object to string, handling encoding issues"""
+    try:
+        if isinstance(obj, bytes):
+            return obj.decode('utf-8', errors='replace')
+        elif isinstance(obj, str):
+            return obj.encode('utf-8', errors='replace').decode('utf-8')
+        else:
+            return str(obj).encode('utf-8', errors='replace').decode('utf-8')
+    except Exception:
+        try:
+            return repr(obj)
+        except Exception:
+            return "Error converting to string"
+
 
 
 # helper function for trending graph
@@ -315,45 +335,57 @@ class TechnicalTools:
             mpf.make_addplot(resist_line_c, color='red', width=1, label="Close Resistance")
         ]
 
-        # Generate figure with legend and save locally
-        fig, axlist = mpf.plot(
-            candles,
-            type='candle',
-            style=color.my_color_style,
-            addplot=apds,
-            alines=dict(alines=all_segments, colors=colors, linewidths=1),
-            returnfig=True,
-            figsize=(12, 6),
-            block=False,
-        )
+        try:
+            # Generate figure with legend and save locally
+            fig, axlist = mpf.plot(
+                candles,
+                type='candle',
+                style=color.my_color_style,
+                addplot=apds,
+                alines=dict(alines=all_segments, colors=colors, linewidths=1),
+                returnfig=True,
+                figsize=(12, 6),
+                block=False,
+            )
 
-        axlist[0].set_ylabel('Price', fontweight='normal')
-        axlist[0].set_xlabel('Datetime', fontweight='normal')
+            axlist[0].set_ylabel('Price', fontweight='normal')
+            axlist[0].set_xlabel('Datetime', fontweight='normal')
 
-        #save fig locally
-        fig.savefig(
-            "trend_graph.png",
-            format="png",
-            dpi=600,
-            bbox_inches="tight",
-            pad_inches=0.1
-        )
-        plt.close(fig) 
+            # Add legend manually
+            axlist[0].legend(loc='upper left')
 
-        # Add legend manually
-        axlist[0].legend(loc='upper left')
+            # Save to base64
+            buf = io.BytesIO()
+            fig.savefig(buf, format="png", dpi=600, bbox_inches="tight", pad_inches=0.1)
+            buf.seek(0)
+            img_b64 = base64.b64encode(buf.read()).decode("utf-8")
+            
+            # Save fig locally
+            try:
+                fig.savefig(
+                    "trend_graph.png",
+                    format="png",
+                    dpi=600,
+                    bbox_inches="tight",
+                    pad_inches=0.1
+                )
+            except Exception as save_error:
+                print(f"Local trend save error: {safe_str(save_error)}")
+            
+            plt.close(fig) 
 
-        # Save to base64
-        buf = io.BytesIO()
-        fig.savefig(buf, format="png")
-        buf.seek(0)
-        img_b64 = base64.b64encode(buf.read()).decode("utf-8")
-        plt.close(fig)
-
-        return {
-            "trend_image": img_b64,
-            "trend_image_description": "Trend-enhanced candlestick chart with support/resistance lines."
-        }
+            return {
+                "trend_image": img_b64,
+                "trend_image_description": "Trend-enhanced candlestick chart with support/resistance lines."
+            }
+            
+        except Exception as e:
+            error_msg = safe_str(e)
+            print(f"Trend chart generation error: {error_msg}")
+            return {
+                "trend_image": "",
+                "trend_image_description": f"Error generating trend chart: {error_msg}"
+            }
 
 
 
@@ -377,48 +409,64 @@ class TechnicalTools:
         # take recent 40
         df = df.tail(40)
 
-        df.to_csv("record.csv", index=False, date_format="%Y-%m-%d %H:%M:%S")
+        try:
+            df.to_csv("record.csv", index=False, date_format="%Y-%m-%d %H:%M:%S")
+        except Exception as e:
+            print(f"CSV save error: {safe_str(e)}")
+        
         try:
             # df.index = pd.to_datetime(df["Datetime"])
             df.index = pd.to_datetime(df["Datetime"], format="%Y-%m-%d %H:%M:%S")
+        except ValueError as e:
+            print(f"DateTime conversion error: {safe_str(e)}")
+            try:
+                df.index = pd.to_datetime(df["Datetime"])
+            except Exception as e2:
+                print(f"Fallback DateTime conversion error: {safe_str(e2)}")
 
-        except ValueError:
-            print("ValueError at graph_util.py\n")
+        try:
+            # Save image locally
+            fig, axlist = mpf.plot(
+                df[["Open", "High", "Low", "Close"]],
+                type="candle",
+                style=color.my_color_style,
+                figsize=(12, 6),
+                returnfig=True,           
+                block=False,             
+            )
+            axlist[0].set_ylabel('Price', fontweight='normal')
+            axlist[0].set_xlabel('Datetime', fontweight='normal')
 
+            # ---------- Encode to base64 -----------------
+            buf = io.BytesIO()
+            fig.savefig(buf, format="png", dpi=600, bbox_inches="tight", pad_inches=0.1)
+            buf.seek(0)
+            img_b64 = base64.b64encode(buf.read()).decode("utf-8")
+            plt.close(fig)                # release memory
 
+            # Also save locally
+            try:
+                fig.savefig(             
+                    fname="kline_chart.png",
+                    dpi=600,
+                    bbox_inches="tight",
+                    pad_inches=0.1,
+                )
+            except Exception as save_error:
+                print(f"Local save error: {safe_str(save_error)}")
 
-        # Save image locally
-        fig, axlist = mpf.plot(
-            df[["Open", "High", "Low", "Close"]],
-            type="candle",
-            style=color.my_color_style,
-            figsize=(12, 6),
-            returnfig=True,           
-            block=False,             
+            return {
+                "pattern_image": img_b64,
+                "pattern_image_description": "Candlestick chart saved locally and returned as base64 string."
+            }
             
-        )
-        axlist[0].set_ylabel('Price', fontweight='normal')
-        axlist[0].set_xlabel('Datetime', fontweight='normal')
-
-        fig.savefig(             
-            fname="kline_chart.png",
-            dpi=600,
-            bbox_inches="tight",
-            pad_inches=0.1,
-        )
-        plt.close(fig)
-        # ---------- Encode to base64 -----------------
-        buf = io.BytesIO()
-        fig.savefig(buf, format="png", dpi=600, bbox_inches="tight", pad_inches=0.1)
-        plt.close(fig)                # release memory
-
-        buf.seek(0)
-        img_b64 = base64.b64encode(buf.read()).decode("utf-8")
-
-        return {
-            "pattern_image": img_b64,
-            "pattern_image_description": "Candlestick chart saved locally and returned as base64 string."
-        }
+        except Exception as e:
+            error_msg = safe_str(e)
+            print(f"Chart generation error: {error_msg}")
+            return {
+                "pattern_image": "",
+                "pattern_image_description": f"Error generating chart: {error_msg}"
+            }
 
 
     @staticmethod
@@ -531,4 +579,28 @@ class TechnicalTools:
         willr = talib.WILLR(df["High"], df["Low"], df["Close"], timeperiod=period)
         return {"willr": willr.fillna(0).round(2).tolist()[-28:]}
 
-
+    def get_indicator_tools(self):
+        """Get technical indicator tools"""
+        return [
+            self.compute_rsi,
+            self.compute_macd,
+            self.compute_stoch,
+            self.compute_roc,
+            self.compute_willr
+        ]
+    
+    def get_pattern_tools(self):
+        """Get pattern analysis tools"""
+        return [
+            self.generate_kline_image
+        ]
+    
+    def get_trend_tools(self):
+        """Get trend analysis tools"""
+        return [
+            self.generate_trend_image
+        ]
+    
+    def get_decision_tools(self):
+        """Get decision making tools"""
+        return []

@@ -19,122 +19,92 @@ def invoke_tool_with_retry(tool_fn, tool_args, retries=3, wait_sec=4):
     raise RuntimeError("Tool failed to generate image after multiple retries")
 
 
-def create_pattern_agent(tool_llm, graph_llm, toolkit):
+def create_pattern_agent(llm, tools):
     """
     Create a pattern recognition agent node for candlestick pattern analysis.
     The agent uses an LLM and a chart generation tool to identify classic trading patterns.
     """
     def pattern_agent_node(state):
-        # --- Tool and pattern definitions ---
-        tools = [toolkit.generate_kline_image]
         time_frame = state['time_frame']
         pattern_text = """
-        Please refer to the following classic candlestick patterns:
+        请参考以下经典K线形态：
 
-        1. Inverse Head and Shoulders: Three lows with the middle one being the lowest, symmetrical structure, typically indicates an upcoming upward trend.
-        2. Double Bottom: Two similar low points with a rebound in between, forming a 'W' shape.
-        3. Rounded Bottom: Gradual price decline followed by a gradual rise, forming a 'U' shape.
-        4. Hidden Base: Horizontal consolidation followed by a sudden upward breakout.
-        5. Falling Wedge: Price narrows downward, usually breaks out upward.
-        6. Rising Wedge: Price rises slowly but converges, often breaks down.
-        7. Ascending Triangle: Rising support line with a flat resistance on top, breakout often occurs upward.
-        8. Descending Triangle: Falling resistance line with flat support at the bottom, typically breaks down.
-        9. Bullish Flag: After a sharp rise, price consolidates downward briefly before continuing upward.
-        10. Bearish Flag: After a sharp drop, price consolidates upward briefly before continuing downward.
-        11. Rectangle: Price fluctuates between horizontal support and resistance.
-        12. Island Reversal: Two price gaps in opposite directions forming an isolated price island.
-        13. V-shaped Reversal: Sharp decline followed by sharp recovery, or vice versa.
-        14. Rounded Top / Rounded Bottom: Gradual peaking or bottoming, forming an arc-shaped pattern.
-        15. Expanding Triangle: Highs and lows increasingly wider, indicating volatile swings.
-        16. Symmetrical Triangle: Highs and lows converge toward the apex, usually followed by a breakout.
+        1. 倒头肩形态：三个低点，中间最低，结构对称，通常预示即将上涨。
+        2. 双底形态：两个相似的低点，中间有反弹，形成'W'形。
+        3. 圆弧底：价格逐渐下跌后逐渐上升，形成'U'形。
+        4. 潜伏底：水平整理后突然向上突破。
+        5. 下降楔形：价格向下收窄，通常向上突破。
+        6. 上升楔形：价格缓慢上升但收敛，经常向下突破。
+        7. 上升三角形：上升支撑线配合水平阻力线，突破通常向上。
+        8. 下降三角形：下降阻力线配合水平支撑线，通常向下突破。
+        9. 看涨旗形：急涨后短暂向下整理，然后继续上涨。
+        10. 看跌旗形：急跌后短暂向上整理，然后继续下跌。
+        11. 矩形：价格在水平支撑和阻力之间波动。
+        12. 岛形反转：两个相反方向的价格缺口形成孤立的价格岛。
+        13. V形反转：急跌后急涨，或相反。
+        14. 圆顶/圆底：逐渐见顶或见底，形成弧形形态。
+        15. 扩散三角形：高点和低点越来越宽，表示波动加剧。
+        16. 对称三角形：高点和低点向顶点收敛，通常伴随突破。
         """
 
-        # --- Step 1: System prompt setup ---
-        prompt = ChatPromptTemplate.from_messages(
-            [
-                (
-                    "system",
-                    "You are a trading pattern recognition assistant tasked with identifying classical high-frequency trading patterns. "
-                    "You have access to tool: generate_kline_image"
-                    "Use it by providing appropriate arguments like `kline_data`\n\n"
-                    "Once the chart is generated, compare it to classical pattern descriptions and determine if any known pattern is present."
-                ),
-                MessagesPlaceholder(variable_name="messages"),
-            ]
-        ).partial(
-            kline_data=json.dumps(state["kline_data"], indent=2)
-        )
-
-        chain = prompt | tool_llm.bind_tools(tools)
+        # --- Step 1: 直接调用图表生成工具 ---
         messages = state.get("messages", [])
+        kline_data = state["kline_data"]
+        
+        try:
+            # 直接调用图表生成工具 - 使用tools参数中的第一个工具
+            from graph_util import TechnicalTools
+            toolkit = TechnicalTools()
+            chart_result = invoke_tool_with_retry(
+                toolkit.generate_kline_image, 
+                {"kline_data": kline_data}
+            )
+            
+            pattern_image = chart_result.get("pattern_image", "")
+            pattern_image_filename = chart_result.get("pattern_image_filename", "")
+            
+        except Exception as e:
+            print(f"Error generating pattern chart: {str(e)}")
+            pattern_image = ""
+            pattern_image_filename = ""
+            chart_result = {"error": str(e)}
 
-        # --- Retry wrapper for LLM invocation ---
-        def invoke_with_retry(call_fn, *args, retries=3, wait_sec=8):
-            for attempt in range(retries):
-                try:
-                    return call_fn(*args)
-                except RateLimitError as e:
-                    print(f"Rate limit hit, retrying in {wait_sec}s (attempt {attempt + 1}/{retries})...")
-                    time.sleep(wait_sec)
-                except Exception as e:
-                    print(f"Other error: {e}, retrying in {wait_sec}s (attempt {attempt + 1}/{retries})...")
-                    time.sleep(wait_sec)
-            raise RuntimeError("Max retries exceeded")
+        # --- Step 2: 生成模式分析报告 ---
+        analysis_prompt = ChatPromptTemplate.from_messages([
+            (
+                "system",
+                "你是一位专门识别经典高频交易形态的交易形态识别助手。请用中文回答。"
+                f"图表是基于{time_frame}间隔数据生成的。\n\n"
+                "图表生成结果: {chart_result}\n\n"
+                "将生成的图表与经典形态描述进行比较，确定是否存在已知形态:\n\n"
+                "{pattern_descriptions}\n\n"
+                "请提供详细的中文形态分析报告，包括:\n"
+                "1. 识别的形态（如有）\n"
+                "2. 形态可靠性和强度\n"
+                "3. 交易含义\n"
+                "4. 关键支撑/阻力位"
+            )
+        ])
+        
+        try:
+            final_response = (analysis_prompt | llm).invoke({
+                "chart_result": json.dumps(chart_result, indent=2),
+                "pattern_descriptions": pattern_text
+            })
+            
+            pattern_report = final_response.content if hasattr(final_response, 'content') else str(final_response)
+            
+        except Exception as e:
+            pattern_report = f"Error generating pattern analysis: {str(e)}\n\nChart result: {json.dumps(chart_result, indent=2)}"
 
-        # --- Step 2: First LLM call to determine tool usage ---
-        ai_response = invoke_with_retry(chain.invoke, messages)
-        messages.append(ai_response)
-
-        pattern_image_b64 = None
-
-        # --- Step 3: Handle tool call (generate_kline_image) ---
-        if hasattr(ai_response, "tool_calls"):
-            for call in ai_response.tool_calls:
-                tool_name = call["name"]
-                tool_args = call["args"]
-                # Always provide kline_data
-                tool_args["kline_data"] = copy.deepcopy(state["kline_data"])
-                tool_fn = next(t for t in tools if t.name == tool_name)
-                tool_result = invoke_tool_with_retry(tool_fn, tool_args)
-                pattern_image_b64 = tool_result.get("pattern_image")
-                messages.append(
-                    ToolMessage(
-                        tool_call_id=call["id"],
-                        content=json.dumps(tool_result)
-                    )
-                )
-
-        # --- Step 4: Second call with image (Vision LLM expects image_url + context) ---
-        if pattern_image_b64:
-            image_prompt = [
-                {
-                    "type": "text",
-                    "text": (
-                        f"This is a {time_frame} candlestick chart generated from recent OHLC market data.\n\n"
-                        f"{pattern_text}\n\n"
-                        "Determine whether the chart matches any of the patterns listed. "
-                        "Clearly name the matched pattern(s), and explain your reasoning based on structure, trend, and symmetry."
-                    )
-                },
-                {
-                    "type": "image_url",
-                    "image_url": {
-                        "url": f"data:image/png;base64,{pattern_image_b64}"
-                    }
-                }
-            ]
-
-            final_response = invoke_with_retry(graph_llm.invoke, [
-                SystemMessage(content="You are a trading pattern recognition assistant tasked with analyzing candlestick charts."),
-                HumanMessage(content=image_prompt)
-            ])
-        else:
-            # If no image was generated, fall back to reasoning with messages
-            final_response = invoke_with_retry(chain.invoke, messages)
-
-        return {
-            "messages": messages + [final_response],
-            "pattern_report": final_response.content,
-        }
+        # 更新state并返回
+        state.update({
+            "messages": messages,
+            "pattern_report": pattern_report,
+            "pattern_image": pattern_image,
+            "pattern_image_filename": pattern_image_filename,
+        })
+        
+        return state
 
     return pattern_agent_node
