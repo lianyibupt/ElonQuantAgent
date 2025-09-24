@@ -533,7 +533,7 @@
                              <p><strong>Forecast Horizon:</strong> 24-48 hours</p>
                              <p><strong>Risk/Reward Ratio:</strong> 1:2.5</p>
                              <p><strong>Justification:</strong></p>
-                             <p>Based on comprehensive analysis of technical indicators, pattern recognition, and trend analysis, the system recommends a LONG position on BTC. The analysis shows strong bullish momentum with key support levels holding, and multiple technical indicators confirming upward movement.</p>
+                             <p>基于技术指标、形态识别和趋势分析的综合分析，系统正在处理分析结果。请稍等片刻或重新运行分析。</p>
                          {% endif %}
                      </div>
                  </div>
@@ -544,17 +544,11 @@
                         <i class="fas fa-chart-bar"></i> Indicator Agent
                     </h3>
                     <div class="large-panel-section">
-                        {% if results.technical_indicators %}
+                        {% if results.technical_indicators and results.technical_indicators != "No analysis data available" %}
                             <div class="auto-beautify">{{ results.technical_indicators | safe }}</div>
                         {% else %}
                             <div class="auto-beautify">
-                                <ul>
-                                    <li><strong>RSI (14):</strong> 65.4 - Neutral to bullish momentum</li>
-                                    <li><strong>MACD:</strong> Bullish crossover with increasing histogram</li>
-                                    <li><strong>Moving Averages:</strong> Price above 50-day and 200-day MA</li>
-                                    <li><strong>Bollinger Bands:</strong> Price in upper band, showing strength</li>
-                                    <li><strong>Volume:</strong> Above average volume supporting price action</li>
-                                </ul>
+                                <p>技术指标分析结果尚未生成或不可用。请重新运行分析。</p>
                             </div>
                         {% endif %}
                     </div>

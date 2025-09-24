@@ -1114,6 +1114,20 @@
                                         </button>
                                     </div>
                                 </div>
+                                
+                                <!-- Chart Generation Toggle -->
+                                <div class="form-group">
+                                    <label class="form-label">Chart Generation</label>
+                                    <div class="form-check form-switch">
+                                        <input class="form-check-input" type="checkbox" id="generateCharts" style="transform: scale(1.2); margin-right: 0.75rem;">
+                                        <label class="form-check-label" for="generateCharts" style="font-size: 1.1rem; font-weight: 500; color: #374151; cursor: pointer;">
+                                            Generate Charts (Slower)
+                                        </label>
+                                    </div>
+                                    <small class="form-text text-muted">
+                                        Enable this to generate visual charts for pattern and trend analysis. This will significantly increase analysis time.
+                                    </small>
+                                </div>
                                     
                                     <!-- API Key Status Messages -->
                                     <div id="apiKeyStatus" class="alert alert-info mt-2" style="display: none;">
@@ -1689,6 +1703,9 @@
              analyzeBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Analyzing...';
              analyzeBtn.disabled = true;
              
+             // Get chart generation setting
+             const generateCharts = document.getElementById('generateCharts').checked;
+             
              // Prepare request data
              const requestData = {
                  data_source: dataSource,
@@ -1699,6 +1716,7 @@
                  end_date: endDate,
                  end_time: endTime,
                  use_current_time: useCurrentTime,
+                 generate_charts: generateCharts,  // 新增图表生成参数
                  redirect_to_output: true
              };
              
@@ -1813,28 +1831,29 @@
          // API Key Management Functions
          function updateApiKey() {
              const apiKey = document.getElementById('apiKeyInput').value.trim();
-             
+             const provider = document.getElementById('apiProviderSelect').value;
+              
              if (!apiKey) {
                  showApiKeyError('Please enter an API key');
                  return;
              }
-             
+              
              // Hide previous messages
              hideApiKeyMessages();
-             
+              
              // Show loading state
              const updateBtn = document.querySelector('button[onclick="updateApiKey()"]');
              const originalText = updateBtn.innerHTML;
              updateBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Updating...';
              updateBtn.disabled = true;
-             
+              
              // Make API call to update the key
              fetch('/api/update-api-key', {
                  method: 'POST',
                  headers: {
                      'Content-Type': 'application/json',
                  },
-                 body: JSON.stringify({ api_key: apiKey })
+                 body: JSON.stringify({ api_key: apiKey, provider: provider })
              })
              .then(response => response.json())
              .then(data => {

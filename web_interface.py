@@ -534,21 +534,21 @@ def output():
     
     # Default results if none provided
     default_results = {
-        "asset_name": "BTC",
-        "timeframe": "1h",
-        "data_length": 1247,
-        "technical_indicators": "RSI (14): 65.4 - Neutral to bullish momentum\nMACD: Bullish crossover with increasing histogram\nMoving Averages: Price above 50-day and 200-day MA\nBollinger Bands: Price in upper band, showing strength\nVolume: Above average volume supporting price action",
-        "pattern_analysis": "Bull Flag Pattern: Consolidation after strong upward move\nGolden Cross: 50-day MA crossing above 200-day MA\nHigher Highs & Higher Lows: Uptrend confirmation\nVolume Pattern: Increasing volume on price advances",
-        "trend_analysis": "Primary Trend: Bullish (Long-term)\nSecondary Trend: Bullish (Medium-term)\nShort-term Trend: Consolidating with bullish bias\nADX: 28.5 - Moderate trend strength\nPrice Action: Higher highs and higher lows maintained\nMomentum: Positive divergence on RSI",
+        "asset_name": "N/A",
+        "timeframe": "N/A",
+        "data_length": 0,
+        "technical_indicators": "No analysis available. Please run an analysis first.",
+        "pattern_analysis": "No pattern analysis available. Please run an analysis first.",
+        "trend_analysis": "No trend analysis available. Please run an analysis first.",
         "pattern_chart": "",
         "trend_chart": "",
         "pattern_image_filename": "",
         "trend_image_filename": "",
         "final_decision": {
-            "decision": "LONG",
-            "risk_reward_ratio": "1:2.5",
-            "forecast_horizon": "24-48 hours",
-            "justification": "Based on comprehensive analysis of technical indicators, pattern recognition, and trend analysis, the system recommends a LONG position on BTC. The analysis shows strong bullish momentum with key support levels holding, and multiple technical indicators confirming upward movement."
+            "decision": "N/A",
+            "risk_reward_ratio": "N/A",
+            "forecast_horizon": "N/A",
+            "justification": "No analysis available. Please run an analysis first."
         }
     }
     
