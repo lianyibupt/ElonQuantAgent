@@ -164,19 +164,45 @@ class MultiSourceDataFetcher:
         """Fetch stock data using akshare"""
         try:
             print(f"正在获取 {symbol} 的数据...")
+            print(f"  开始日期: {start_date}, 结束日期: {end_date}")
             
-            # 如果akshare获取失败，使用demo数据
-            df = self.get_demo_data(symbol, start_date, end_date)
-            if not df.empty:
-                print(f"使用demo数据，成功获取 {len(df)} 条数据")
-                return df
+            # 先尝试获取真实数据，如果失败再使用demo数据
+            df = pd.DataFrame()
             
             # akshare数据获取逻辑 - 尝试多种方法
-            functions_to_try = [
-                ('stock_zh_index_daily_em', symbol),
-                ('stock_zh_a_hist', symbol),
-                ('index_zh_a_hist', symbol),
-            ]
+            # 根据股票代码类型选择不同的函数
+            functions_to_try = []
+            
+            # 美股代码（通常为1-5个字母）
+            if re.match(r'^[A-Z]{1,5}$', symbol):
+                print(f"  检测到美股代码: {symbol}")
+                functions_to_try.extend([
+                    ('stock_us_daily', symbol),  # 美股日线数据
+                    ('stock_us_spot', symbol),   # 美股实时数据
+                ])
+            # A股代码（6位数字）
+            elif re.match(r'^\d{6}$', symbol):
+                print(f"  检测到A股代码: {symbol}")
+                functions_to_try.extend([
+                    ('stock_zh_a_hist', symbol),
+                    ('stock_zh_index_daily_em', symbol),
+                ])
+            # 指数代码
+            elif symbol.startswith('SH') or symbol.startswith('SZ'):
+                print(f"  检测到指数代码: {symbol}")
+                functions_to_try.extend([
+                    ('index_zh_a_hist', symbol),
+                    ('stock_zh_index_daily_em', symbol),
+                ])
+            else:
+                print(f"  未知代码格式: {symbol}，尝试所有方法")
+                functions_to_try.extend([
+                    ('stock_zh_index_daily_em', symbol),
+                    ('stock_zh_a_hist', symbol),
+                    ('index_zh_a_hist', symbol),
+                    ('stock_us_daily', symbol),
+                    ('stock_us_spot', symbol),
+                ])
             
             for func_name, sym in functions_to_try:
                 try:
@@ -189,14 +215,33 @@ class MultiSourceDataFetcher:
                         df = func(symbol=sym, period="daily", 
                                 start_date=start_date.replace('-', ''), 
                                 end_date=end_date.replace('-', ''))
+                    elif func_name == 'stock_us_daily':
+                        # 美股日线数据
+                        df = func(symbol=sym)
+                    elif func_name == 'stock_us_spot':
+                        # 美股实时数据，可能需要转换为日线
+                        df = func()
+                        if not df.empty and symbol in df['symbol'].values:
+                            df = df[df['symbol'] == symbol]
                     else:
                         df = func(symbol=sym)
                     
+                    # 检查df是否为None或空
+                    if df is None:
+                        print(f"{func_name} 返回None，跳过")
+                        continue
+                    
                     if not df.empty:
-                        print(f"使用 {func_name} 成功获取数据")
+                        print(f"使用 {func_name} 成功获取数据，数据形状: {df.shape}")
                         break
+                    else:
+                        print(f"{func_name} 返回空DataFrame")
+                        
                 except Exception as e:
-                    print(f"{func_name} 失败: {safe_str(e)}")
+                    error_msg = safe_str(e)
+                    print(f"{func_name} 失败: {error_msg}")
+                    if "subscriptable" in error_msg:
+                        print(f"  详细错误: 函数 {func_name} 可能返回了None")
                     continue
             
             if df.empty:
@@ -215,9 +260,11 @@ class MultiSourceDataFetcher:
             }
             
             # 应用列名映射
+            print(f"  原始列名: {list(df.columns)}")
             for old_name, new_name in column_mapping.items():
                 if old_name in df.columns:
                     df = df.rename(columns={old_name: new_name})
+            print(f"  映射后列名: {list(df.columns)}")
             
             # Ensure Datetime column exists
             if 'Datetime' not in df.columns:
@@ -270,17 +317,23 @@ class MultiSourceDataFetcher:
             if len(dates) == 0:
                 return pd.DataFrame()
             
-            # 生成模拟价格数据
-            np.random.seed(42)  # 确保可重复性
+            # 生成模拟价格数据，使用股票名称的哈希值作为种子，确保不同股票生成不同数据
+            seed = hash(symbol) % 10000
+            np.random.seed(seed)
             
-            # 基础价格
-            base_prices = {
-                'BTC': 50000,
-                '000001': 3000,
-                'AAPL': 150,
-                'TSLA': 200,
-            }
-            base_price = base_prices.get(symbol.upper(), 100)
+            # 基础价格 - 根据股票名称生成更有差异化的基础价格
+            if symbol.upper() in ['BTC', 'ETH', 'SOL']:
+                # 加密货币价格较高
+                base_price = 50000 + (hash(symbol) % 10000)
+            elif symbol.upper() in ['AAPL', 'MSFT', 'GOOGL']:
+                # 大型科技股
+                base_price = 150 + (hash(symbol) % 100)
+            elif re.match(r'^\d{6}$', symbol):
+                # 可能是A股代码
+                base_price = 10 + (hash(symbol) % 90)
+            else:
+                # 其他股票
+                base_price = 50 + (hash(symbol) % 150)
             
             # 生成价格序列
             returns = np.random.normal(0, 0.02, len(dates))  # 2%日波动率
@@ -339,7 +392,7 @@ class MultiSourceDataFetcher:
             data = self.finnhub_client.stock_candles(symbol, resolution, 
                                                    start_timestamp, end_timestamp)
             
-            if not data or 's' != 'ok':
+            if not data or data.get('s') != 'ok':
                 return pd.DataFrame()
             
             # 转换为DataFrame
@@ -364,7 +417,7 @@ class MultiSourceDataFetcher:
         df = pd.DataFrame()
         
         # 首先尝试akshare
-        if self.current_source == 'akshare' or not df.empty:
+        if self.current_source == 'akshare' or df.empty:
             df = self.fetch_akshare_data(symbol, self._convert_timeframe(timeframe),
                                        start_date.strftime('%Y%m%d'), 
                                        end_date.strftime('%Y%m%d'))
@@ -518,7 +571,7 @@ class WebTradingAnalyzer:
         return df
 
     # Keep other methods unchanged, only modify data fetching part
-    def run_analysis(self, df: pd.DataFrame, asset_name: str, timeframe: str) -> Dict[str, Any]:
+    def run_analysis(self, df: pd.DataFrame, asset_name: str, timeframe: str, generate_charts: bool = False) -> Dict[str, Any]:
         """Run the trading analysis on the provided DataFrame."""
         try:
             # 确保asset_name是安全的字符串
@@ -530,29 +583,40 @@ class WebTradingAnalyzer:
             else:
                 df_slice = df.tail(45)
             
-            required_columns = ["Datetime", "Open", "High", "Low", "Close"]
-            if not all(col in df_slice.columns for col in required_columns):
+            # 检查必要的列，注意Datetime可能被设置为索引
+            required_price_columns = ["Open", "High", "Low", "Close"]
+            
+            # 检查Datetime列是否存在，或者是否在索引中
+            has_datetime_column = "Datetime" in df_slice.columns
+            has_datetime_index = df_slice.index.name == "Datetime" or isinstance(df_slice.index, pd.DatetimeIndex)
+            
+            if not all(col in df_slice.columns for col in required_price_columns) or (not has_datetime_column and not has_datetime_index):
                 return {
                     "success": False,
-                    "error": f"Missing required columns. Available: {list(df_slice.columns)}"
+                    "error": f"Missing required columns. Available columns: {list(df_slice.columns)}, Index: {df_slice.index.name}"
                 }
             
-            df_slice = df_slice.reset_index(drop=True)
+            # 处理Datetime数据（可能在列中或索引中）
             df_slice_dict = {}
-            for col in required_columns:
-                if col == 'Datetime':
-                    # 确保日期时间格式正确
-                    try:
-                        df_slice_dict[col] = df_slice[col].dt.strftime('%Y-%m-%d %H:%M:%S').tolist()
-                    except Exception:
-                        # 如果日期格式有问题，尝试转换
-                        df_slice_dict[col] = [safe_str(dt) for dt in df_slice[col].tolist()]
-                else:
-                    # 确保数值数据是可序列化的
-                    try:
-                        df_slice_dict[col] = [float(x) if pd.notna(x) else 0.0 for x in df_slice[col].tolist()]
-                    except Exception:
-                        df_slice_dict[col] = [safe_str(x) for x in df_slice[col].tolist()]
+            
+            # 如果Datetime在索引中，重置索引
+            if has_datetime_index:
+                df_slice = df_slice.reset_index()
+                has_datetime_column = True
+            
+            # 处理Datetime列
+            if has_datetime_column:
+                try:
+                    df_slice_dict['Datetime'] = df_slice['Datetime'].dt.strftime('%Y-%m-%d %H:%M:%S').tolist()
+                except Exception:
+                    df_slice_dict['Datetime'] = [safe_str(dt) for dt in df_slice['Datetime'].tolist()]
+            
+            # 处理价格数据列
+            for col in required_price_columns:
+                try:
+                    df_slice_dict[col] = [float(x) if pd.notna(x) else 0.0 for x in df_slice[col].tolist()]
+                except Exception:
+                    df_slice_dict[col] = [safe_str(x) for x in df_slice[col].tolist()]
             
             display_timeframe = timeframe
             if timeframe.endswith('h'):
@@ -570,7 +634,19 @@ class WebTradingAnalyzer:
                 "stock_name": safe_str(asset_name)
             }
             
-            final_state = self.trading_graph.analyze(df_slice_dict, asset_name)
+            # 根据generate_charts参数决定是否生成图表
+            if generate_charts:
+                analysis_result = self.trading_graph.analyze(df_slice_dict, asset_name, display_timeframe)
+            else:
+                # 只进行文本分析，不生成图表
+                analysis_result = self.trading_graph.analyze_text_only(df_slice_dict, asset_name, display_timeframe)
+            
+            # 从分析结果中提取final_state
+            final_state = analysis_result.get("final_state", {})
+            print(f"从TradingGraph提取的final_state键: {list(final_state.keys())}")
+            print(f"趋势报告长度: {len(final_state.get('trend_report', ''))}")
+            print(f"指标报告长度: {len(final_state.get('indicator_report', ''))}")
+            print(f"形态报告长度: {len(final_state.get('pattern_report', ''))}")
             
             # 确保final_state中的所有字符串都是安全的
             if isinstance(final_state, dict):
@@ -812,8 +888,11 @@ def output():
         if results_param:
             import urllib.parse
             try:
+                print(f"原始URL参数: {results_param}")
                 decoded_results = urllib.parse.unquote(results_param, encoding='utf-8')
+                print(f"解码后结果: {decoded_results[:200]}...")  # 只显示前200个字符
                 results = json.loads(decoded_results)
+                print(f"JSON解析成功，technical_indicators长度: {len(results.get('technical_indicators', ''))}")
                 
                 # 确保所有字符串字段都是安全的
                 if isinstance(results, dict):
@@ -827,6 +906,7 @@ def output():
                                     
             except Exception as decode_error:
                 print(f"URL decode error: {safe_str(decode_error)}")
+                print(f"错误类型: {type(decode_error).__name__}")
                 # 如果解码失败，使用默认结果
                 results = {
                     "success": False,
@@ -873,12 +953,22 @@ def analyze():
         asset = data.get('asset')
         timeframe = data.get('timeframe')
         start_date = data.get('start_date')
+        start_time = data.get('start_time', '00:00')
         end_date = data.get('end_date')
+        end_time = data.get('end_time', '23:59')
         redirect_to_output = data.get('redirect_to_output', False)
+        generate_charts = data.get('generate_charts', False)  # 新增参数，默认关闭图表生成
+        
+        # Validate required parameters
+        if not asset or not timeframe or not start_date or not end_date:
+            return jsonify({"error": "Missing required parameters"})
         
         # Create datetime objects
-        start_dt = datetime.strptime(f"{start_date} 00:00", "%Y-%m-%d %H:%M")
-        end_dt = datetime.strptime(f"{end_date} 23:59", "%Y-%m-%d %H:%M")
+        try:
+            start_dt = datetime.strptime(f"{start_date} {start_time}", "%Y-%m-%d %H:%M")
+            end_dt = datetime.strptime(f"{end_date} {end_time}", "%Y-%m-%d %H:%M")
+        except ValueError:
+            return jsonify({"error": "Invalid date or time format. Please use YYYY-MM-DD for date and HH:MM for time."})
         
         # Use new data fetching method
         df = analyzer.fetch_market_data(asset, timeframe, start_dt, end_dt)
@@ -886,7 +976,7 @@ def analyze():
             return jsonify({"error": "Unable to fetch data, please check the code or try other data sources"})
         
         display_name = analyzer.asset_mapping.get(asset, asset)
-        results = analyzer.run_analysis(df, display_name, timeframe)
+        results = analyzer.run_analysis(df, display_name, timeframe, generate_charts)  # 传递generate_charts参数
         formatted_results = analyzer.extract_analysis_results(results)
         
         if redirect_to_output:
@@ -943,12 +1033,22 @@ def get_image(image_type):
             if pattern_files:
                 latest_file = max(pattern_files, key=lambda x: os.path.getctime(os.path.join(image_dir, x)))
                 return send_file(os.path.join(image_dir, latest_file))
+            else:
+                # 如果没有找到分析图片，返回占位图
+                placeholder_path = os.path.join(image_dir, 'pattern_placeholder.svg')
+                if os.path.exists(placeholder_path):
+                    return send_file(placeholder_path)
         elif image_type == 'trend':
             # 查找最新的trend图片
             trend_files = [f for f in os.listdir(image_dir) if f.startswith('trend_') and f.endswith('.png')]
             if trend_files:
                 latest_file = max(trend_files, key=lambda x: os.path.getctime(os.path.join(image_dir, x)))
                 return send_file(os.path.join(image_dir, latest_file))
+            else:
+                # 如果没有找到分析图片，返回占位图
+                placeholder_path = os.path.join(image_dir, 'trend_placeholder.svg')
+                if os.path.exists(placeholder_path):
+                    return send_file(placeholder_path)
         
         # 如果没有找到图片，返回404
         return jsonify({"error": f"Image not found: {image_type}"}), 404
@@ -958,4 +1058,10 @@ def get_image(image_type):
 
 # Other helper routes remain unchanged
 if __name__ == '__main__':
-    app.run(debug=True, host='0.0.0.0', port=5001)
+    import argparse
+    parser = argparse.ArgumentParser(description='Run ElonQuantAgent Web Interface')
+    parser.add_argument('--port', type=int, default=5000, help='Port to run the server on')
+    parser.add_argument('--host', type=str, default='0.0.0.0', help='Host to run the server on')
+    args = parser.parse_args()
+    
+    app.run(debug=True, host=args.host, port=args.port)
