@@ -953,15 +953,6 @@
                                         <button type="button" class="asset-btn" data-asset="ETH" onclick="selectAsset(this, 'ETH')">
                                             <i class="fab fa-ethereum"></i> ETH
                                         </button>
-                                        <button type="button" class="asset-btn" data-asset="AAPL" onclick="selectAsset(this, 'AAPL')">
-                                            <i class="fas fa-apple-alt"></i> AAPL
-                                        </button>
-                                        <button type="button" class="asset-btn" data-asset="GOOGL" onclick="selectAsset(this, 'GOOGL')">
-                                            <i class="fab fa-google"></i> GOOGL
-                                        </button>
-                                        <button type="button" class="asset-btn" data-asset="MSFT" onclick="selectAsset(this, 'MSFT')">
-                                            <i class="fab fa-microsoft"></i> MSFT
-                                        </button>
                                         <button type="button" class="asset-btn" data-asset="TSLA" onclick="selectAsset(this, 'TSLA')">
                                             <i class="fas fa-car"></i> TSLA
                                         </button>
@@ -1383,7 +1374,7 @@
             updateApiKeyFields();
             // Set default dates
             const now = new Date();
-            const thirtyDaysAgo = new Date(now.getTime() - (30 * 24 * 60 * 60 * 1000));
+            const thirtyDaysAgo = new Date(now.getTime() - (50 * 24 * 60 * 60 * 1000));
             
             // Format dates for input fields
             const formatDate = (date) => {
