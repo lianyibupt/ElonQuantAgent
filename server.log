@@ -1,0 +1,73 @@
+🤖 ElonQuantAgent - 多厂商API量化交易分析系统
+==================================================
+🔍 检查环境变量...
+📦 安装依赖包...
+✅ 依赖安装成功
+📁 创建数据目录...
+✅ 数据目录设置完成
+
+✅ 准备就绪！
+可用数据源:
+   - akshare (免费，支持A股、港股、美股)
+   - finnhub (需要API密钥，备用数据源)
+
+可用LLM提供商:
+   - OpenAI (GPT-4o, GPT-4o-mini)
+   - DeepSeek (deepseek-chat, deepseek-coder)
+🚀 启动Web交易分析界面...
+   访问地址: http://127.0.0.1:5000
+   按 Ctrl+C 停止服务
+
+==================================================
+ * Serving Flask app 'web_interface_new'
+ * Debug mode: on
+WARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.
+ * Running on http://127.0.0.1:5000
+Press CTRL+C to quit
+ * Restarting with stat
+ * Debugger is active!
+ * Debugger PIN: 118-470-364
+127.0.0.1 - - [24/Sep/2025 13:14:55] "GET /api/get-api-key-status HTTP/1.1" 200 -
+127.0.0.1 - - [24/Sep/2025 13:14:55] "GET /api/custom-assets HTTP/1.1" 200 -
+127.0.0.1 - - [24/Sep/2025 13:14:55] "HEAD /assets/darklogo.png HTTP/1.1" 200 -
+127.0.0.1 - - [24/Sep/2025 13:15:24] "GET / HTTP/1.1" 200 -
+127.0.0.1 - - [24/Sep/2025 13:15:24] "GET /assets/darklogo.png HTTP/1.1" 200 -
+127.0.0.1 - - [24/Sep/2025 13:15:24] "GET /api/get-api-key-status HTTP/1.1" 200 -
+127.0.0.1 - - [24/Sep/2025 13:15:24] "GET /api/custom-assets HTTP/1.1" 200 -
+127.0.0.1 - - [24/Sep/2025 13:16:11] "POST /api/analyze HTTP/1.1" 200 -
+ * Detected change in '/Users/bytedance/Documents/code/ElonQuantAgent/trading_graph.py', reloading
+🤖 ElonQuantAgent - 多厂商API量化交易分析系统
+==================================================
+🔍 检查环境变量...
+📦 安装依赖包...
+✅ 依赖安装成功
+📁 创建数据目录...
+✅ 数据目录设置完成
+
+✅ 准备就绪！
+可用数据源:
+   - akshare (免费，支持A股、港股、美股)
+   - finnhub (需要API密钥，备用数据源)
+
+可用LLM提供商:
+   - OpenAI (GPT-4o, GPT-4o-mini)
+   - DeepSeek (deepseek-chat, deepseek-coder)
+🚀 启动Web交易分析界面...
+   访问地址: http://127.0.0.1:5000
+   按 Ctrl+C 停止服务
+
+==================================================
+正在获取 AAPL 的数据...
+生成了 17 条 AAPL 的demo数据
+使用demo数据，成功获取 17 条数据
+Running indicator analysis...
+正在获取 RXRX 的数据...
+生成了 23 条 RXRX 的demo数据
+使用demo数据，成功获取 23 条数据
+Running indicator analysis...
+Running pattern analysis...
+Running trend analysis...
+Running decision analysis...
+ * Restarting with stat
+ * Debugger is active!
+ * Debugger PIN: 118-470-364

@@ -1,102 +1,72 @@
 """
-Agent for making final trade decisions in high-frequency trading (HFT) context.
-Combines indicator, pattern, and trend reports to issue a LONG or SHORT order.
+Agent for final trading decision synthesis in high-frequency trading (HFT) context.
+Combines indicator, pattern, and trend analysis to make actionable trading recommendations.
 """
+from langchain_core.prompts import ChatPromptTemplate
+import json
 
-
-def create_final_trade_decider(llm):
+def create_decision_agent(llm, tools):
     """
-    Create a trade decision agent node. The agent uses LLM to synthesize indicator, pattern, and trend reports
-    and outputs a final trade decision (LONG or SHORT) with justification and risk-reward ratio.
+    Create a decision synthesis agent node for HFT. The agent combines all analysis results to make final trading decisions.
     """
-    def trade_decision_node(state) -> dict:
-        indicator_report = state["indicator_report"]
-        pattern_report = state['pattern_report']
-        trend_report = state['trend_report']
+    def decision_agent_node(state):
         time_frame = state['time_frame']
         stock_name = state['stock_name']
+        
+        # 获取各个分析结果
+        indicator_report = state.get("indicator_report", "No indicator analysis available")
+        pattern_report = state.get("pattern_report", "No pattern analysis available")
+        trend_report = state.get("trend_report", "No trend analysis available")
+        
+        # --- 生成最终交易决策 ---
+        decision_prompt = ChatPromptTemplate.from_messages([
+            (
+                "system",
+                "你是一位资深的高频交易决策专家。"
+                "基于以下综合分析报告，做出最终的交易决策。请用中文回答。\n\n"
+                "股票代码: {stock_name}\n"
+                "时间周期: {time_frame}\n\n"
+                "技术指标分析:\n{indicator_report}\n\n"
+                "形态分析:\n{pattern_report}\n\n"
+                "趋势分析:\n{trend_report}\n\n"
+                "请按照以下JSON格式提供你的最终决策（用中文填写）:\n"
+                "{{\n"
+                '  "decision": "买入/卖出/持有",\n'
+                '  "confidence": "高/中/低",\n'
+                '  "risk_reward_ratio": "X:Y",\n'
+                '  "forecast_horizon": "预测时间段",\n'
+                '  "justification": "详细的中文理由说明"\n'
+                "}}\n\n"
+                "请综合考虑所有三种分析类型，为高频交易提供可操作的中文见解。"
+            )
+        ])
+        
+        try:
+            final_response = (decision_prompt | llm).invoke({
+                "stock_name": stock_name,
+                "time_frame": time_frame,
+                "indicator_report": indicator_report,
+                "pattern_report": pattern_report,
+                "trend_report": trend_report
+            })
+            
+            decision_content = final_response.content if hasattr(final_response, 'content') else str(final_response)
+            
+        except Exception as e:
+            decision_content = json.dumps({
+                "decision": "HOLD",
+                "confidence": "LOW", 
+                "risk_reward_ratio": "1:1",
+                "forecast_horizon": "Unknown",
+                "justification": f"Error generating decision: {str(e)}"
+            }, indent=2)
 
-        # --- System prompt for LLM ---
-        prompt = f"""You are a high-frequency quantitative trading (HFT) analyst operating on the current {time_frame} K-line chart for {stock_name}. Your task is to issue an **immediate execution order**: **LONG** or **SHORT**. WARNING: HOLD is prohibited due to HFT constraints.
+        # 更新state并返回
+        state.update({
+            "messages": state.get("messages", []),
+            "final_trade_decision": decision_content,
+        })
+        
+        return state
 
-            Your decision should forecast the market move over the **next N candlesticks**, where:
-            - For example: TIME_FRAME = 15min, N = 1 → Predict the next 15 minutes.
-            - TIME_FRAME = 4hour, N = 1 → Predict the next 4 hours.
-
-            Base your decision on the combined strength, alignment, and timing of the following three reports:
-
-            ---
-
-            ### 1. Technical Indicator Report:
-            - Evaluate momentum (e.g., MACD, ROC) and oscillators (e.g., RSI, Stochastic, Williams %R).
-            - Give **higher weight to strong directional signals** such as MACD crossovers, RSI divergence, extreme overbought/oversold levels.
-            - **Ignore or down-weight neutral or mixed signals** unless they align across multiple indicators.
-
-            ---
-
-            ### 2. Pattern Report:
-            - Only act on bullish or bearish patterns if:
-            - The pattern is **clearly recognizable and mostly complete**, and
-            - A **breakout or breakdown is already underway** or highly probable based on price and momentum (e.g., strong wick, volume spike, engulfing candle).
-            - **Do NOT act** on early-stage or speculative patterns. Do not treat consolidating setups as tradable unless there is **breakout confirmation** from other reports.
-
-            ---
-
-            ### 3. Trend Report:
-            - Analyze how price interacts with support and resistance:
-            - An **upward sloping support line** suggests buying interest.
-            - A **downward sloping resistance line** suggests selling pressure.
-            - If price is compressing between trendlines:
-            - Predict breakout **only when confluence exists with strong candles or indicator confirmation**.
-            - **Do NOT assume breakout direction** from geometry alone.
-
-            ---
-
-            ### Decision Strategy
-
-            1. Only act on **confirmed** signals — avoid emerging, speculative, or conflicting signals.
-            2. Prioritize decisions where **all three reports** (Indicator, Pattern, and Trend) **align in the same direction**.
-            3. Give more weight to:
-            - Recent strong momentum (e.g., MACD crossover, RSI breakout)
-            - Decisive price action (e.g., breakout candle, rejection wicks, support bounce)
-            4. If reports disagree:
-            - Choose the direction with **stronger and more recent confirmation**
-            - Prefer **momentum-backed signals** over weak oscillator hints.
-            5. ⚖️ If the market is in consolidation or reports are mixed:
-            - Default to the **dominant trendline slope** (e.g., SHORT in descending channel).
-            - Do not guess direction — choose the **more defensible** side.
-            6. Suggest a reasonable **risk-reward ratio** between **1.2 and 1.8**, based on current volatility and trend strength.
-
-            ---
-            ### 🧠 Output Format in json(for system parsing):
-
-            ```
-            {{
-            "forecast_horizon": "Predicting next 3 candlestick (15 minutes, 1 hour, etc.)",
-            "decision": "<LONG or SHORT>",
-            "justification": "<Concise, confirmed reasoning based on reports>",
-            "risk_reward_ratio": "<float between 1.2 and 1.8>",
-            }}
-
-            --------
-            **Technical Indicator Report**  
-            {indicator_report}
-
-            **Pattern Report**  
-            {pattern_report}
-
-            **Trend Report**  
-            {trend_report}
-
-        """
-
-        # --- LLM call for decision ---
-        response = llm.invoke(prompt)
-
-        return {
-            "final_trade_decision": response.content,
-            "messages": [response],
-            "decision_prompt": prompt,
-        }
-
-    return trade_decision_node
+    return decision_agent_node
