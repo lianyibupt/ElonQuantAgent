@@ -29,7 +29,7 @@ def create_indicator_agent(llm, toolkit):
                     "You must analyze technical indicators to support fast-paced trading execution.\n\n"
                     "You have access to tools: compute_rsi, compute_macd, compute_roc, compute_stoch, and compute_willr. "
                     "Use them by providing appropriate arguments like `kline_data` and the respective periods.\n\n"
-                    f"⚠️ The OHLC data provided is from a {time_frame} intervals, reflecting recent market behavior. "
+                    f"WARNING: The OHLC data provided is from a {time_frame} intervals, reflecting recent market behavior. "
                     "You must interpret this data quickly and accurately.\n\n"
                     "Here is the OHLC data:\n{kline_data}.\n\n"
                     "Call necessary tools, and analyze the results.\n"
