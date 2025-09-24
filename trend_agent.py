@@ -55,6 +55,7 @@ def create_trend_agent(tool_llm, graph_llm, toolkit):
 
         # --- Step 1: Let LLM decide if it wants to call generate_trend_image ---
         ai_response = invoke_with_retry(chain.invoke, messages)
+        messages.append(ai_response)
 
         trend_image_b64 = None
 

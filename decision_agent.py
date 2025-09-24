@@ -17,7 +17,7 @@ def create_final_trade_decider(llm):
         stock_name = state['stock_name']
 
         # --- System prompt for LLM ---
-        prompt = f"""You are a high-frequency quantitative trading (HFT) analyst operating on the current {time_frame} K-line chart for {stock_name}. Your task is to issue an **immediate execution order**: **LONG** or **SHORT**. ⚠️ HOLD is prohibited due to HFT constraints.
+        prompt = f"""You are a high-frequency quantitative trading (HFT) analyst operating on the current {time_frame} K-line chart for {stock_name}. Your task is to issue an **immediate execution order**: **LONG** or **SHORT**. WARNING: HOLD is prohibited due to HFT constraints.
 
             Your decision should forecast the market move over the **next N candlesticks**, where:
             - For example: TIME_FRAME = 15min, N = 1 → Predict the next 15 minutes.
@@ -52,7 +52,7 @@ def create_final_trade_decider(llm):
 
             ---
 
-            ### ✅ Decision Strategy
+            ### Decision Strategy
 
             1. Only act on **confirmed** signals — avoid emerging, speculative, or conflicting signals.
             2. Prioritize decisions where **all three reports** (Indicator, Pattern, and Trend) **align in the same direction**.

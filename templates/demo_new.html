@@ -1084,15 +1084,36 @@
                                     <i class="fas fa-cog"></i> Settings
                                 </h4>
                                 
-                                <!-- OpenAI API Key Input -->
+                                <!-- API Provider Selection -->
                                 <div class="form-group">
+                                    <label class="form-label">API Provider</label>
+                                    <select class="form-select" id="apiProviderSelect" onchange="updateApiKeyFields()">
+                                        <option value="openai">OpenAI</option>
+                                        <option value="deepseek" selected>DeepSeek</option>
+                                    </select>
+                                </div>
+
+                                <!-- OpenAI API Key Input -->
+                                <div class="form-group" id="openaiApiGroup">
                                     <label class="form-label">OpenAI API Key</label>
                                     <div class="input-group">
-                                        <input type="password" class="form-control" id="apiKeyInput" placeholder="Enter your OpenAI API key">
-                                        <button class="btn btn-outline-primary" type="button" onclick="updateApiKey()">
+                                        <input type="password" class="form-control" id="openaiApiKeyInput" placeholder="Enter your OpenAI API key">
+                                        <button class="btn btn-outline-primary" type="button" onclick="updateOpenAIApiKey()">
                                             <i class="fas fa-save"></i> Update
                                         </button>
                                     </div>
+                                </div>
+
+                                <!-- DeepSeek API Key Input -->
+                                <div class="form-group" id="deepseekApiGroup">
+                                    <label class="form-label">DeepSeek API Key</label>
+                                    <div class="input-group">
+                                        <input type="password" class="form-control" id="deepseekApiKeyInput" placeholder="Enter your DeepSeek API key">
+                                        <button class="btn btn-outline-primary" type="button" onclick="updateDeepSeekApiKey()">
+                                            <i class="fas fa-save"></i> Update
+                                        </button>
+                                    </div>
+                                </div>
                                     
                                     <!-- API Key Status Messages -->
                                     <div id="apiKeyStatus" class="alert alert-info mt-2" style="display: none;">
@@ -1344,6 +1365,8 @@
 
         // On page load, restore selected asset/timeframe and custom assets
         document.addEventListener('DOMContentLoaded', function() {
+            // Initialize API provider fields
+            updateApiKeyFields();
             // Set default dates
             const now = new Date();
             const thirtyDaysAgo = new Date(now.getTime() - (30 * 24 * 60 * 60 * 1000));
@@ -1443,20 +1466,95 @@
             checkApiKeyStatus();
         });
         
+        function updateApiKeyFields() {
+            const provider = document.getElementById('apiProviderSelect').value;
+            document.getElementById('openaiApiGroup').style.display = provider === 'openai' ? 'block' : 'none';
+            document.getElementById('deepseekApiGroup').style.display = provider === 'deepseek' ? 'block' : 'none';
+        }
+
         function checkApiKeyStatus() {
             fetch('/api/get-api-key-status')
                 .then(response => response.json())
                 .then(data => {
-                    if (data.has_key) {
-                        showApiKeyStatus(`API key is set: ${data.masked_key}`);
+                    if (data.has_openai_key) {
+                        showApiKeyStatus(`OpenAI API key is set: ${data.masked_openai_key}`);
+                    } else if (data.has_deepseek_key) {
+                        showApiKeyStatus(`DeepSeek API key is set: ${data.masked_deepseek_key}`);
                     } else {
-                        showApiKeyError('No API key found. Please enter your OpenAI API key.');
+                        showApiKeyError('No API key found. Please enter your API key.');
                     }
+                    
+                    // Set the provider selection based on available keys
+                    if (data.has_deepseek_key) {
+                        document.getElementById('apiProviderSelect').value = 'deepseek';
+                    } else if (data.has_openai_key) {
+                        document.getElementById('apiProviderSelect').value = 'openai';
+                    }
+                    updateApiKeyFields();
                 })
                 .catch(error => {
                     console.error('Error checking API key status:', error);
                     showApiKeyError('Unable to check API key status');
                 });
+        }
+
+        function updateOpenAIApiKey() {
+            const apiKey = document.getElementById('openaiApiKeyInput').value.trim();
+            updateApiKey('openai', apiKey);
+        }
+
+        function updateDeepSeekApiKey() {
+            const apiKey = document.getElementById('deepseekApiKeyInput').value.trim();
+            updateApiKey('deepseek', apiKey);
+        }
+
+        function updateApiKey(provider, apiKey) {
+            if (!apiKey) {
+                showApiKeyError('Please enter an API key');
+                return;
+            }
+            
+            // Hide previous messages
+            hideApiKeyMessages();
+            
+            // Show loading state
+            const updateBtn = document.querySelector(`button[onclick="update${provider.charAt(0).toUpperCase() + provider.slice(1)}ApiKey()"]`);
+            const originalText = updateBtn.innerHTML;
+            updateBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Updating...';
+            updateBtn.disabled = true;
+            
+            // Make API call to update the key
+            fetch('/api/update-api-key', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ 
+                    provider: provider,
+                    api_key: apiKey 
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    showApiKeySuccess(`${provider.charAt(0).toUpperCase() + provider.slice(1)} API key updated successfully!`);
+                    document.getElementById(`${provider}ApiKeyInput`).value = '';
+                    // Update provider selection
+                    document.getElementById('apiProviderSelect').value = provider;
+                    updateApiKeyFields();
+                } else {
+                    showApiKeyError(data.error || 'Failed to update API key');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                showApiKeyError('An error occurred while updating the API key');
+            })
+            .finally(() => {
+                // Reset button
+                updateBtn.innerHTML = originalText;
+                updateBtn.disabled = false;
+            });
         }
         
                  // Global variables
