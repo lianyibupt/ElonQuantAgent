@@ -562,9 +562,9 @@
                 <h3 class="large-panel-title">
                     <i class="fas fa-brain"></i> Pattern Agent
                 </h3>
-                <div style="display: flex; gap: 2rem; margin-top: 1rem;">
-                    <!-- Left Panel: Pattern Recognition -->
-                    <div class="panel" style="flex: 1;">
+                <div class="large-panel-content">
+                    <!-- Pattern Recognition Panel -->
+                    <div class="panel">
                         <h4 class="panel-title">
                             <i class="fas fa-search"></i> Pattern Recognition
                         </h4>
@@ -588,8 +588,8 @@
                         </div>
                     </div>
                     
-                    <!-- Right Panel: Pattern Visualization -->
-                    <div class="panel" style="flex: 1;">
+                    <!-- Pattern Visualization Panel -->
+                    <div class="panel">
                         <h4 class="panel-title">
                             <i class="fas fa-chart-bar"></i> Pattern Visualization
                         </h4>
@@ -611,39 +611,39 @@
                     <i class="fas fa-chart-line"></i> Trend Agent
                 </h3>
                 <div class="large-panel-content">
-                    <div class="panel-group-2">
-                        <div class="panel">
-                            <h4 class="panel-title">
-                                <i class="fas fa-analytics"></i> Trend Analysis
-                            </h4>
-                            <div class="form-group">
-                                <h5>Trend Strength Indicators:</h5>
-                                <ul>
-                                    <li><strong>ADX:</strong> 28.5 - Moderate trend strength</li>
-                                    <li><strong>RSI Divergence:</strong> Positive divergence detected</li>
-                                    <li><strong>Momentum:</strong> Declining momentum indicators</li>
-                                    <li><strong>Volume:</strong> Decreasing volume on rallies</li>
-                                </ul>
-                            </div>
-                            
-                            <div class="form-group">
-                                <h5>Likely Downtrend Signal:</h5>
-                                <p>Consistent downward slope and inability to break resistance suggest continued bearish pressure. Short-term trend likely to continue downward.</p>
-                            </div>
+                    <!-- Trend Analysis Panel -->
+                    <div class="panel">
+                        <h4 class="panel-title">
+                            <i class="fas fa-analytics"></i> Trend Analysis
+                        </h4>
+                        <div class="form-group">
+                            <h5>Trend Strength Indicators:</h5>
+                            <ul>
+                                <li><strong>ADX:</strong> 28.5 - Moderate trend strength</li>
+                                <li><strong>RSI Divergence:</strong> Positive divergence detected</li>
+                                <li><strong>Momentum:</strong> Declining momentum indicators</li>
+                                <li><strong>Volume:</strong> Decreasing volume on rallies</li>
+                            </ul>
                         </div>
                         
-                        <div class="panel">
-                            <h4 class="panel-title">
-                                <i class="fas fa-chart-line"></i> Trend Visualization
-                            </h4>
-                            <div class="image-container">
-                                {% if results.trend_chart %}
-                                    <img src="data:image/png;base64,{{ results.trend_chart }}" alt="Trend Analysis Chart" class="analysis-image">
-                                {% else %}
-                                    <img src="/api/images/trend" alt="Trend Analysis Chart" class="analysis-image">
-                                {% endif %}
-                                <p class="chart-caption">Support & Resistance Lines</p>
-                            </div>
+                        <div class="form-group">
+                            <h5>Likely Downtrend Signal:</h5>
+                            <p>Consistent downward slope and inability to break resistance suggest continued bearish pressure. Short-term trend likely to continue downward.</p>
+                        </div>
+                    </div>
+                    
+                    <!-- Trend Visualization Panel -->
+                    <div class="panel">
+                        <h4 class="panel-title">
+                            <i class="fas fa-chart-line"></i> Trend Visualization
+                        </h4>
+                        <div class="image-container">
+                            {% if results.trend_chart %}
+                                <img src="data:image/png;base64,{{ results.trend_chart }}" alt="Trend Analysis Chart" class="analysis-image">
+                            {% else %}
+                                <img src="/api/images/trend" alt="Trend Analysis Chart" class="analysis-image">
+                            {% endif %}
+                            <p class="chart-caption">Support & Resistance Lines</p>
                         </div>
                     </div>
                 </div>

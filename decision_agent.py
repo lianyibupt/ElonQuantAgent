@@ -22,7 +22,7 @@ def create_decision_agent(llm, tools):
         decision_prompt = ChatPromptTemplate.from_messages([
             (
                 "system",
-                "你是一位资深的高频交易决策专家。"
+                "你是一位资深的高频交易决策专家，最短持有2天，最长持有1个月。"
                 "基于以下综合分析报告，做出最终的交易决策。请用中文回答。\n\n"
                 "股票代码: {stock_name}\n"
                 "时间周期: {time_frame}\n\n"
