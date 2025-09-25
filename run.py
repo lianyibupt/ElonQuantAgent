@@ -75,13 +75,13 @@ def setup_data_directories():
 def start_web_interface():
     """启动Web界面"""
     print("🚀 启动Web交易分析界面...")
-    print("   访问地址: http://127.0.0.1:5000")
+    print("   访问地址: http://127.0.0.1:5002")
     print("   按 Ctrl+C 停止服务")
     print("\n" + "="*50)
     
     try:
         from web_interface_new import app
-        app.run(debug=True, host='127.0.0.1', port=5000)
+        app.run(debug=True, host='127.0.0.1', port=5002)
     except ImportError as e:
         print(f"❌ 导入错误: {e}")
         print("请确保已安装所有依赖")

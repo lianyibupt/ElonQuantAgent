@@ -557,53 +557,53 @@
             
 
             
-                                     <!-- Pattern Agent: Pattern Recognition + Pattern Visualization -->
-            <div class="large-panel">
-                <h3 class="large-panel-title">
-                    <i class="fas fa-brain"></i> Pattern Agent
-                </h3>
-                <div class="large-panel-content">
-                    <!-- Pattern Recognition Panel -->
-                    <div class="panel">
-                        <h4 class="panel-title">
-                            <i class="fas fa-search"></i> Pattern Recognition
-                        </h4>
-                        <div class="form-group">
-                            <h5>Identified Pattern:</h5>
-                            {% if results.pattern_analysis %}
-                                <div class="auto-beautify">{{ results.pattern_analysis | safe }}</div>
-                            {% else %}
-                                <ul>
-                                    <li><strong>Descending Triangle:</strong> Lower highs with flat support</li>
-                                    <li><strong>Structure:</strong> Converging trend lines</li>
-                                    <li><strong>Trend:</strong> Prior downtrend continuation</li>
-                                    <li><strong>Symmetry:</strong> Consistent pattern formation</li>
-                                </ul>
-                            {% endif %}
-                        </div>
-                        
-                        <div class="form-group">
-                            <h5>Pattern Reliability:</h5>
-                            <p>Descending triangle has a high success rate for bearish continuation patterns. Key support level at 110,000.</p>
-                        </div>
-                    </div>
-                    
-                    <!-- Pattern Visualization Panel -->
-                    <div class="panel">
-                        <h4 class="panel-title">
-                            <i class="fas fa-chart-bar"></i> Pattern Visualization
-                        </h4>
-                        <div class="image-container">
-                            {% if results.pattern_chart %}
-                                <img src="data:image/png;base64,{{ results.pattern_chart }}" alt="Pattern Analysis Chart" class="analysis-image">
-                            {% else %}
-                                <img src="/api/images/pattern" alt="Pattern Analysis Chart" class="analysis-image">
-                            {% endif %}
-                            <p class="chart-caption">Desc Triangle Overlay</p>
-                        </div>
-                    </div>
-                </div>
+<!-- Pattern Agent: Pattern Recognition + Pattern Visualization -->
+<div class="large-panel">
+    <h3 class="large-panel-title">
+        <i class="fas fa-brain"></i> Pattern Agent
+    </h3>
+    <div class="large-panel-content">
+        <!-- Pattern Recognition Panel -->
+        <div class="panel">
+            <h4 class="panel-title">
+                <i class="fas fa-search"></i> Pattern Recognition
+            </h4>
+            <div class="form-group">
+                <h5>Identified Pattern:</h5>
+                {% if results.pattern_analysis %}
+                    <div class="auto-beautify">{{ results.pattern_analysis | safe }}</div>
+                {% else %}
+                    <ul>
+                        <li><strong>Descending Triangle:</strong> Lower highs with flat support</li>
+                        <li><strong>Structure:</strong> Converging trend lines</li>
+                        <li><strong>Trend:</strong> Prior downtrend continuation</li>
+                        <li><strong>Symmetry:</strong> Consistent pattern formation</li>
+                    </ul>
+                {% endif %}
             </div>
+            
+            <div class="form-group">
+                <h5>Pattern Reliability:</h5>
+                <p>Descending triangle has a high success rate for bearish continuation patterns. Key support level at 110,000.</p>
+            </div>
+        </div>
+        
+        <!-- Pattern Visualization Panel -->
+        <div class="panel">
+            <h4 class="panel-title">
+                <i class="fas fa-chart-bar"></i> Pattern Visualization
+            </h4>
+            <div class="image-container">
+                {% if results.pattern_chart %}
+                    <img src="data:image/png;base64,{{ results.pattern_chart }}" alt="Pattern Analysis Chart" class="analysis-image">
+                {% else %}
+                    <img src="/api/images/pattern" alt="Pattern Analysis Chart" class="analysis-image">
+                {% endif %}
+                <p class="chart-caption">Desc Triangle Overlay</p>
+            </div>
+        </div>
+    </div>
+</div>
              
                          <!-- Trend Agent: Trend Analysis + Trend Chart -->
             <div class="large-panel">

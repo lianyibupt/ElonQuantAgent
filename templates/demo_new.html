@@ -1065,111 +1065,117 @@
                                     <i class="fas fa-exclamation-triangle"></i>
                                     <span id="dateRangeErrorText"></span>
                                 </div>
+                        </div>
+                        
+                        <!-- Run Analysis Button - Independent Section -->
+                        <div class="action-section" style="margin: 2rem 0;">
+                            <div class="text-center">
+                                <button class="btn btn-primary" id="analyzeBtn" onclick="runAnalysis()" style="padding: 1.5rem 3rem; font-size: 1.3rem; border-radius: 16px; background: linear-gradient(135deg, var(--etrade-purple-light) 0%, var(--etrade-purple) 100%); box-shadow: 0 8px 25px rgba(86, 39, 216, 0.4); border: none;">
+                                    <i class="fas fa-play" style="margin-right: 0.75rem;"></i> Run Analysis
+                                </button>
+                                <p class="text-muted mt-2" style="font-size: 1rem;">Configure your asset, timeframe, and date range above, then click to start analysis</p>
                             </div>
                         </div>
                         
-                        <!-- Panel 3: Settings & Security -->
-                        <div class="panel-group">
-                            <div class="panel">
-                                <h4 class="panel-title">
-                                    <i class="fas fa-cog"></i> Settings & Security
-                                </h4>
-                                
-                                <!-- API Provider Selection -->
-                                <div class="form-group">
-                                    <label class="form-label">API Provider</label>
-                                    <select class="form-select" id="apiProviderSelect" onchange="updateApiKeyFields()">
-                                        <option value="openai">OpenAI</option>
-                                        <option value="deepseek" selected>DeepSeek</option>
-                                    </select>
-                                </div>
+                        <!-- Panel 3: Settings & Security - Full Width -->
+                        <div class="panel" style="width: 100%; margin-top: 2rem;">
+                            <h4 class="panel-title">
+                                <i class="fas fa-cog"></i> Settings & Security
+                            </h4>
+                            
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <!-- API Provider Selection -->
+                                    <div class="form-group">
+                                        <label class="form-label">API Provider</label>
+                                        <select class="form-select" id="apiProviderSelect" onchange="updateApiKeyFields()">
+                                            <option value="openai">OpenAI</option>
+                                            <option value="deepseek" selected>DeepSeek</option>
+                                        </select>
+                                    </div>
 
-                                <!-- API Key Inputs -->
-                                <div class="form-group" id="openaiApiGroup">
-                                    <label class="form-label">OpenAI API Key</label>
-                                    <div class="input-group">
-                                        <input type="password" class="form-control" id="openaiApiKeyInput" placeholder="Enter your OpenAI API key">
-                                        <button class="btn btn-outline-primary" type="button" onclick="updateOpenAIApiKey()">
-                                            <i class="fas fa-save"></i> Update
-                                        </button>
+                                    <!-- API Key Inputs -->
+                                    <div class="form-group" id="openaiApiGroup">
+                                        <label class="form-label">OpenAI API Key</label>
+                                        <div class="input-group">
+                                            <input type="password" class="form-control" id="openaiApiKeyInput" placeholder="Enter your OpenAI API key">
+                                            <button class="btn btn-outline-primary" type="button" onclick="updateOpenAIApiKey()">
+                                                <i class="fas fa-save"></i> Update
+                                            </button>
+                                        </div>
                                     </div>
-                                </div>
 
-                                <div class="form-group" id="deepseekApiGroup">
-                                    <label class="form-label">DeepSeek API Key</label>
-                                    <div class="input-group">
-                                        <input type="password" class="form-control" id="deepseekApiKeyInput" placeholder="Enter your DeepSeek API key">
-                                        <button class="btn btn-outline-primary" type="button" onclick="updateDeepSeekApiKey()">
-                                            <i class="fas fa-save"></i> Update
-                                        </button>
+                                    <div class="form-group" id="deepseekApiGroup">
+                                        <label class="form-label">DeepSeek API Key</label>
+                                        <div class="input-group">
+                                            <input type="password" class="form-control" id="deepseekApiKeyInput" placeholder="Enter your DeepSeek API key">
+                                            <button class="btn btn-outline-primary" type="button" onclick="updateDeepSeekApiKey()">
+                                                <i class="fas fa-save"></i> Update
+                                            </button>
+                                        </div>
+                                    </div>
+                                    
+                                    <!-- Chart Generation Toggle -->
+                                    <div class="form-group">
+                                        <label class="form-label">Chart Generation</label>
+                                        <div class="form-check form-switch">
+                                            <input class="form-check-input" type="checkbox" id="generateCharts" style="transform: scale(1.2); margin-right: 0.75rem;">
+                                            <label class="form-check-label" for="generateCharts" style="font-size: 1.1rem; font-weight: 500; color: #374151; cursor: pointer;">
+                                                Generate Charts (Slower)
+                                            </label>
+                                        </div>
+                                        <small class="form-text text-muted">
+                                            Enable this to generate visual charts for pattern and trend analysis. This will significantly increase analysis time.
+                                        </small>
                                     </div>
                                 </div>
                                 
-                                <!-- Chart Generation Toggle -->
-                                <div class="form-group">
-                                    <label class="form-label">Chart Generation</label>
-                                    <div class="form-check form-switch">
-                                        <input class="form-check-input" type="checkbox" id="generateCharts" style="transform: scale(1.2); margin-right: 0.75rem;">
-                                        <label class="form-check-label" for="generateCharts" style="font-size: 1.1rem; font-weight: 500; color: #374151; cursor: pointer;">
-                                            Generate Charts (Slower)
-                                        </label>
-                                    </div>
-                                    <small class="form-text text-muted">
-                                        Enable this to generate visual charts for pattern and trend analysis. This will significantly increase analysis time.
-                                    </small>
-                                </div>
-                                
-                                <!-- Security Information -->
-                                <div class="form-group">
-                                    <label class="form-label">Security Information</label>
-                                    <div class="security-info" style="background: #FEFBF3; border: 1px solid #E5E7EB; border-radius: 8px; padding: 1rem;">
-                                        <div class="security-item" style="display: flex; align-items: flex-start; gap: 0.75rem; margin-bottom: 1rem;">
-                                            <i class="fas fa-server" style="color: #F59E0B; font-size: 1rem; background: #FEF3C7; padding: 0.5rem; border-radius: 6px;"></i>
-                                            <div style="color: #374151; line-height: 1.4;">
-                                                <strong style="color: #1F2937; font-size: 0.9rem;">Localhost Only</strong>
-                                                <p style="margin: 0; color: #6B7280; font-size: 0.85rem;">This server runs exclusively on localhost (127.0.0.1)</p>
+                                <div class="col-md-6">
+                                    <!-- Security Information -->
+                                    <div class="form-group">
+                                        <label class="form-label">Security Information</label>
+                                        <div class="security-info" style="background: #FEFBF3; border: 1px solid #E5E7EB; border-radius: 8px; padding: 1rem;">
+                                            <div class="security-item" style="display: flex; align-items: flex-start; gap: 0.75rem; margin-bottom: 1rem;">
+                                                <i class="fas fa-server" style="color: #F59E0B; font-size: 1rem; background: #FEF3C7; padding: 0.5rem; border-radius: 6px;"></i>
+                                                <div style="color: #374151; line-height: 1.4;">
+                                                    <strong style="color: #1F2937; font-size: 0.9rem;">Localhost Only</strong>
+                                                    <p style="margin: 0; color: #6B7280; font-size: 0.85rem;">This server runs exclusively on localhost (127.0.0.1)</p>
+                                                </div>
                                             </div>
-                                        </div>
-                                        
-                                        <div class="security-item" style="display: flex; align-items: flex-start; gap: 0.75rem; margin-bottom: 1rem;">
-                                            <i class="fas fa-key" style="color: #F59E0B; font-size: 1rem; background: #FEF3C7; padding: 0.5rem; border-radius: 6px;"></i>
-                                            <div style="color: #374151; line-height: 1.4;">
-                                                <strong style="color: #1F2937; font-size: 0.9rem;">API Key Security</strong>
-                                                <p style="margin: 0; color: #6B7280; font-size: 0.85rem;">Your API key is stored locally and never uploaded to external servers</p>
+                                            
+                                            <div class="security-item" style="display: flex; align-items: flex-start; gap: 0.75rem; margin-bottom: 1rem;">
+                                                <i class="fas fa-key" style="color: #F59E0B; font-size: 1rem; background: #FEF3C7; padding: 0.5rem; border-radius: 6px;"></i>
+                                                <div style="color: #374151; line-height: 1.4;">
+                                                    <strong style="color: #1F2937; font-size: 0.9rem;">API Key Security</strong>
+                                                    <p style="margin: 0; color: #6B7280; font-size: 0.85rem;">Your API key is stored locally and never uploaded to external servers</p>
+                                                </div>
                                             </div>
-                                        </div>
-                                        
-                                        <div class="security-item" style="display: flex; align-items: flex-start; gap: 0.75rem;">
-                                            <i class="fas fa-shield-alt" style="color: #F59E0B; font-size: 1rem; background: #FEF3C7; padding: 0.5rem; border-radius: 6px;"></i>
-                                            <div style="color: #374151; line-height: 1.4;">
-                                                <strong style="color: #1F2937; font-size: 0.9rem;">Data Privacy</strong>
-                                                <p style="margin: 0; color: #6B7280; font-size: 0.85rem;">All analysis data remains on your local machine</p>
+                                            
+                                            <div class="security-item" style="display: flex; align-items: flex-start; gap: 0.75rem;">
+                                                <i class="fas fa-shield-alt" style="color: #F59E0B; font-size: 1rem; background: #FEF3C7; padding: 0.5rem; border-radius: 6px;"></i>
+                                                <div style="color: #374151; line-height: 1.4;">
+                                                    <strong style="color: #1F2937; font-size: 0.9rem;">Data Privacy</strong>
+                                                    <p style="margin: 0; color: #6B7280; font-size: 0.85rem;">All analysis data remains on your local machine</p>
+                                                </div>
                                             </div>
                                         </div>
                                     </div>
-                                </div>
-                                
-                                <!-- API Key Status Messages -->
-                                <div id="apiKeyStatus" class="alert alert-info mt-2" style="display: none;">
-                                    <i class="fas fa-info-circle"></i>
-                                    <span id="apiKeyStatusText"></span>
-                                </div>
-                                <div id="apiKeyError" class="alert alert-danger mt-2" style="display: none;">
-                                    <i class="fas fa-exclamation-triangle"></i>
-                                    <span id="apiKeyErrorText"></span>
-                                </div>
-                                <div id="apiKeySuccess" class="alert alert-success mt-2" style="display: none;">
-                                    <i class="fas fa-check-circle"></i>
-                                    <span id="apiKeySuccessText"></span>
+                                    
+                                    <!-- API Key Status Messages -->
+                                    <div id="apiKeyStatus" class="alert alert-info mt-2" style="display: none;">
+                                        <i class="fas fa-info-circle"></i>
+                                        <span id="apiKeyStatusText"></span>
+                                    </div>
+                                    <div id="apiKeyError" class="alert alert-danger mt-2" style="display: none;">
+                                        <i class="fas fa-exclamation-triangle"></i>
+                                        <span id="apiKeyErrorText"></span>
+                                    </div>
+                                    <div id="apiKeySuccess" class="alert alert-success mt-2" style="display: none;">
+                                        <i class="fas fa-check-circle"></i>
+                                        <span id="apiKeySuccessText"></span>
+                                    </div>
                                 </div>
                             </div>
-                        </div>
-                        
-                        <!-- Run Analysis Button -->
-                        <div class="text-center" style="margin-top: 1.5rem;">
-                            <button class="btn btn-primary" id="analyzeBtn" onclick="runAnalysis()" style="padding: 1rem 2rem; font-size: 1.1rem; border-radius: 12px;">
-                                <i class="fas fa-play"></i> Run Analysis
-                            </button>
                         </div>
                     </div>
                 </div>
@@ -1886,9 +1892,56 @@
          }
          
          function hideApiKeyMessages() {
-             document.getElementById('apiKeyError').style.display = 'none';
-             document.getElementById('apiKeySuccess').style.display = 'none';
-         }
+            document.getElementById('apiKeyError').style.display = 'none';
+            document.getElementById('apiKeySuccess').style.display = 'none';
+            // 检查是否存在apiKeyStatus元素，如果存在也隐藏它
+            const statusElement = document.getElementById('apiKeyStatus');
+            if (statusElement) {
+                statusElement.style.display = 'none';
+            }
+        }
+        
+        // 添加缺失的showApiKeyStatus函数
+        function showApiKeyStatus(message) {
+            // 查找或创建apiKeyStatus元素
+            let statusDiv = document.getElementById('apiKeyStatus');
+            let statusText = document.getElementById('apiKeyStatusText');
+            
+            if (!statusDiv) {
+                // 如果元素不存在，创建它
+                const apiKeySection = document.getElementById('apiKeySection');
+                if (apiKeySection) {
+                    // 查找error和success元素的位置
+                    const errorDiv = document.getElementById('apiKeyError');
+                    
+                    // 创建status元素
+                    statusDiv = document.createElement('div');
+                    statusDiv.id = 'apiKeyStatus';
+                    statusDiv.className = 'alert alert-info mt-3';
+                    statusDiv.style.display = 'none';
+                    
+                    statusText = document.createElement('p');
+                    statusText.id = 'apiKeyStatusText';
+                    
+                    statusDiv.appendChild(statusText);
+                    
+                    // 插入到error元素之前
+                    if (errorDiv) {
+                        apiKeySection.insertBefore(statusDiv, errorDiv);
+                    } else {
+                        apiKeySection.appendChild(statusDiv);
+                    }
+                }
+            }
+            
+            // 设置消息文本并显示
+            if (statusText) {
+                statusText.textContent = message;
+            }
+            if (statusDiv) {
+                statusDiv.style.display = 'block';
+            }
+        }
     </script>
 </body>
 </html>
