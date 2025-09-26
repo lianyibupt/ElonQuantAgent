@@ -4,6 +4,7 @@ ElonQuantAgent 启动脚本
 支持多厂商API和数据源
 """
 
+import argparse
 import os
 import sys
 from pathlib import Path
@@ -72,16 +73,16 @@ def setup_data_directories():
     
     print("✅ 数据目录设置完成")
 
-def start_web_interface():
+def start_web_interface(port=5002):
     """启动Web界面"""
-    print("🚀 启动Web交易分析界面...")
-    print("   访问地址: http://127.0.0.1:5002")
+    print(f"🚀 启动Web交易分析界面...")
+    print(f"   访问地址: http://127.0.0.1:{port}")
     print("   按 Ctrl+C 停止服务")
     print("\n" + "="*50)
     
     try:
         from web_interface_new import app
-        app.run(debug=True, host='127.0.0.1', port=5002)
+        app.run(debug=True, host='127.0.0.1', port=port)
     except ImportError as e:
         print(f"❌ 导入错误: {e}")
         print("请确保已安装所有依赖")
@@ -95,6 +96,11 @@ def main():
     """主函数"""
     print("🤖 ElonQuantAgent - 多厂商API量化交易分析系统")
     print("="*50)
+    
+    # 解析命令行参数
+    parser = argparse.ArgumentParser(description='ElonQuantAgent')
+    parser.add_argument('--port', type=int, default=5002, help='Server port (default: 5002)')
+    args = parser.parse_args()
     
     # 检查环境变量
     if not check_requirements():
@@ -118,7 +124,7 @@ def main():
     print("   - DeepSeek (deepseek-chat, deepseek-coder)")
     
     # 启动Web界面
-    start_web_interface()
+    start_web_interface(args.port)
 
 if __name__ == "__main__":
     main()

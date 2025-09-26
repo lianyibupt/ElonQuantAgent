@@ -1128,6 +1128,22 @@
                                             Enable this to generate visual charts for pattern and trend analysis. This will significantly increase analysis time.
                                         </small>
                                     </div>
+
+                                    <!-- Trading Strategy Selection -->
+                                    <div class="form-group">
+                                        <label class="form-label">Trading Strategy</label>
+                                        <div class="timeframe-selector">
+                                            <button type="button" class="timeframe-btn active" data-strategy="high_frequency" onclick="selectTradingStrategy(this, 'high_frequency')">
+                                                High Frequency
+                                            </button>
+                                            <button type="button" class="timeframe-btn" data-strategy="low_frequency" onclick="selectTradingStrategy(this, 'low_frequency')">
+                                                Low Frequency
+                                            </button>
+                                        </div>
+                                        <small class="form-text text-muted">
+                                            <span id="strategyDescription">High Frequency: Short-term trades with tight stop-loss. Low Frequency: Monthly to semi-annual holding periods.</span>
+                                        </small>
+                                    </div>
                                 </div>
                                 
                                 <div class="col-md-6">
@@ -1350,24 +1366,78 @@
 
         // Persist timeframe selection as well
         function selectTimeframe(button, timeframe) {
-            // Remove active class from all timeframe buttons
-            document.querySelectorAll('.timeframe-btn').forEach(btn => {
-                btn.classList.remove('active');
-            });
-
-            // Add active class to clicked button
-            button.classList.add('active');
-
-            // Store selected timeframe
-            selectedTimeframe = timeframe;
-            try {
-                localStorage.setItem(STORAGE_KEYS.SELECTED_TIMEFRAME, timeframe);
-            } catch (e) {
-                console.warn('Could not persist selected timeframe', e);
-            }
+             // Remove active class from all timeframe buttons
+             document.querySelectorAll('.timeframe-btn').forEach(btn => {
+                 btn.classList.remove('active');
+             });
+              
+             // Add active class to clicked button
+             button.classList.add('active');
+              
+             // Store selected timeframe
+             selectedTimeframe = timeframe;
+             try {
+                 localStorage.setItem(STORAGE_KEYS.SELECTED_TIMEFRAME, timeframe);
+             } catch (e) {
+                 console.warn('Could not persist selected timeframe', e);
+             }
 
             console.log('Selected timeframe:', timeframe);
         }
+
+        // Handle trading strategy selection
+        function selectTradingStrategy(button, strategy) {
+            // 修复高亮问题：使用更精确的选择器
+            console.log('Attempting to select trading strategy:', strategy);
+            console.log('Button before adding active class:', button);
+            
+            // Remove active class from all strategy buttons
+            document.querySelectorAll('.timeframe-selector button[data-strategy]').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            
+            // Add active class to clicked button
+            button.classList.add('active');
+            console.log('Button after adding active class:', button);
+            console.log('Button classes:', button.className);
+            
+            // Store selected strategy
+            selectedStrategy = strategy;
+            console.log('Stored selected strategy:', selectedStrategy);
+            
+            // Update strategy description based on selection
+            const strategyDescription = document.getElementById('strategyDescription');
+            if (strategy === 'low_frequency') {
+                strategyDescription.textContent = 'Low Frequency: Monthly to semi-annual holding periods. Focuses on long-term trends and fundamental analysis.';
+                // 不再自动选择时间框架，保持用户选择
+            } else {
+                strategyDescription.textContent = 'High Frequency: Short-term trades with tight stop-loss. Focuses on technical indicators and short-term patterns.';
+            }
+            
+            console.log('Selected trading strategy:', strategy);
+        }
+        
+        // 不再使用这些函数，保持用户选择的时间框架
+        // function suggestLowFrequencyTimeframes() {
+        //     // Get all timeframe buttons
+        //     const timeframeButtons = document.querySelectorAll('.timeframe-btn[data-timeframe]');
+        //     
+        //     // Deactivate all buttons first
+        //     timeframeButtons.forEach(btn => {
+        //         btn.classList.remove('active');
+        //     });
+        //     
+        //     // Automatically select a longer timeframe for low frequency strategy
+        //     const longTermTimeframeBtn = document.querySelector('[data-timeframe="1w"]') || document.querySelector('[data-timeframe="1d"]');
+        //     if (longTermTimeframeBtn) {
+        //         longTermTimeframeBtn.click(); // Trigger click event to update selection
+        //     }
+        // }
+        
+        // function restoreAllTimeframes() {
+        //     // Just ensure all timeframes are visible and active selection is preserved
+        //     // No specific action needed as all timeframes are already available
+        // }
 
         // On page load, restore selected asset/timeframe and custom assets
         document.addEventListener('DOMContentLoaded', function() {
@@ -1566,6 +1636,7 @@
                  // Global variables
          let selectedAsset = '';
          let selectedTimeframe = '1h'; // Default timeframe
+         let selectedStrategy = 'high_frequency'; // Default strategy
          
          function selectAsset(button, asset) {
              // Remove active class from all asset buttons
@@ -1666,38 +1737,38 @@
                  function runAnalysis() {
              const dataSource = 'live'; // Always use live data
              const timeframe = selectedTimeframe;
-             
+              
              // Get asset value from selected asset
              let asset = selectedAsset;
-             
+              
              // Validate inputs
              if (!asset || !timeframe) {
                  alert('Please select both asset and timeframe.');
                  return;
              }
-             
+              
              // Get date and time values
              const startDate = document.getElementById('startDate').value;
              const startTime = document.getElementById('startTime').value;
              const endDate = document.getElementById('endDate').value;
              const endTime = document.getElementById('endTime').value;
              const useCurrentTime = document.getElementById('useCurrentTime').checked;
-             
+              
              // Validate dates
              if (!startDate || !endDate) {
                  alert('Please select both start and end dates.');
                  return;
              }
-             
+              
              // Show loading state
              const analyzeBtn = document.getElementById('analyzeBtn');
              const originalText = analyzeBtn.innerHTML;
              analyzeBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Analyzing...';
              analyzeBtn.disabled = true;
-             
+              
              // Get chart generation setting
              const generateCharts = document.getElementById('generateCharts').checked;
-             
+              
              // Prepare request data
              const requestData = {
                  data_source: dataSource,
@@ -1708,7 +1779,8 @@
                  end_date: endDate,
                  end_time: endTime,
                  use_current_time: useCurrentTime,
-                 generate_charts: generateCharts,  // 新增图表生成参数
+                 generate_charts: generateCharts,
+                 trading_strategy: selectedStrategy, // Add trading strategy to request data
                  redirect_to_output: true
              };
              

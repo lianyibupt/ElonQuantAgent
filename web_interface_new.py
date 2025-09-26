@@ -571,7 +571,7 @@ class WebTradingAnalyzer:
         return df
 
     # Keep other methods unchanged, only modify data fetching part
-    def run_analysis(self, df: pd.DataFrame, asset_name: str, timeframe: str, generate_charts: bool = False) -> Dict[str, Any]:
+    def run_analysis(self, df: pd.DataFrame, asset_name: str, timeframe: str, generate_charts: bool = False, trading_strategy: str = 'high_frequency') -> Dict[str, Any]:
         """Run the trading analysis on the provided DataFrame."""
         try:
             # 确保asset_name是安全的字符串
@@ -631,15 +631,16 @@ class WebTradingAnalyzer:
                 "analysis_results": None,
                 "messages": [],
                 "time_frame": safe_str(display_timeframe),
-                "stock_name": safe_str(asset_name)
+                "stock_name": safe_str(asset_name),
+                "trading_strategy": safe_str(trading_strategy)  # Add trading strategy to state
             }
             
             # 根据generate_charts参数决定是否生成图表
             if generate_charts:
-                analysis_result = self.trading_graph.analyze(df_slice_dict, asset_name, display_timeframe)
+                analysis_result = self.trading_graph.analyze(df_slice_dict, asset_name, display_timeframe, trading_strategy)
             else:
                 # 只进行文本分析，不生成图表
-                analysis_result = self.trading_graph.analyze_text_only(df_slice_dict, asset_name, display_timeframe)
+                analysis_result = self.trading_graph.analyze_text_only(df_slice_dict, asset_name, display_timeframe, trading_strategy)
             
             # 从分析结果中提取final_state
             final_state = analysis_result.get("final_state", {})
@@ -958,6 +959,10 @@ def analyze():
         end_time = data.get('end_time', '23:59')
         redirect_to_output = data.get('redirect_to_output', False)
         generate_charts = data.get('generate_charts', False)  # 新增参数，默认关闭图表生成
+        trading_strategy = data.get('trading_strategy', 'high_frequency')  # 新增交易策略参数，默认高频交易
+        
+        # 添加日志打印，确认策略参数是否正确传递
+        print(f"[DEBUG] 收到的交易策略参数: {trading_strategy}")
         
         # Validate required parameters
         if not asset or not timeframe or not start_date or not end_date:
@@ -976,7 +981,7 @@ def analyze():
             return jsonify({"error": "Unable to fetch data, please check the code or try other data sources"})
         
         display_name = analyzer.asset_mapping.get(asset, asset)
-        results = analyzer.run_analysis(df, display_name, timeframe, generate_charts)  # 传递generate_charts参数
+        results = analyzer.run_analysis(df, display_name, timeframe, generate_charts, trading_strategy)  # 传递generate_charts和trading_strategy参数
         formatted_results = analyzer.extract_analysis_results(results)
         
         if redirect_to_output:
