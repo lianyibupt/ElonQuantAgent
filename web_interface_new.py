@@ -76,8 +76,8 @@ class MultiProviderLLM:
                 'models': ['deepseek-chat', 'deepseek-coder']
             }
         }
-        self.current_provider = 'openai'
-        self.api_key = os.environ.get("OPENAI_API_KEY", "")
+        self.current_provider = 'deepseek'
+        self.api_key = os.environ.get("DEEPSEEK_API_KEY", "")
     
     def set_provider(self, provider: str, api_key: str = None):
         """Set current LLM provider"""
@@ -798,6 +798,27 @@ def setup_environment():
 # Initialize environment
 setup_environment()
 
+# Initialize database manager at startup
+print("🔍 初始化数据库管理器...")
+try:
+    from database import get_database_manager
+    db_manager = get_database_manager()
+    print(f"✅ 数据库管理器初始化成功")
+    print(f"📁 数据库路径: {db_manager.db_path}")
+    
+    # 检查数据库文件是否存在
+    import os
+    if os.path.exists(db_manager.db_path):
+        file_size = os.path.getsize(db_manager.db_path)
+        print(f"📊 数据库文件大小: {file_size} 字节")
+    else:
+        print("⚠️  数据库文件尚未创建，将在第一次API调用时创建")
+        
+except Exception as e:
+    print(f"❌ 数据库管理器初始化失败: {e}")
+    import traceback
+    traceback.print_exc()
+
 # Flask routes remain unchanged, only modify API key related endpoints
 @app.route('/api/update-api-key', methods=['POST'])
 def update_api_key():
@@ -905,6 +926,16 @@ def output():
                                 if isinstance(sub_value, str):
                                     value[sub_key] = safe_str(sub_value)
                                     
+                # 添加缓存标记信息
+                if results.get('cached'):
+                    results['cache_info'] = {
+                        'cache_id': results.get('cache_id'),
+                        'cache_timestamp': results.get('cache_timestamp'),
+                        'is_cached': True
+                    }
+                else:
+                    results['cache_info'] = {'is_cached': False}
+                                    
             except Exception as decode_error:
                 print(f"URL decode error: {safe_str(decode_error)}")
                 print(f"错误类型: {type(decode_error).__name__}")
@@ -914,7 +945,8 @@ def output():
                     "error": f"Failed to decode results: {safe_str(decode_error)}",
                     "asset_name": "Unknown",
                     "timeframe": "Unknown",
-                    "data_length": 0
+                    "data_length": 0,
+                    "cache_info": {"is_cached": False}
                 }
         else:
             # Default results if no parameter provided
@@ -931,7 +963,8 @@ def output():
                     "risk_reward_ratio": "1:1",
                     "forecast_horizon": "24 hours",
                     "justification": "No analysis data available"
-                }
+                },
+                "cache_info": {"is_cached": False}
             }
         
         return render_template('output.html', results=results)
@@ -943,7 +976,8 @@ def output():
             "error": f"Error loading results: {safe_str(e)}",
             "asset_name": "Unknown",
             "timeframe": "Unknown",
-            "data_length": 0
+            "data_length": 0,
+            "cache_info": {"is_cached": False}
         }
         return render_template('output.html', results=error_results)
 
@@ -960,6 +994,7 @@ def analyze():
         redirect_to_output = data.get('redirect_to_output', False)
         generate_charts = data.get('generate_charts', False)  # 新增参数，默认关闭图表生成
         trading_strategy = data.get('trading_strategy', 'high_frequency')  # 新增交易策略参数，默认高频交易
+        session_id = data.get('session_id')  # 新增：接收前端传递的session_id
         
         # 添加日志打印，确认策略参数是否正确传递
         print(f"[DEBUG] 收到的交易策略参数: {trading_strategy}")
@@ -975,6 +1010,67 @@ def analyze():
         except ValueError:
             return jsonify({"error": "Invalid date or time format. Please use YYYY-MM-DD for date and HH:MM for time."})
         
+        # 首先检查数据库中是否存在相同查询条件的分析结果（24小时内）
+        print(f"🔍 检查数据库缓存...")
+        print(f"   📊 查询条件: {asset} {timeframe} {start_date}~{end_date} {trading_strategy}")
+        existing_analysis = db_manager.check_existing_analysis(
+            asset=asset,
+            timeframe=timeframe,
+            start_date=start_date,
+            end_date=end_date,
+            start_time=start_time,
+            end_time=end_time,
+            trading_strategy=trading_strategy,
+            max_hours_old=24
+        )
+        
+        if existing_analysis:
+            # 如果找到缓存结果，直接返回
+            print(f"✅ 使用缓存的分析结果，跳过API调用")
+            
+            # 从缓存结果中提取数据
+            result_details = existing_analysis.get('result_details', {})
+            result_summary = existing_analysis.get('result_summary', '')
+            
+            # 构建返回结果
+            formatted_results = {
+                "success": True,
+                "asset_name": asset,
+                "timeframe": timeframe,
+                "data_length": result_details.get('data_length', 0),
+                "technical_indicators": result_details.get('technical_indicators', ''),
+                "pattern_analysis": result_details.get('pattern_analysis', ''),
+                "trend_analysis": result_details.get('trend_analysis', ''),
+                "pattern_chart": result_details.get('pattern_chart', ''),
+                "trend_chart": result_details.get('trend_chart', ''),
+                "pattern_image_filename": result_details.get('pattern_image_filename', ''),
+                "trend_image_filename": result_details.get('trend_image_filename', ''),
+                "final_decision": result_details.get('final_decision', {}),
+                "cached": True,  # 标记为缓存结果
+                "cache_id": existing_analysis['id'],
+                "cache_timestamp": existing_analysis['created_at']
+            }
+            
+            if redirect_to_output:
+                # Handle URL-encoded results for redirect
+                import urllib.parse
+                try:
+                    # 确保所有字符串都是UTF-8编码
+                    results_json = json.dumps(formatted_results, ensure_ascii=False)
+                    encoded_results = urllib.parse.quote(results_json, safe='')
+                    redirect_url = f"/output?results={encoded_results}"
+                    return jsonify({"redirect": redirect_url})
+                except Exception as e:
+                    # If encoding fails, return results directly
+                    error_msg = safe_str(e)
+                    print(f"URL encoding failed: {error_msg}")
+                    return jsonify(formatted_results)
+            else:
+                return jsonify(formatted_results)
+        
+        # 如果没有找到缓存结果，继续执行原有的分析流程
+        print(f"🔍 未找到缓存，开始执行新的分析...")
+        
         # Use new data fetching method
         df = analyzer.fetch_market_data(asset, timeframe, start_dt, end_dt)
         if df.empty:
@@ -983,6 +1079,28 @@ def analyze():
         display_name = analyzer.asset_mapping.get(asset, asset)
         results = analyzer.run_analysis(df, display_name, timeframe, generate_charts, trading_strategy)  # 传递generate_charts和trading_strategy参数
         formatted_results = analyzer.extract_analysis_results(results)
+        
+        # 保存分析结果到数据库
+        try:
+            history_id = db_manager.save_analysis_history(
+                asset=asset,
+                timeframe=timeframe,
+                start_date=start_date,
+                end_date=end_date,
+                start_time=start_time,
+                end_time=end_time,
+                generate_charts=generate_charts,
+                trading_strategy=trading_strategy,
+                result_summary=f"{asset} {timeframe} 分析结果",
+                result_details=formatted_results,
+                status='completed',
+                session_id=session_id,  # 使用前端传递的session_id
+                user_ip=request.remote_addr
+            )
+            print(f"✅ 分析结果已保存到数据库，ID: {history_id}")
+            print(f"   📊 使用的session_id: {session_id}")
+        except Exception as e:
+            print(f"⚠️ 保存分析结果到数据库失败: {safe_str(e)}")
         
         if redirect_to_output:
             # Handle URL-encoded results for redirect
@@ -1005,6 +1123,165 @@ def analyze():
         error_msg = safe_str(e)
         print(f"Analysis error: {error_msg}")
         return jsonify({"error": error_msg})
+
+# 历史记录API端点
+@app.route('/api/history/save', methods=['POST'])
+def save_analysis_history():
+    """保存分析历史记录"""
+    try:
+        data = request.get_json()
+        
+        # 获取数据库管理器
+        from database import get_database_manager
+        db_manager = get_database_manager()
+        
+        # 保存历史记录
+        history_id = db_manager.save_analysis_history(
+            asset=data.get('asset'),
+            timeframe=data.get('timeframe'),
+            start_date=data.get('start_date'),
+            end_date=data.get('end_date'),
+            start_time=data.get('start_time'),
+            end_time=data.get('end_time'),
+            use_current_time=data.get('use_current_time', False),
+            generate_charts=data.get('generate_charts', False),
+            trading_strategy=data.get('trading_strategy'),
+            analysis_params=data.get('analysis_params'),
+            result_summary=data.get('result_summary'),
+            result_details=data.get('result_details'),
+            status=data.get('status', 'pending'),
+            error_message=data.get('error_message'),
+            session_id=data.get('session_id'),
+            user_ip=request.remote_addr
+        )
+        
+        return jsonify({"success": True, "history_id": history_id})
+        
+    except Exception as e:
+        error_msg = safe_str(e)
+        print(f"保存历史记录失败: {error_msg}")
+        return jsonify({"success": False, "error": error_msg}), 500
+
+@app.route('/api/history/update', methods=['POST'])
+def update_analysis_history():
+    """更新分析历史记录"""
+    try:
+        data = request.get_json()
+        history_id = data.get('history_id')
+        
+        if not history_id:
+            return jsonify({"success": False, "error": "Missing history_id"}), 400
+        
+        # 获取数据库管理器
+        from database import get_database_manager
+        db_manager = get_database_manager()
+        
+        # 更新历史记录
+        success = db_manager.update_analysis_history(
+            history_id=history_id,
+            result_summary=data.get('result_summary'),
+            result_details=data.get('result_details'),
+            status=data.get('status'),
+            error_message=data.get('error_message')
+        )
+        
+        return jsonify({"success": success})
+        
+    except Exception as e:
+        error_msg = safe_str(e)
+        print(f"更新历史记录失败: {error_msg}")
+        return jsonify({"success": False, "error": error_msg}), 500
+
+@app.route('/api/history/list', methods=['GET'])
+def get_analysis_history():
+    """获取分析历史记录列表"""
+    try:
+        # 获取查询参数
+        limit = request.args.get('limit', 50, type=int)
+        asset = request.args.get('asset')
+        timeframe = request.args.get('timeframe')
+        status = request.args.get('status')
+        days_back = request.args.get('days_back', 30, type=int)
+        
+        # 获取数据库管理器
+        from database import get_database_manager
+        db_manager = get_database_manager()
+        
+        # 获取历史记录 - 移除session_id过滤，允许跨session查看所有记录
+        history_list = db_manager.get_analysis_history_list(
+            limit=limit,
+            asset=asset,
+            timeframe=timeframe,
+            status=status,
+            days_back=days_back
+        )
+        
+        return jsonify({"success": True, "history": history_list})
+        
+    except Exception as e:
+        error_msg = safe_str(e)
+        print(f"获取历史记录失败: {error_msg}")
+        return jsonify({"success": False, "error": error_msg}), 500
+
+@app.route('/api/history/<int:history_id>', methods=['GET'])
+def get_analysis_history_by_id(history_id):
+    """根据ID获取分析历史记录详情"""
+    try:
+        # 获取数据库管理器
+        from database import get_database_manager
+        db_manager = get_database_manager()
+        
+        # 获取历史记录详情
+        history_record = db_manager.get_analysis_history_by_id(history_id)
+        
+        if history_record:
+            return jsonify({"success": True, "record": history_record})
+        else:
+            return jsonify({"success": False, "error": "Record not found"}), 404
+        
+    except Exception as e:
+        error_msg = safe_str(e)
+        print(f"获取历史记录详情失败: {error_msg}")
+        return jsonify({"success": False, "error": error_msg}), 500
+
+@app.route('/api/history/<int:history_id>', methods=['DELETE'])
+def delete_analysis_history(history_id):
+    """删除分析历史记录"""
+    try:
+        # 获取数据库管理器
+        from database import get_database_manager
+        db_manager = get_database_manager()
+        
+        # 删除历史记录
+        success = db_manager.delete_analysis_history(history_id)
+        
+        return jsonify({"success": success})
+        
+    except Exception as e:
+        error_msg = safe_str(e)
+        print(f"删除历史记录失败: {error_msg}")
+        return jsonify({"success": False, "error": error_msg}), 500
+
+@app.route('/api/history/clear', methods=['POST'])
+def clear_analysis_history():
+    """清理分析历史记录"""
+    try:
+        data = request.get_json() or {}
+        days_older_than = data.get('days_older_than')
+        
+        # 获取数据库管理器
+        from database import get_database_manager
+        db_manager = get_database_manager()
+        
+        # 清理历史记录
+        deleted_count = db_manager.clear_analysis_history(days_older_than)
+        
+        return jsonify({"success": True, "deleted_count": deleted_count})
+        
+    except Exception as e:
+        error_msg = safe_str(e)
+        print(f"清理历史记录失败: {error_msg}")
+        return jsonify({"success": False, "error": error_msg}), 500
 
 # 添加缺失的静态资源和API路由
 @app.route('/assets/<path:filename>')

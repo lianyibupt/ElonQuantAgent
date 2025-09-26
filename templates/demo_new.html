@@ -5,6 +5,8 @@
     <meta charset="utf-8">
     <title>QuantAgent - Multi-Agent Trading System</title>
     <meta name="viewport" content="width=device-width,initial-scale=1">
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <style>
                  :root {
@@ -795,24 +797,24 @@
          }
          
          /* Mobile responsive */
-         @media (max-width: 768px) {
+        @media (max-width: 768px) {
              .timeframe-selector {
                  overflow-x: auto;
                  scrollbar-width: none;
                  -ms-overflow-style: none;
              }
-             
+              
              .timeframe-selector::-webkit-scrollbar {
                  display: none;
              }
-             
+              
              .timeframe-btn {
                  flex-shrink: 0;
                  min-width: 60px;
                  padding: 10px 12px;
                  font-size: 0.8rem;
              }
-         }
+        }
 
                  /* Banner Image Styles */
          .hero-section img {
@@ -823,42 +825,106 @@
              box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
          }
 
+         /* 历史记录模态框样式 */
+         .modal-content {
+             border-radius: 16px !important;
+             border: 2px solid var(--gray-200) !important;
+             box-shadow: 0 25px 50px -12px rgba(36, 16, 86, 0.25);
+         }
+
+         .modal-header {
+             background: var(--etrade-purple) !important;
+             color: white !important;
+             border-radius: 14px 14px 0 0 !important;
+             border-bottom: none !important;
+             padding: 1.5rem !important;
+         }
+
+         .modal-title {
+             font-size: 1.5rem !important;
+             font-weight: 600 !important;
+         }
+
+         .modal-body {
+             padding: 2rem !important;
+         }
+
+         .modal-footer {
+             padding: 1.5rem 2rem !important;
+             border-top: 1px solid var(--gray-200) !important;
+         }
+
+         /* 表格样式 */
+         .table {
+             margin-bottom: 0 !important;
+         }
+
+         .table th {
+             font-weight: 600 !important;
+             color: var(--etrade-purple) !important;
+             border-bottom: 2px solid var(--gray-200) !important;
+             padding: 1rem !important;
+         }
+
+         .table td {
+             padding: 1rem !important;
+             vertical-align: middle !important;
+         }
+
+         .table-hover tbody tr:hover {
+             background-color: var(--etrade-purple-bg) !important;
+         }
+
          @media (max-width: 768px) {
              .col-md-6, .col-md-4 { flex: 0 0 100%; max-width: 100%; }
              .form-container { margin: 1rem; border-radius: 16px; }
              .form-section, .results-section { padding: 2rem 1rem; }
-             
+              
              /* Mobile panel layout */
              .panel-group {
                  grid-template-columns: 1fr;
                  gap: 1rem;
              }
-             
+              
              .panel {
                  padding: 1rem;
              }
-             
+              
              /* Mobile banner adjustments */
              .hero-section img {
                  max-width: 80%;
                  margin: 2rem auto;
                  display: block;
              }
-             
+              
              /* Mobile asset button grid */
              .asset-button-grid {
                  grid-template-columns: repeat(2, 1fr);
                  gap: 0.5rem;
              }
-             
+              
              .asset-btn {
                  padding: 0.75rem 0.5rem;
                  font-size: 0.9rem;
                  min-height: 70px;
              }
-             
+              
              .asset-btn i {
                  font-size: 1.2rem;
+             }
+              
+             /* 响应式调整 */
+             .modal-dialog {
+                 margin: 0.5rem !important;
+                 max-width: none !important;
+             }
+
+             .modal-body {
+                 padding: 1rem !important;
+             }
+
+             .table-responsive {
+                 overflow-x: auto !important;
              }
          }
     </style>
@@ -868,7 +934,27 @@
     <!-- Page wrapper -->
     <div class="flex flex-col min-h-screen overflow-hidden">
 
-
+        <!-- 添加Header部分 -->
+        <header style="background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(10px); border-bottom: 1px solid var(--gray-200); padding: 1rem 0; position: sticky; top: 0; z-index: 100;">
+            <div class="max-w-6xl mx-auto px-4 sm:px-6">
+                <div class="flex items-center justify-between h-16">
+                    <!-- Logo -->
+                    <div class="flex items-center">
+                        <img src="assets/darklogo.png" alt="QuantAgent Logo" style="width: 2.5rem; height: 2.5rem; object-fit: contain;">
+                        <span style="font-size: 1.5rem; font-weight: 700; color: var(--etrade-purple); margin-left: 0.5rem;">QuantAgent</span>
+                    </div>
+                    
+                    <!-- Navigation Buttons -->
+                    <div class="flex items-center space-x-4">
+                        <!-- 历史记录按钮 -->
+                        <button id="historyButton" class="header-btn" onclick="showHistoryModal()" style="display: flex; align-items: center; gap: 8px; background: #ffffff; color: #5627d8; padding: 10px 20px; border-radius: 25px; border: 2px solid #5627d8; font-weight: 600; cursor: pointer; transition: all 0.3s ease;">
+                            <i class="fas fa-history"></i>
+                            <span>历史记录</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </header>
 
         <!-- Page content -->
         <main class="grow">
@@ -2014,6 +2100,993 @@
                 statusDiv.style.display = 'block';
             }
         }
+
+        // ==================== 历史记录功能 ====================
+
+        // 后端数据库交互函数
+        let sessionId = null;
+
+        // 初始化会话ID
+        function initSessionId() {
+            // 生成或获取会话ID
+            if (!sessionId) {
+                sessionId = localStorage.getItem('quantagent_session_id');
+                if (!sessionId) {
+                    sessionId = 'session_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+                    localStorage.setItem('quantagent_session_id', sessionId);
+                }
+            }
+            return sessionId;
+        }
+
+        // 保存查询记录到后端数据库
+        function saveQueryRecord(queryData, resultSummary = null, resultDetails = null) {
+            try {
+                const sessionId = initSessionId();
+                
+                const saveData = {
+                    asset: queryData.asset,
+                    timeframe: queryData.timeframe,
+                    start_date: queryData.start_date,
+                    end_date: queryData.end_date,
+                    start_time: queryData.start_time,
+                    end_time: queryData.end_time,
+                    use_current_time: queryData.use_current_time,
+                    generate_charts: queryData.generate_charts,
+                    trading_strategy: queryData.trading_strategy,
+                    analysis_params: queryData,
+                    result_summary: resultSummary,
+                    result_details: resultDetails,
+                    status: 'pending',
+                    session_id: sessionId
+                };
+
+                console.log('保存查询记录到后端数据库:', saveData);
+
+                fetch('/api/history/save', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(saveData)
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        console.log('查询记录已保存到后端数据库，记录ID:', data.history_id);
+                        // 将记录ID存储到本地，以便后续更新
+                        localStorage.setItem('last_history_id', data.history_id);
+                    } else {
+                        console.error('保存查询记录失败:', data.error);
+                    }
+                })
+                .catch(error => {
+                    console.error('保存查询记录时出错:', error);
+                });
+            } catch (error) {
+                console.error('保存查询记录时出错:', error);
+            }
+        }
+
+        // 保存查询记录到数据库
+        function saveQueryRecord(queryData, resultSummary = null, resultDetails = null) {
+            try {
+                if (!historyDb) {
+                    console.warn('数据库未初始化，无法保存查询记录');
+                    return;
+                }
+
+                const transaction = historyDb.transaction(['query_history'], 'readwrite');
+                const objectStore = transaction.objectStore('query_history');
+
+                const record = {
+                    timestamp: new Date().toISOString(),
+                    asset: queryData.asset,
+                    timeframe: queryData.timeframe,
+                    startDate: queryData.start_date,
+                    startTime: queryData.start_time,
+                    endDate: queryData.end_date,
+                    endTime: queryData.end_time,
+                    useCurrentTime: queryData.use_current_time,
+                    generateCharts: queryData.generate_charts,
+                    tradingStrategy: queryData.trading_strategy,
+                    resultSummary: resultSummary,
+                    resultDetails: resultDetails, // 新增：详细结果数据
+                    status: 'pending' // 初始状态为pending
+                };
+
+                const request = objectStore.add(record);
+
+                request.onsuccess = function() {
+                    console.log('查询记录已保存到数据库，记录ID:', request.result);
+                };
+
+                request.onerror = function(event) {
+                    console.error('保存查询记录失败:', event.target.errorCode);
+                };
+            } catch (error) {
+                console.error('保存查询记录时出错:', error);
+            }
+        }
+
+        // 更新查询记录状态
+        function updateQueryRecordStatus(queryData, status, errorMessage = null) {
+            try {
+                const lastHistoryId = localStorage.getItem('last_history_id');
+                if (!lastHistoryId) {
+                    console.warn('未找到最近的历史记录ID，无法更新状态');
+                    return;
+                }
+
+                const updateData = {
+                    history_id: parseInt(lastHistoryId),
+                    status: status,
+                    error_message: errorMessage
+                };
+
+                console.log('更新查询记录状态:', updateData);
+
+                fetch('/api/history/update', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(updateData)
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        console.log('查询记录状态已更新为:', status);
+                    } else {
+                        console.error('更新查询记录状态失败:', data.error);
+                    }
+                })
+                .catch(error => {
+                    console.error('更新查询记录状态时出错:', error);
+                });
+            } catch (error) {
+                console.error('更新查询记录状态时出错:', error);
+            }
+        }
+
+        // 更新查询记录结果
+        function updateQueryRecordWithResult(queryData, resultSummary, resultDetails = null) {
+            try {
+                const lastHistoryId = localStorage.getItem('last_history_id');
+                if (!lastHistoryId) {
+                    console.warn('未找到最近的历史记录ID，无法更新结果');
+                    return;
+                }
+
+                const updateData = {
+                    history_id: parseInt(lastHistoryId),
+                    result_summary: resultSummary,
+                    result_details: resultDetails,
+                    status: 'completed'
+                };
+
+                console.log('更新查询记录结果:', updateData);
+
+                fetch('/api/history/update', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(updateData)
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        console.log('查询记录结果已更新，包含详细结果数据');
+                    } else {
+                        console.error('更新查询记录结果失败:', data.error);
+                    }
+                })
+                .catch(error => {
+                    console.error('更新查询记录结果时出错:', error);
+                });
+            } catch (error) {
+                console.error('更新查询记录结果时出错:', error);
+            }
+        }
+
+        // 保存详细结果数据
+        function saveResultDetails(queryData, resultDetails) {
+            try {
+                const lastHistoryId = localStorage.getItem('last_history_id');
+                if (!lastHistoryId) {
+                    console.warn('未找到最近的历史记录ID，无法保存详细结果');
+                    return;
+                }
+
+                const updateData = {
+                    history_id: parseInt(lastHistoryId),
+                    result_details: resultDetails
+                };
+
+                console.log('保存详细结果数据:', updateData);
+
+                fetch('/api/history/update', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(updateData)
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        console.log('详细结果数据已保存到数据库');
+                    } else {
+                        console.error('保存详细结果数据失败:', data.error);
+                    }
+                })
+                .catch(error => {
+                    console.error('保存详细结果数据时出错:', error);
+                });
+            } catch (error) {
+                console.error('保存详细结果数据时出错:', error);
+            }
+        }
+
+        // 获取历史查询记录
+        function getQueryHistory(filterOptions = {}) {
+            return new Promise((resolve, reject) => {
+                try {
+                    // 构建查询参数
+                    const params = new URLSearchParams();
+                    params.append('limit', filterOptions.limit || 50);
+                    params.append('days_back', filterOptions.daysBack || 30);
+                    
+                    if (filterOptions.asset) {
+                        params.append('asset', filterOptions.asset);
+                    }
+                    if (filterOptions.timeframe) {
+                        params.append('timeframe', filterOptions.timeframe);
+                    }
+                    if (filterOptions.status) {
+                        params.append('status', filterOptions.status);
+                    }
+                    
+                    const sessionId = initSessionId();
+                    params.append('session_id', sessionId);
+
+                    console.log('获取历史查询记录，参数:', params.toString());
+
+                    fetch(`/api/history/list?${params.toString()}`)
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            console.log('获取历史记录成功，记录数:', data.history.length);
+                            resolve(data.history);
+                        } else {
+                            reject(new Error(data.error || '获取历史记录失败'));
+                        }
+                    })
+                    .catch(error => {
+                        reject(error);
+                    });
+                } catch (error) {
+                    reject(error);
+                }
+            });
+        }
+
+        // 删除查询记录
+        function deleteQueryRecord(recordId) {
+            return new Promise((resolve, reject) => {
+                try {
+                    console.log('删除查询记录，ID:', recordId);
+
+                    fetch(`/api/history/${recordId}`, {
+                        method: 'DELETE'
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            console.log('删除查询记录成功');
+                            resolve(true);
+                        } else {
+                            reject(new Error(data.error || '删除记录失败'));
+                        }
+                    })
+                    .catch(error => {
+                        reject(error);
+                    });
+                } catch (error) {
+                    reject(error);
+                }
+            });
+        }
+
+        // 清除所有查询记录
+        function clearAllQueryHistory() {
+            return new Promise((resolve, reject) => {
+                try {
+                    console.log('清除所有查询记录');
+
+                    fetch('/api/history/clear', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({})
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            console.log('清除所有查询记录成功，删除记录数:', data.deleted_count);
+                            resolve(true);
+                        } else {
+                            reject(new Error(data.error || '清除记录失败'));
+                        }
+                    })
+                    .catch(error => {
+                        reject(error);
+                    });
+                } catch (error) {
+                    reject(error);
+                }
+            });
+        }
+
+        // 修改runAnalysis函数以保存查询记录
+        function runAnalysis() {
+            const dataSource = 'live'; // Always use live data
+            const timeframe = selectedTimeframe;
+              
+            // Get asset value from selected asset
+            let asset = selectedAsset;
+              
+            // Validate inputs
+            if (!asset || !timeframe) {
+                alert('Please select both asset and timeframe.');
+                return;
+            }
+              
+            // Get date and time values
+            const startDate = document.getElementById('startDate').value;
+            const startTime = document.getElementById('startTime').value;
+            const endDate = document.getElementById('endDate').value;
+            const endTime = document.getElementById('endTime').value;
+            const useCurrentTime = document.getElementById('useCurrentTime').checked;
+              
+            // Validate dates
+            if (!startDate || !endDate) {
+                alert('Please select both start and end dates.');
+                return;
+            }
+              
+            // Show loading state
+            const analyzeBtn = document.getElementById('analyzeBtn');
+            const originalText = analyzeBtn.innerHTML;
+            analyzeBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Analyzing...';
+            analyzeBtn.disabled = true;
+              
+            // Get chart generation setting
+            const generateCharts = document.getElementById('generateCharts').checked;
+              
+            // Prepare request data
+            const requestData = {
+                data_source: dataSource,
+                asset: asset,
+                timeframe: timeframe,
+                start_date: startDate,
+                start_time: startTime,
+                end_date: endDate,
+                end_time: endTime,
+                use_current_time: useCurrentTime,
+                generate_charts: generateCharts,
+                trading_strategy: selectedStrategy, // Add trading strategy to request data
+                redirect_to_output: true
+            };
+            
+            console.log('开始分析，准备保存查询记录:', requestData);
+            
+            // 在发送API请求前先保存查询记录
+            saveQueryRecord(requestData);
+            
+            // Make API call
+            fetch('/api/analyze', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(requestData)
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.redirect) {
+                    console.log('分析完成，页面将重定向到结果页面');
+                    // 保存查询记录到数据库（已经提前保存，这里可以更新状态）
+                    updateQueryRecordStatus(requestData, 'completed');
+                    // 如果有详细结果数据，也保存
+                    if (data.result_details) {
+                        saveResultDetails(requestData, data.result_details);
+                    }
+                    // Redirect to output page with results
+                    window.location.href = data.redirect;
+                } else if (data.error) {
+                    console.error('分析失败:', data.error);
+                    // 更新查询记录状态为失败
+                    updateQueryRecordStatus(requestData, 'failed', data.error);
+                    // Show error message
+                    alert('Analysis failed: ' + data.error);
+                    // Reset button
+                    analyzeBtn.innerHTML = originalText;
+                    analyzeBtn.disabled = false;
+                } else {
+                    console.log('分析完成，结果:', data);
+                    // 保存查询记录到数据库（包含结果摘要和详细结果）
+                    const resultDetails = data.result_details || {
+                        analysis: data.analysis,
+                        patterns: data.patterns,
+                        indicators: data.indicators,
+                        suggestions: data.suggestions,
+                        volatility: data.volatility
+                    };
+                    updateQueryRecordWithResult(requestData, data.summary, resultDetails);
+                    // Handle other responses
+                    console.log('Analysis completed:', data);
+                    alert('Analysis completed successfully!');
+                    // Reset button
+                    analyzeBtn.innerHTML = originalText;
+                    analyzeBtn.disabled = false;
+                }
+            })
+            .catch(error => {
+                console.error('API调用错误:', error);
+                // 更新查询记录状态为错误
+                updateQueryRecordStatus(requestData, 'error', error.message);
+                alert('An error occurred during analysis. Please try again.');
+                // Reset button
+                analyzeBtn.innerHTML = originalText;
+                analyzeBtn.disabled = false;
+            });
+        }
+
+        // 显示历史记录模态框
+        function showHistoryModal() {
+            // 检查历史记录模态框是否已存在，如果不存在则创建
+            let modal = document.getElementById('historyModal');
+            if (!modal) {
+                // 创建历史记录模态框
+                modal = document.createElement('div');
+                modal.id = 'historyModal';
+                modal.className = 'modal fade';
+                modal.tabIndex = -1;
+                modal.setAttribute('aria-labelledby', 'historyModalLabel');
+                modal.setAttribute('aria-hidden', 'true');
+                
+                modal.innerHTML = `
+                    <div class="modal-dialog modal-xl">
+                        <div class="modal-content" style="border-radius: 16px; border: 2px solid var(--gray-200);">
+                            <div class="modal-header" style="background: var(--etrade-purple); color: white; border-radius: 14px 14px 0 0;">
+                                <h5 class="modal-title" id="historyModalLabel" style="font-size: 1.5rem; font-weight: 600;">
+                                    <i class="fas fa-history me-2"></i>查询历史记录
+                                </h5>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close" style="filter: invert(1);"></button>
+                            </div>
+                            <div class="modal-body">
+                                <!-- 筛选选项 -->
+                                <div class="mb-4 p-3 bg-gray-50 rounded-lg border border-gray-200">
+                                    <div class="row">
+                                        <div class="col-md-3">
+                                            <label class="form-label">资产</label>
+                                            <select id="historyAssetFilter" class="form-select">
+                                                <option value="">所有资产</option>
+                                                <option value="BTC">BTC</option>
+                                                <option value="ETH">ETH</option>
+                                                <option value="TSLA">TSLA</option>
+                                            </select>
+                                        </div>
+                                        <div class="col-md-3">
+                                            <label class="form-label">时间周期</label>
+                                            <select id="historyTimeframeFilter" class="form-select">
+                                                <option value="">所有周期</option>
+                                                <option value="1m">1m</option>
+                                                <option value="15m">15m</option>
+                                                <option value="1h">1h</option>
+                                                <option value="4h">4h</option>
+                                                <option value="1d">1d</option>
+                                                <option value="1w">1w</option>
+                                                <option value="1mo">1mo</option>
+                                            </select>
+                                        </div>
+                                        <div class="col-md-3">
+                                            <label class="form-label">时间范围</label>
+                                            <select id="historyDateRangeFilter" class="form-select">
+                                                <option value="1month" selected>过去1个月</option>
+                                                <option value="3months">过去3个月</option>
+                                                <option value="6months">过去6个月</option>
+                                                <option value="1year">过去1年</option>
+                                                <option value="all">所有时间</option>
+                                            </select>
+                                        </div>
+                                        <div class="col-md-3">
+                                            <label class="form-label">&nbsp;</label>
+                                            <button id="historyFilterBtn" class="btn btn-primary w-full">
+                                                <i class="fas fa-filter me-1"></i>筛选
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- 操作按钮 -->
+                                <div class="mb-4 text-right">
+                                    <button id="clearHistoryBtn" class="btn btn-outline-danger">
+                                        <i class="fas fa-trash-alt me-1"></i>清除历史记录
+                                    </button>
+                                </div>
+
+                                <!-- 历史记录表格 -->
+                                <div class="table-responsive">
+                                    <table id="historyTable" class="table table-hover table-striped">
+                                        <thead style="background: var(--etrade-purple-bg);">
+                                            <tr>
+                                                <th style="font-weight: 600; color: var(--etrade-purple);">时间</th>
+                                                <th style="font-weight: 600; color: var(--etrade-purple);">资产</th>
+                                                <th style="font-weight: 600; color: var(--etrade-purple);">时间周期</th>
+                                                <th style="font-weight: 600; color: var(--etrade-purple);">日期范围</th>
+                                                <th style="font-weight: 600; color: var(--etrade-purple);">策略</th>
+                                                <th style="font-weight: 600; color: var(--etrade-purple);">图表</th>
+                                                <th style="font-weight: 600; color: var(--etrade-purple);">操作</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="historyTableBody">
+                                            <!-- 历史记录将通过JavaScript动态添加 -->
+                                            <tr>
+                                                <td colspan="7" class="text-center">
+                                                    <i class="fas fa-spinner fa-spin me-2"></i>加载历史记录中...
+                                                </td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-outline-primary" data-bs-dismiss="modal">
+                                    关闭
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                document.body.appendChild(modal);
+
+                // 添加筛选按钮事件
+                document.getElementById('historyFilterBtn').addEventListener('click', loadHistoryRecords);
+                
+                // 添加清除历史记录按钮事件
+                document.getElementById('clearHistoryBtn').addEventListener('click', function() {
+                    if (confirm('确定要清除所有历史记录吗？此操作不可恢复。')) {
+                        clearAllQueryHistory().then(() => {
+                            alert('历史记录已清除');
+                            loadHistoryRecords();
+                        }).catch(error => {
+                            console.error('清除历史记录失败:', error);
+                            alert('清除历史记录失败，请重试');
+                        });
+                    }
+                });
+            }
+
+            // 加载历史记录
+            loadHistoryRecords();
+
+            // 显示模态框
+            const bootstrapModal = new bootstrap.Modal(modal);
+            bootstrapModal.show();
+        }
+
+        // 显示结果明细模态框
+        function showResultDetails(recordId) {
+            // 检查结果明细模态框是否已存在，如果不存在则创建
+            let modal = document.getElementById('resultDetailsModal');
+            if (!modal) {
+                // 创建结果明细模态框
+                modal = document.createElement('div');
+                modal.id = 'resultDetailsModal';
+                modal.className = 'modal fade';
+                modal.tabIndex = -1;
+                modal.setAttribute('aria-labelledby', 'resultDetailsModalLabel');
+                modal.setAttribute('aria-hidden', 'true');
+                
+                modal.innerHTML = `
+                    <div class="modal-dialog modal-xl">
+                        <div class="modal-content" style="border-radius: 16px; border: 2px solid var(--gray-200);">
+                            <div class="modal-header" style="background: var(--etrade-purple); color: white; border-radius: 14px 14px 0 0;">
+                                <h5 class="modal-title" id="resultDetailsModalLabel" style="font-size: 1.5rem; font-weight: 600;">
+                                    <i class="fas fa-chart-bar me-2"></i>分析结果明细
+                                </h5>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close" style="filter: invert(1);"></button>
+                            </div>
+                            <div class="modal-body">
+                                <!-- 查询基本信息 -->
+                                <div class="mb-4 p-3 bg-gray-50 rounded-lg border border-gray-200">
+                                    <h6 class="mb-3" style="color: var(--etrade-purple);">
+                                        <i class="fas fa-info-circle me-2"></i>查询基本信息
+                                    </h6>
+                                    <div class="row" id="resultBasicInfo">
+                                        <!-- 基本信息将通过JavaScript动态添加 -->
+                                    </div>
+                                </div>
+
+                                <!-- 分析结果摘要 -->
+                                <div class="mb-4 p-3 bg-light rounded-lg border border-gray-200">
+                                    <h6 class="mb-3" style="color: var(--etrade-purple);">
+                                        <i class="fas fa-file-alt me-2"></i>分析结果摘要
+                                    </h6>
+                                    <div id="resultSummaryContent">
+                                        <!-- 结果摘要将通过JavaScript动态添加 -->
+                                    </div>
+                                </div>
+
+                                <!-- 详细分析结果 -->
+                                <div class="mb-4">
+                                    <h6 class="mb-3" style="color: var(--etrade-purple);">
+                                        <i class="fas fa-chart-line me-2"></i>详细分析结果
+                                    </h6>
+                                    <div id="resultDetailsContent" class="bg-white p-3 rounded-lg border border-gray-200">
+                                        <!-- 详细结果将通过JavaScript动态添加 -->
+                                    </div>
+                                </div>
+
+                                <!-- 技术指标分析 -->
+                                <div class="mb-4">
+                                    <h6 class="mb-3" style="color: var(--etrade-purple);">
+                                        <i class="fas fa-cogs me-2"></i>技术指标分析
+                                    </h6>
+                                    <div id="technicalIndicators" class="bg-white p-3 rounded-lg border border-gray-200">
+                                        <!-- 技术指标将通过JavaScript动态添加 -->
+                                    </div>
+                                </div>
+
+                                <!-- 交易建议 -->
+                                <div class="mb-4">
+                                    <h6 class="mb-3" style="color: var(--etrade-purple);">
+                                        <i class="fas fa-lightbulb me-2"></i>交易建议
+                                    </h6>
+                                    <div id="tradingSuggestions" class="bg-white p-3 rounded-lg border border-gray-200">
+                                        <!-- 交易建议将通过JavaScript动态添加 -->
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-outline-primary" data-bs-dismiss="modal">
+                                    关闭
+                                </button>
+                                <button type="button" class="btn btn-primary" onclick="exportResultDetails()">
+                                    <i class="fas fa-download me-1"></i>导出结果
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                document.body.appendChild(modal);
+            }
+
+            // 加载结果明细数据
+            loadResultDetails(recordId);
+
+            // 显示模态框
+            const bootstrapModal = new bootstrap.Modal(modal);
+            bootstrapModal.show();
+        }
+
+        // 加载结果明细数据
+        function loadResultDetails(recordId) {
+            try {
+                console.log('加载结果明细数据，记录ID:', recordId);
+
+                fetch(`/api/history/${recordId}`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        console.log('加载结果明细数据成功:', data.record);
+                        displayResultDetails(data.record);
+                    } else {
+                        console.error('未找到指定的查询记录:', data.error);
+                        alert('未找到指定的查询记录');
+                    }
+                })
+                .catch(error => {
+                    console.error('加载结果明细失败:', error);
+                    alert('加载结果明细失败');
+                });
+            } catch (error) {
+                console.error('加载结果明细时出错:', error);
+                alert('加载结果明细时出错');
+            }
+        }
+
+        // 显示结果明细
+        function displayResultDetails(record) {
+            // 显示基本信息
+            const basicInfoHtml = `
+                <div class="col-md-3">
+                    <strong>资产:</strong> ${record.asset || '未知'}
+                </div>
+                <div class="col-md-3">
+                    <strong>时间周期:</strong> ${record.timeframe || '未知'}
+                </div>
+                <div class="col-md-3">
+                    <strong>日期范围:</strong> ${record.startDate || '未知'} - ${record.endDate || '未知'}
+                </div>
+                <div class="col-md-3">
+                    <strong>查询时间:</strong> ${record.timestamp ? new Date(record.timestamp).toLocaleString('zh-CN') : '未知'}
+                </div>
+            `;
+            document.getElementById('resultBasicInfo').innerHTML = basicInfoHtml;
+
+            // 显示结果摘要
+            const summaryHtml = record.resultSummary ? 
+                `<div class="alert alert-info">${record.resultSummary}</div>` :
+                `<div class="text-muted">暂无结果摘要</div>`;
+            document.getElementById('resultSummaryContent').innerHTML = summaryHtml;
+
+            // 显示详细结果 - 增强错误处理
+            try {
+                if (record.resultDetails) {
+                    displayDetailedResults(record.resultDetails);
+                } else {
+                    document.getElementById('resultDetailsContent').innerHTML = '<div class="alert alert-warning">该记录没有保存详细结果数据</div>';
+                    document.getElementById('technicalIndicators').innerHTML = '<div class="text-muted">暂无技术指标数据</div>';
+                    document.getElementById('tradingSuggestions').innerHTML = '<div class="text-muted">暂无交易建议</div>';
+                }
+            } catch (error) {
+                console.error('显示结果明细时出错:', error);
+                document.getElementById('resultDetailsContent').innerHTML = '<div class="alert alert-danger">显示结果数据时出错</div>';
+                document.getElementById('technicalIndicators').innerHTML = '<div class="text-muted">数据加载失败</div>';
+                document.getElementById('tradingSuggestions').innerHTML = '<div class="text-muted">数据加载失败</div>';
+            }
+        }
+
+        // 显示详细结果数据
+        function displayDetailedResults(resultDetails) {
+            try {
+                // 解析结果数据
+                const details = typeof resultDetails === 'string' ? JSON.parse(resultDetails) : resultDetails;
+                
+                // 显示详细分析结果
+                let detailsHtml = '';
+                if (details.analysis) {
+                    detailsHtml += `<h6>趋势分析</h6><p>${details.analysis.trend || '暂无数据'}</p>`;
+                }
+                if (details.patterns) {
+                    detailsHtml += `<h6>模式识别</h6><p>${details.patterns || '暂无数据'}</p>`;
+                }
+                if (details.volatility) {
+                    detailsHtml += `<h6>波动性分析</h6><p>${details.volatility || '暂无数据'}</p>`;
+                }
+                
+                document.getElementById('resultDetailsContent').innerHTML = detailsHtml || '<div class="text-muted">暂无详细分析结果</div>';
+
+                // 显示技术指标
+                let indicatorsHtml = '';
+                if (details.indicators) {
+                    const indicators = details.indicators;
+                    indicatorsHtml = `
+                        <div class="row">
+                            <div class="col-md-6">
+                                <strong>移动平均线:</strong> ${indicators.ma || 'N/A'}<br>
+                                <strong>RSI:</strong> ${indicators.rsi || 'N/A'}<br>
+                                <strong>MACD:</strong> ${indicators.macd || 'N/A'}
+                            </div>
+                            <div class="col-md-6">
+                                <strong>布林带:</strong> ${indicators.bollinger || 'N/A'}<br>
+                                <strong>成交量:</strong> ${indicators.volume || 'N/A'}<br>
+                                <strong>支撑阻力:</strong> ${indicators.support_resistance || 'N/A'}
+                            </div>
+                        </div>
+                    `;
+                }
+                document.getElementById('technicalIndicators').innerHTML = indicatorsHtml || '<div class="text-muted">暂无技术指标数据</div>';
+
+                // 显示交易建议
+                let suggestionsHtml = '';
+                if (details.suggestions) {
+                    const suggestions = details.suggestions;
+                    suggestionsHtml = `
+                        <div class="alert ${suggestions.sentiment === 'bullish' ? 'alert-success' : suggestions.sentiment === 'bearish' ? 'alert-danger' : 'alert-warning'}">
+                            <strong>市场情绪:</strong> ${suggestions.sentiment || '中性'}
+                        </div>
+                        <p><strong>交易建议:</strong> ${suggestions.recommendation || '暂无建议'}</p>
+                        <p><strong>目标价位:</strong> ${suggestions.target_price || 'N/A'}</p>
+                        <p><strong>止损价位:</strong> ${suggestions.stop_loss || 'N/A'}</p>
+                    `;
+                }
+                document.getElementById('tradingSuggestions').innerHTML = suggestionsHtml || '<div class="text-muted">暂无交易建议</div>';
+
+            } catch (error) {
+                console.error('解析详细结果数据时出错:', error);
+                document.getElementById('resultDetailsContent').innerHTML = '<div class="alert alert-danger">解析结果数据时出错</div>';
+            }
+        }
+
+        // 导出结果功能
+        function exportResultDetails() {
+            // 这里可以实现结果导出功能
+            alert('导出功能正在开发中...');
+        }
+
+        // 加载历史记录数据到表格
+        function loadHistoryRecords() {
+            const historyTableBody = document.getElementById('historyTableBody');
+            historyTableBody.innerHTML = `
+                <tr>
+                    <td colspan="7" class="text-center">
+                        <i class="fas fa-spinner fa-spin me-2"></i>加载历史记录中...
+                    </td>
+                </tr>
+            `;
+
+            // 获取筛选条件
+            const assetFilter = document.getElementById('historyAssetFilter').value;
+            const timeframeFilter = document.getElementById('historyTimeframeFilter').value;
+            const dateRangeFilter = document.getElementById('historyDateRangeFilter').value;
+
+            const filterOptions = {
+                asset: assetFilter || undefined,
+                timeframe: timeframeFilter || undefined,
+                showAll: dateRangeFilter === 'all'
+            };
+
+            getQueryHistory(filterOptions).then(records => {
+                if (records.length === 0) {
+                    historyTableBody.innerHTML = `
+                        <tr>
+                            <td colspan="7" class="text-center text-muted">
+                                <i class="fas fa-info-circle me-2"></i>没有找到历史查询记录
+                            </td>
+                        </tr>
+                    `;
+                    return;
+                }
+
+                // 生成表格行
+                let html = '';
+                records.forEach(record => {
+                    // 格式化日期时间 - 修复日期显示问题
+                    let formattedDate = '日期格式错误';
+                    try {
+                        const timestamp = new Date(record.timestamp);
+                        if (!isNaN(timestamp.getTime())) {
+                            formattedDate = timestamp.toLocaleString('zh-CN', {
+                                year: 'numeric',
+                                month: '2-digit',
+                                day: '2-digit',
+                                hour: '2-digit',
+                                minute: '2-digit'
+                            });
+                        }
+                    } catch (error) {
+                        console.warn('日期格式化错误:', error);
+                        formattedDate = record.timestamp || '未知时间';
+                    }
+
+                    // 日期范围显示 - 确保日期格式正确
+                    const dateRange = `${record.startDate || '未知开始日期'} - ${record.endDate || '未知结束日期'}`;
+
+                    // 策略和图表显示
+                    const strategy = record.tradingStrategy === 'high_frequency' ? '高频' : '低频';
+                    const charts = record.generateCharts ? '是' : '否';
+
+                    // 生成操作按钮 - 确保所有记录都显示"查看详情"按钮
+                    const actions = `
+                        <div class="btn-group">
+                            <button class="btn btn-sm btn-primary" onclick="reRunAnalysis(${JSON.stringify(record).replace(/"/g, '&quot;')})"><i class="fas fa-redo-alt me-1"></i>重新分析</button>
+                            <button class="btn btn-sm btn-info" onclick="showResultDetails(${record.id})"><i class="fas fa-eye me-1"></i>查看详情</button>
+                            <button class="btn btn-sm btn-outline-danger" onclick="deleteRecord(${record.id})"><i class="fas fa-trash-alt"></i></button>
+                        </div>
+                    `;
+
+                    html += `
+                        <tr>
+                            <td>${formattedDate}</td>
+                            <td><strong>${record.asset}</strong></td>
+                            <td>${record.timeframe}</td>
+                            <td>${dateRange}</td>
+                            <td>${strategy}</td>
+                            <td>${charts}</td>
+                            <td>${actions}</td>
+                        </tr>
+                    `;
+                });
+
+                historyTableBody.innerHTML = html;
+            }).catch(error => {
+                console.error('加载历史记录失败:', error);
+                historyTableBody.innerHTML = `
+                    <tr>
+                        <td colspan="7" class="text-center text-danger">
+                            <i class="fas fa-exclamation-triangle me-2"></i>加载历史记录失败
+                        </td>
+                    </tr>
+                `;
+            });
+        }
+
+        // 重新运行分析
+        function reRunAnalysis(record) {
+            // 填充表单数据
+            document.getElementById('startDate').value = record.startDate;
+            document.getElementById('startTime').value = record.startTime || '00:00';
+            document.getElementById('endDate').value = record.endDate;
+            document.getElementById('endTime').value = record.endTime || '23:59';
+            document.getElementById('useCurrentTime').checked = record.useCurrentTime;
+            document.getElementById('generateCharts').checked = record.generateCharts;
+
+            // 处理当前时间选项
+            handleUseCurrentTimeChange();
+
+            // 选择资产
+            const assetButtons = document.querySelectorAll('.asset-btn');
+            let assetFound = false;
+            
+            assetButtons.forEach(btn => {
+                if (btn.dataset.asset === record.asset) {
+                    btn.click();
+                    assetFound = true;
+                }
+            });
+
+            // 如果资产不在预设列表中，显示自定义资产输入
+            if (!assetFound && record.asset) {
+                showCustomAssetInput();
+                const customInput = document.getElementById('customAssetInput');
+                if (customInput) {
+                    customInput.value = record.asset;
+                }
+            }
+
+            // 选择时间周期
+            const timeframeButtons = document.querySelectorAll('.timeframe-btn[data-timeframe]');
+            timeframeButtons.forEach(btn => {
+                if (btn.dataset.timeframe === record.timeframe) {
+                    btn.click();
+                }
+            });
+
+            // 选择交易策略
+            const strategyButtons = document.querySelectorAll('.timeframe-btn[data-strategy]');
+            strategyButtons.forEach(btn => {
+                if (btn.dataset.strategy === record.tradingStrategy) {
+                    btn.click();
+                }
+            });
+
+            // 关闭模态框
+            const modal = document.getElementById('historyModal');
+            if (modal) {
+                const bootstrapModal = bootstrap.Modal.getInstance(modal);
+                bootstrapModal.hide();
+            }
+
+            // 滚动到分析按钮
+            document.getElementById('analyzeBtn').scrollIntoView({ behavior: 'smooth' });
+        }
+
+        // 删除单条记录
+        function deleteRecord(recordId) {
+            if (confirm('确定要删除这条历史记录吗？')) {
+                deleteQueryRecord(recordId).then(() => {
+                    loadHistoryRecords();
+                }).catch(error => {
+                    console.error('删除记录失败:', error);
+                    alert('删除记录失败，请重试');
+                });
+            }
+        }
+
+        // 在DOM加载完成后初始化会话ID
+        document.addEventListener('DOMContentLoaded', function() {
+            // 初始化会话ID
+            initSessionId();
+        });
+
     </script>
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>
