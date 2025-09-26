@@ -80,10 +80,24 @@ def create_indicator_agent(llm, toolkit):
             print(f"❌ [IndicatorAgent] 技术指标计算失败: {str(e)}")
             tool_results = {"error": error_msg}
 
-        # --- Step 2: 生成分析报告 ---
-        analysis_prompt = ChatPromptTemplate.from_messages([
-            (
-                "system",
+        # --- Step 2: 根据交易策略生成分析报告 ---
+        trading_strategy = state.get('trading_strategy', 'high_frequency')
+        
+        if trading_strategy == 'low_frequency':
+            # 低频交易策略提示词
+            system_prompt = (
+                "你是一位专业的低频交易分析助手，专注于长期趋势和价格行为分析。"
+                "基于以下技术指标结果，提供一份全面的中文分析报告。"
+                "总结MACD、RSI、ROC、随机指标和威廉指标的关键发现，重点关注中长期趋势信号。"
+                "为低频交易决策提供可操作的中文见解，特别关注长期支撑位、阻力位和趋势变化。\n\n"
+                f"股票代码: {state.get('stock_name', 'Unknown')}\n"
+                f"OHLC数据来自{time_frame}间隔，反映了市场行为。\n\n"
+                "技术指标数值结果（JSON格式）:\n{indicator_data}\n\n"
+                "请用中文详细分析每个指标的含义和长期交易信号。"
+            )
+        else:
+            # 高频交易策略提示词
+            system_prompt = (
                 "你是一位在时间敏感条件下运作的高频交易(HFT)分析助手。"
                 "基于以下技术指标结果，提供一份全面的中文分析报告。"
                 "总结MACD、RSI、ROC、随机指标和威廉指标的关键发现。"
@@ -92,6 +106,13 @@ def create_indicator_agent(llm, toolkit):
                 f"OHLC数据来自{time_frame}间隔，反映了最近的市场行为。\n\n"
                 "技术指标数值结果（JSON格式）:\n{indicator_data}\n\n"
                 "请用中文详细分析每个指标的含义和交易信号。"
+            )
+            
+        # 创建提示词模板
+        analysis_prompt = ChatPromptTemplate.from_messages([
+            (
+                "system",
+                system_prompt
             )
         ])
         

@@ -74,10 +74,28 @@ def create_pattern_agent(llm, tools):
             pattern_image_filename = ""
             chart_result = {"error": str(e)}
 
-        # --- Step 2: 生成模式分析报告 ---
-        analysis_prompt = ChatPromptTemplate.from_messages([
-            (
-                "system",
+        # --- Step 2: 根据交易策略生成模式分析报告 ---
+        trading_strategy = state.get('trading_strategy', 'high_frequency')
+        
+        if trading_strategy == 'low_frequency':
+            # 低频交易策略提示词
+            system_prompt = (
+                "你是一位专业的低频交易形态识别助手，专注于长期趋势和价格行为分析。请用中文回答。"
+                f"股票代码: {state.get('stock_name', 'Unknown')}\n"
+                f"图表是基于{time_frame}间隔数据生成的。\n\n"
+                "图表生成结果: {chart_result}\n\n"
+                "将生成的图表与经典形态描述进行比较，确定是否存在已知形态:\n\n"
+                "{pattern_descriptions}\n\n"
+                "请提供详细的中文形态分析报告，包括:\n"
+                "1. 识别的形态（如有）\n"
+                "2. 形态可靠性和强度\n"
+                "3. 长期交易含义\n"
+                "4. 长期关键支撑/阻力位\n"
+                "5. 形态对未来1-6个月价格走势的影响"
+            )
+        else:
+            # 高频交易策略提示词
+            system_prompt = (
                 "你是一位专门识别经典高频交易形态的交易形态识别助手。请用中文回答。"
                 f"股票代码: {state.get('stock_name', 'Unknown')}\n"
                 f"图表是基于{time_frame}间隔数据生成的。\n\n"
@@ -89,6 +107,13 @@ def create_pattern_agent(llm, tools):
                 "2. 形态可靠性和强度\n"
                 "3. 交易含义\n"
                 "4. 关键支撑/阻力位"
+            )
+            
+        # 创建提示词模板
+        analysis_prompt = ChatPromptTemplate.from_messages([
+            (
+                "system",
+                system_prompt
             )
         ])
         
@@ -167,10 +192,35 @@ def create_pattern_agent_text_only(llm, tools):
         
         print(f"📊 [PatternAgent-Text] 准备进行文本形态分析，数据长度: {len(price_data['close_prices'])}")
 
-        # --- Step 2: 生成模式分析报告（文本模式）---
-        analysis_prompt = ChatPromptTemplate.from_messages([
-            (
-                "system",
+        # --- Step 2: 根据交易策略生成模式分析报告（文本模式）---
+        trading_strategy = state.get('trading_strategy', 'high_frequency')
+        
+        if trading_strategy == 'low_frequency':
+            # 低频交易策略提示词
+            system_prompt = (
+                "你是一位专业的低频交易形态识别助手，专注于长期趋势和价格行为分析。请用中文回答。"
+                f"股票代码: {state.get('stock_name', 'Unknown')}\n"
+                f"时间框架: {time_frame}\n\n"
+                "基于以下价格数据进行形态分析:\n"
+                "- 开盘价: {open_prices}\n"
+                "- 最高价: {high_prices}\n"
+                "- 最低价: {low_prices}\n"
+                "- 收盘价: {close_prices}\n"
+                "- 时间戳: {datetimes}\n\n"
+                "近期价格变化: {price_change:.2f}%\n\n"
+                "请参考以下经典形态描述:\n\n"
+                "{pattern_descriptions}\n\n"
+                "请提供详细的中文形态分析报告，包括:\n"
+                "1. 识别的形态（如有）\n"
+                "2. 形态可靠性和强度\n"
+                "3. 长期交易含义\n"
+                "4. 长期关键支撑/阻力位\n"
+                "5. 基于价格数据的分析推理\n"
+                "6. 形态对未来1-6个月价格走势的影响"
+            )
+        else:
+            # 高频交易策略提示词
+            system_prompt = (
                 "你是一位专门识别经典高频交易形态的交易形态识别助手。请用中文回答。"
                 f"股票代码: {state.get('stock_name', 'Unknown')}\n"
                 f"时间框架: {time_frame}\n\n"
@@ -189,6 +239,13 @@ def create_pattern_agent_text_only(llm, tools):
                 "3. 交易含义\n"
                 "4. 关键支撑/阻力位\n"
                 "5. 基于价格数据的分析推理"
+            )
+            
+        # 创建提示词模板
+        analysis_prompt = ChatPromptTemplate.from_messages([
+            (
+                "system",
+                system_prompt
             )
         ])
         

@@ -106,7 +106,7 @@ class TradingGraph:
             error_msg = safe_str(e)
             print(f"Error refreshing LLMs: {error_msg}")
 
-    def analyze(self, data, asset_symbol="BTC", time_frame="1d"):
+    def analyze(self, data, asset_symbol="BTC", time_frame="1d", trading_strategy="high_frequency"):
         """
         Run the complete trading analysis pipeline using direct function calls
         
@@ -141,7 +141,8 @@ class TradingGraph:
                 "indicator_report": "",
                 "pattern_report": "",
                 "trend_report": "",
-                "decision_report": ""
+                "decision_report": "",
+                "trading_strategy": trading_strategy  # Add trading strategy to state
             }
             
             print(f"🔍 [TradingGraph] 开始分析 {asset_symbol}，时间框架: {time_frame}")
@@ -212,7 +213,7 @@ class TradingGraph:
                 }
             }
 
-    def analyze_text_only(self, data, asset_symbol="BTC", time_frame="1d"):
+    def analyze_text_only(self, data, asset_symbol="BTC", time_frame="1d", trading_strategy="high_frequency"):
         """
         Run trading analysis pipeline without generating charts (text only)
         
@@ -247,7 +248,8 @@ class TradingGraph:
                 "indicator_report": "",
                 "pattern_report": "",
                 "trend_report": "",
-                "decision_report": ""
+                "decision_report": "",
+                "trading_strategy": trading_strategy  # Add trading strategy to state
             }
             
             print(f"🔍 [TradingGraph] 开始文本分析 {asset_symbol}，时间框架: {time_frame}")
