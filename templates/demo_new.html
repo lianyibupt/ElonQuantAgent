@@ -2811,7 +2811,7 @@
                     <strong>时间周期:</strong> ${record.timeframe || '未知'}
                 </div>
                 <div class="col-md-3">
-                    <strong>日期范围:</strong> ${record.startDate || '未知'} - ${record.endDate || '未知'}
+                    <strong>日期范围:</strong> ${record.start_date || '未知'} - ${record.end_date || '未知'}
                 </div>
                 <div class="col-md-3">
                     <strong>查询时间:</strong> ${record.timestamp ? new Date(record.timestamp).toLocaleString('zh-CN') : '未知'}
@@ -2819,16 +2819,16 @@
             `;
             document.getElementById('resultBasicInfo').innerHTML = basicInfoHtml;
 
-            // 显示结果摘要
-            const summaryHtml = record.resultSummary ? 
-                `<div class="alert alert-info">${record.resultSummary}</div>` :
+            // 显示结果摘要 - 修复字段名问题
+            const summaryHtml = record.result_summary ? 
+                `<div class="alert alert-info">${record.result_summary}</div>` :
                 `<div class="text-muted">暂无结果摘要</div>`;
             document.getElementById('resultSummaryContent').innerHTML = summaryHtml;
 
-            // 显示详细结果 - 增强错误处理
+            // 显示详细结果 - 修复字段名问题和增强错误处理
             try {
-                if (record.resultDetails) {
-                    displayDetailedResults(record.resultDetails);
+                if (record.result_details) {
+                    displayDetailedResults(record.result_details);
                 } else {
                     document.getElementById('resultDetailsContent').innerHTML = '<div class="alert alert-warning">该记录没有保存详细结果数据</div>';
                     document.getElementById('technicalIndicators').innerHTML = '<div class="text-muted">暂无技术指标数据</div>';
@@ -2847,60 +2847,73 @@
             try {
                 // 解析结果数据
                 const details = typeof resultDetails === 'string' ? JSON.parse(resultDetails) : resultDetails;
+                console.log('解析的详细结果数据:', details);
                 
                 // 显示详细分析结果
                 let detailsHtml = '';
-                if (details.analysis) {
-                    detailsHtml += `<h6>趋势分析</h6><p>${details.analysis.trend || '暂无数据'}</p>`;
+                
+                // 趋势分析
+                if (details.trend_analysis) {
+                    detailsHtml += `<div class="mb-3"><h6 style="color: var(--etrade-purple);"><i class="fas fa-chart-line me-2"></i>趋势分析</h6><div class="p-3 bg-light rounded">${details.trend_analysis}</div></div>`;
                 }
-                if (details.patterns) {
-                    detailsHtml += `<h6>模式识别</h6><p>${details.patterns || '暂无数据'}</p>`;
+                
+                // 形态分析
+                if (details.pattern_analysis) {
+                    detailsHtml += `<div class="mb-3"><h6 style="color: var(--etrade-purple);"><i class="fas fa-brain me-2"></i>形态分析</h6><div class="p-3 bg-light rounded">${details.pattern_analysis}</div></div>`;
                 }
-                if (details.volatility) {
-                    detailsHtml += `<h6>波动性分析</h6><p>${details.volatility || '暂无数据'}</p>`;
+                
+                // 最终决策
+                if (details.final_decision) {
+                    const decision = details.final_decision;
+                    const decisionClass = decision.decision === '买入' ? 'alert-success' : 
+                                        decision.decision === '卖出' ? 'alert-danger' : 'alert-warning';
+                    detailsHtml += `
+                        <div class="mb-3">
+                            <h6 style="color: var(--etrade-purple);"><i class="fas fa-bullseye me-2"></i>最终交易决策</h6>
+                            <div class="alert ${decisionClass}">
+                                <strong>决策:</strong> ${decision.decision || '持有'}<br>
+                                <strong>风险收益比:</strong> ${decision.risk_reward_ratio || 'N/A'}<br>
+                                <strong>预测时间:</strong> ${decision.forecast_horizon || 'N/A'}<br>
+                                <strong>理由:</strong> ${decision.justification || '暂无详细理由'}
+                            </div>
+                        </div>
+                    `;
                 }
                 
                 document.getElementById('resultDetailsContent').innerHTML = detailsHtml || '<div class="text-muted">暂无详细分析结果</div>';
 
                 // 显示技术指标
                 let indicatorsHtml = '';
-                if (details.indicators) {
-                    const indicators = details.indicators;
-                    indicatorsHtml = `
-                        <div class="row">
-                            <div class="col-md-6">
-                                <strong>移动平均线:</strong> ${indicators.ma || 'N/A'}<br>
-                                <strong>RSI:</strong> ${indicators.rsi || 'N/A'}<br>
-                                <strong>MACD:</strong> ${indicators.macd || 'N/A'}
-                            </div>
-                            <div class="col-md-6">
-                                <strong>布林带:</strong> ${indicators.bollinger || 'N/A'}<br>
-                                <strong>成交量:</strong> ${indicators.volume || 'N/A'}<br>
-                                <strong>支撑阻力:</strong> ${indicators.support_resistance || 'N/A'}
-                            </div>
-                        </div>
-                    `;
+                if (details.technical_indicators) {
+                    indicatorsHtml = `<div class="p-3 bg-light rounded" style="white-space: pre-wrap;">${details.technical_indicators}</div>`;
                 }
                 document.getElementById('technicalIndicators').innerHTML = indicatorsHtml || '<div class="text-muted">暂无技术指标数据</div>';
 
-                // 显示交易建议
+                // 显示交易建议 - 基于最终决策
                 let suggestionsHtml = '';
-                if (details.suggestions) {
-                    const suggestions = details.suggestions;
+                if (details.final_decision) {
+                    const decision = details.final_decision;
+                    const decisionClass = decision.decision === '买入' ? 'alert-success' : 
+                                        decision.decision === '卖出' ? 'alert-danger' : 'alert-warning';
                     suggestionsHtml = `
-                        <div class="alert ${suggestions.sentiment === 'bullish' ? 'alert-success' : suggestions.sentiment === 'bearish' ? 'alert-danger' : 'alert-warning'}">
-                            <strong>市场情绪:</strong> ${suggestions.sentiment || '中性'}
+                        <div class="alert ${decisionClass}">
+                            <h6><i class="fas fa-lightbulb me-2"></i>交易建议</h6>
+                            <p><strong>建议操作:</strong> ${decision.decision || '持有'}</p>
+                            <p><strong>风险收益比:</strong> ${decision.risk_reward_ratio || 'N/A'}</p>
+                            <p><strong>建议持有时间:</strong> ${decision.forecast_horizon || 'N/A'}</p>
+                            <p><strong>详细说明:</strong> ${decision.justification || '暂无详细说明'}</p>
                         </div>
-                        <p><strong>交易建议:</strong> ${suggestions.recommendation || '暂无建议'}</p>
-                        <p><strong>目标价位:</strong> ${suggestions.target_price || 'N/A'}</p>
-                        <p><strong>止损价位:</strong> ${suggestions.stop_loss || 'N/A'}</p>
                     `;
+                } else {
+                    suggestionsHtml = '<div class="text-muted">暂无交易建议</div>';
                 }
-                document.getElementById('tradingSuggestions').innerHTML = suggestionsHtml || '<div class="text-muted">暂无交易建议</div>';
+                document.getElementById('tradingSuggestions').innerHTML = suggestionsHtml;
 
             } catch (error) {
                 console.error('解析详细结果数据时出错:', error);
-                document.getElementById('resultDetailsContent').innerHTML = '<div class="alert alert-danger">解析结果数据时出错</div>';
+                document.getElementById('resultDetailsContent').innerHTML = '<div class="alert alert-danger">解析结果数据时出错: ' + error.message + '</div>';
+                document.getElementById('technicalIndicators').innerHTML = '<div class="text-muted">数据解析失败</div>';
+                document.getElementById('tradingSuggestions').innerHTML = '<div class="text-muted">数据解析失败</div>';
             }
         }
 
@@ -2965,8 +2978,8 @@
                         formattedDate = record.timestamp || '未知时间';
                     }
 
-                    // 日期范围显示 - 确保日期格式正确
-                    const dateRange = `${record.startDate || '未知开始日期'} - ${record.endDate || '未知结束日期'}`;
+                    // 日期范围显示 - 修复字段名问题
+                    const dateRange = `${record.start_date || '未知开始日期'} - ${record.end_date || '未知结束日期'}`;
 
                     // 策略和图表显示
                     const strategy = record.tradingStrategy === 'high_frequency' ? '高频' : '低频';
@@ -3009,13 +3022,13 @@
 
         // 重新运行分析
         function reRunAnalysis(record) {
-            // 填充表单数据
-            document.getElementById('startDate').value = record.startDate;
-            document.getElementById('startTime').value = record.startTime || '00:00';
-            document.getElementById('endDate').value = record.endDate;
-            document.getElementById('endTime').value = record.endTime || '23:59';
-            document.getElementById('useCurrentTime').checked = record.useCurrentTime;
-            document.getElementById('generateCharts').checked = record.generateCharts;
+            // 填充表单数据 - 修复字段名问题
+            document.getElementById('startDate').value = record.start_date;
+            document.getElementById('startTime').value = record.start_time || '00:00';
+            document.getElementById('endDate').value = record.end_date;
+            document.getElementById('endTime').value = record.end_time || '23:59';
+            document.getElementById('useCurrentTime').checked = record.use_current_time;
+            document.getElementById('generateCharts').checked = record.generate_charts;
 
             // 处理当前时间选项
             handleUseCurrentTimeChange();
@@ -3048,10 +3061,10 @@
                 }
             });
 
-            // 选择交易策略
+            // 选择交易策略 - 修复字段名问题
             const strategyButtons = document.querySelectorAll('.timeframe-btn[data-strategy]');
             strategyButtons.forEach(btn => {
-                if (btn.dataset.strategy === record.tradingStrategy) {
+                if (btn.dataset.strategy === record.trading_strategy) {
                     btn.click();
                 }
             });
