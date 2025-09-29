@@ -512,12 +512,12 @@ analyzer = WebTradingAnalyzer()
 
 @app.route('/')
 def index():
-    """Main landing page - redirect to demo."""
+    """Main landing page - redirect to QuantAgent."""
     return render_template('demo_new.html')
 
-@app.route('/demo')
-def demo():
-    """Demo page with new interface."""
+@app.route('/QuantAgent')
+def QuantAgent():
+    """QuantAgent page with new interface."""
     return render_template('demo_new.html')
 
 @app.route('/output')
