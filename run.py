@@ -117,11 +117,7 @@ def main():
     
     print("\n✅ 准备就绪！")
     print("可用数据源:")
-    print("   - akshare (免费，支持A股、港股、美股)")
-    print("   - finnhub (需要API密钥，备用数据源)")
-    print("\n可用LLM提供商:")
-    print("   - OpenAI (GPT-4o, GPT-4o-mini)")
-    print("   - DeepSeek (deepseek-chat, deepseek-coder)")
+    
     
     # 启动Web界面
     start_web_interface(args.port)

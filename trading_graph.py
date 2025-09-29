@@ -61,7 +61,19 @@ class TradingGraph:
                         base_url="https://api.deepseek.com/v1"
                     )
             
-            # Default to OpenAI or if DeepSeek is not available
+            elif llm_provider == "volcengine":
+                volcengine_key = os.environ.get("VOLCENGINE_API_KEY")
+                if volcengine_key and volcengine_key != "your-volcengine-api-key-here":
+                    # Use Volcengine model names
+                    volcengine_model = "ep-20250519162223-96wj4" if "gpt" in model.lower() else model
+                    return ChatOpenAI(
+                        model=volcengine_model,
+                        temperature=temperature,
+                        api_key=volcengine_key,
+                        base_url="https://ark-cn-beijing.bytedance.net/api/v3"
+                    )
+            
+            # Default to OpenAI or if other providers are not available
             openai_key = os.environ.get("OPENAI_API_KEY")
             if openai_key and openai_key != "your-openai-api-key-here":
                 return ChatOpenAI(

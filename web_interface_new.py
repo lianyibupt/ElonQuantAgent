@@ -82,8 +82,8 @@ class MultiProviderLLM:
                 'models': ['ep-20250519162223-96wj4']
             }
         }
-        self.current_provider = 'deepseek'
-        self.api_key = os.environ.get("DEEPSEEK_API_KEY", "")
+        self.current_provider = 'volcengine'
+        self.api_key = os.environ.get("VOLCENGINE_API_KEY", "")
     
     def set_provider(self, provider: str, api_key: str = None):
         """Set current LLM provider"""

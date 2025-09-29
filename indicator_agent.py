@@ -76,9 +76,19 @@ def create_indicator_agent(llm, toolkit):
             print(f"  威廉指标数据点: {len(willr_result.get('willr', []))}")
             
         except Exception as e:
-            error_msg = f"Error computing indicators: {str(e)}"
-            print(f"❌ [IndicatorAgent] 技术指标计算失败: {str(e)}")
-            tool_results = {"error": error_msg}
+            # 更健壮的错误处理
+            try:
+                error_msg = str(e)
+                if isinstance(error_msg, bytes):
+                    error_msg = error_msg.decode('utf-8', errors='replace')
+                else:
+                    error_msg = error_msg.encode('utf-8', errors='replace').decode('utf-8')
+            except:
+                error_msg = "Unknown encoding error"
+                
+            error_msg_full = f"Error computing indicators: {error_msg}"
+            print(f"❌ [IndicatorAgent] 技术指标计算失败: {error_msg}")
+            tool_results = {"error": error_msg_full}
 
         # --- Step 2: 根据交易策略生成分析报告 ---
         trading_strategy = state.get('trading_strategy', 'high_frequency')
@@ -118,7 +128,16 @@ def create_indicator_agent(llm, toolkit):
         
         try:
             print("🤖 [IndicatorAgent] 调用LLM生成分析报告...")
+            # 确保JSON序列化正确处理中文字符
             indicator_data = json.dumps(tool_results, indent=2, ensure_ascii=False)
+            
+            # 确保indicator_data是UTF-8编码的字符串
+            if isinstance(indicator_data, bytes):
+                indicator_data = indicator_data.decode('utf-8', errors='replace')
+            elif isinstance(indicator_data, str):
+                # 如果已经是字符串，确保编码正确
+                indicator_data = indicator_data.encode('utf-8', errors='replace').decode('utf-8')
+                
             print(f"  传递给LLM的数据长度: {len(indicator_data)}")
             
             final_response = (analysis_prompt | llm).invoke({
@@ -129,11 +148,30 @@ def create_indicator_agent(llm, toolkit):
             # 确保报告使用UTF-8编码
             if isinstance(indicator_report, str):
                 indicator_report = indicator_report.encode('utf-8', errors='replace').decode('utf-8')
+            elif isinstance(indicator_report, bytes):
+                indicator_report = indicator_report.decode('utf-8', errors='replace')
+                
             print(f"✅ [IndicatorAgent] LLM分析完成，报告长度: {len(indicator_report)}")
             
         except Exception as e:
-            error_msg = str(e).encode('utf-8', errors='replace').decode('utf-8')
-            indicator_report = f"Error generating indicator analysis: {error_msg}\n\nRaw results:\n" + "\n".join(tool_results)
+            # 更健壮的错误处理
+            try:
+                error_msg = str(e)
+                if isinstance(error_msg, bytes):
+                    error_msg = error_msg.decode('utf-8', errors='replace')
+                else:
+                    error_msg = error_msg.encode('utf-8', errors='replace').decode('utf-8')
+            except:
+                error_msg = "Unknown encoding error"
+                
+            # 安全地处理tool_results
+            try:
+                raw_results = "\n".join([str(r) for r in tool_results.values()]) if isinstance(tool_results, dict) else str(tool_results)
+                raw_results = raw_results.encode('utf-8', errors='replace').decode('utf-8')
+            except:
+                raw_results = "Unable to display raw results"
+                
+            indicator_report = f"Error generating indicator analysis: {error_msg}\n\nRaw results:\n{raw_results}"
             print(f"❌ [IndicatorAgent] LLM分析失败: {error_msg}")
         
         # 更新state并返回
