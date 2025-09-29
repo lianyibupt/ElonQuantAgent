@@ -935,7 +935,6 @@ class DatabaseManager:
         start_time: str = None,
         end_time: str = None,
         trading_strategy: str = None,
-        session_id: str = None,
         max_hours_old: int = 24
     ) -> Optional[Dict[str, Any]]:
         """
@@ -955,34 +954,27 @@ class DatabaseManager:
             如果存在符合条件的记录，返回记录详情，否则返回None
         """
         with self.get_connection() as conn:
-            # 构建查询条件 - 添加session_id过滤，确保每个用户的查询都是独立的
+            # 构建查询条件 - 基于相同的股票、时间段、策略、周期等信息进行缓存
+            # 不依赖session_id，允许跨会话共享缓存结果
             conditions = [
                 "asset = ?",
                 "timeframe = ?",
                 "start_date = ?",
                 "end_date = ?",
                 "status = 'completed'",
-                "created_at >= datetime('now', '-24 hours')"  # 直接使用固定24小时
+                "created_at >= datetime('now', '-24 hours')"  # 24小时内有效的缓存
             ]
             params = [asset, timeframe, start_date, end_date]
             
-            # 移除start_time和end_time的过滤条件，因为它们不是必需的查询key
-            # 只使用asset, timeframe, start_date, end_date, trading_strategy作为查询key
-                
+            # 使用交易策略作为查询条件
             if trading_strategy:
                 conditions.append("trading_strategy = ?")
                 params.append(trading_strategy)
             else:
                 conditions.append("trading_strategy IS NULL")
             
-            # 添加session_id过滤条件，确保每个用户的查询都是独立的
-            if session_id:
-                conditions.append("session_id = ?")
-                params.append(session_id)
-            else:
-                # 如果没有session_id，使用user_ip作为替代标识
-                conditions.append("user_ip = ?")
-                params.append(request.remote_addr if 'request' in globals() else 'unknown')
+            # 移除session_id过滤条件，允许跨session共享缓存
+            print("🔍 使用跨会话缓存策略，不依赖session_id")
             
             where_clause = " AND ".join(conditions)
             
