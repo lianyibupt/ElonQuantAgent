@@ -74,6 +74,12 @@ class MultiProviderLLM:
                 'client_class': OpenAIClient,
                 'base_url': 'https://api.deepseek.com/v1',
                 'models': ['deepseek-chat', 'deepseek-coder']
+            },
+            'volcengine': {
+                'name': 'Volcengine',
+                'client_class': OpenAIClient,
+                'base_url': 'https://ark-cn-beijing.bytedance.net/api/v3',
+                'models': ['ep-20250519162223-96wj4']
             }
         }
         self.current_provider = 'deepseek'
@@ -93,6 +99,8 @@ class MultiProviderLLM:
             os.environ["OPENAI_API_KEY"] = self.api_key
         elif provider == 'deepseek':
             os.environ["DEEPSEEK_API_KEY"] = self.api_key
+        elif provider == 'volcengine':
+            os.environ["VOLCENGINE_API_KEY"] = self.api_key
     
     def get_client(self):
         """获取当前配置的LLM客户端"""
@@ -118,6 +126,8 @@ class MultiProviderLLM:
             if provider == 'openai':
                 client = OpenAIClient(api_key=api_key)
             elif provider == 'deepseek':
+                client = OpenAIClient(api_key=api_key, base_url=provider_config['base_url'])
+            elif provider == 'volcengine':
                 client = OpenAIClient(api_key=api_key, base_url=provider_config['base_url'])
             else:
                 return {"valid": False, "error": f"Unsupported provider: {provider}"}
@@ -456,6 +466,10 @@ class WebTradingAnalyzer:
             openai_key = os.environ.get("OPENAI_API_KEY")
             if openai_key and openai_key != "your-openai-api-key-here":
                 self.llm_provider.set_provider('openai', openai_key)
+        elif llm_provider == "volcengine":
+            volcengine_key = os.environ.get("VOLCENGINE_API_KEY")
+            if volcengine_key and volcengine_key != "your-volcengine-api-key-here":
+                self.llm_provider.set_provider('volcengine', volcengine_key)
         
         # 初始化TradingGraph
         self.trading_graph = TradingGraph()
@@ -911,8 +925,15 @@ def output():
             import urllib.parse
             try:
                 print(f"原始URL参数: {results_param}")
+                # 先进行URL解码
                 decoded_results = urllib.parse.unquote(results_param, encoding='utf-8')
                 print(f"解码后结果: {decoded_results[:200]}...")  # 只显示前200个字符
+                
+                # 确保解码后的字符串使用UTF-8编码
+                if isinstance(decoded_results, str):
+                    decoded_results = decoded_results.encode('utf-8', errors='replace').decode('utf-8')
+                
+                # 解析JSON
                 results = json.loads(decoded_results)
                 print(f"JSON解析成功，technical_indicators长度: {len(results.get('technical_indicators', ''))}")
                 

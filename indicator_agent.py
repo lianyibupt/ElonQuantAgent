@@ -126,11 +126,15 @@ def create_indicator_agent(llm, toolkit):
             })
             
             indicator_report = final_response.content if hasattr(final_response, 'content') else str(final_response)
+            # 确保报告使用UTF-8编码
+            if isinstance(indicator_report, str):
+                indicator_report = indicator_report.encode('utf-8', errors='replace').decode('utf-8')
             print(f"✅ [IndicatorAgent] LLM分析完成，报告长度: {len(indicator_report)}")
             
         except Exception as e:
-            indicator_report = f"Error generating indicator analysis: {str(e)}\n\nRaw results:\n" + "\n".join(tool_results)
-            print(f"❌ [IndicatorAgent] LLM分析失败: {str(e)}")
+            error_msg = str(e).encode('utf-8', errors='replace').decode('utf-8')
+            indicator_report = f"Error generating indicator analysis: {error_msg}\n\nRaw results:\n" + "\n".join(tool_results)
+            print(f"❌ [IndicatorAgent] LLM分析失败: {error_msg}")
         
         # 更新state并返回
         state.update({
