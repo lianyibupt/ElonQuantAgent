@@ -69,10 +69,20 @@ def create_pattern_agent(llm, tools):
             print(f"  图像描述: {chart_result.get('pattern_image_description', '无描述')}")
             
         except Exception as e:
-            print(f"Error generating pattern chart: {str(e)}")
+            # 更健壮的错误处理
+            try:
+                error_msg = str(e)
+                if isinstance(error_msg, bytes):
+                    error_msg = error_msg.decode('utf-8', errors='replace')
+                else:
+                    error_msg = error_msg.encode('utf-8', errors='replace').decode('utf-8')
+            except:
+                error_msg = "Unknown encoding error"
+                
+            print(f"Error generating pattern chart: {error_msg}")
             pattern_image = ""
             pattern_image_filename = ""
-            chart_result = {"error": str(e)}
+            chart_result = {"error": error_msg}
 
         # --- Step 2: 根据交易策略生成模式分析报告 ---
         trading_strategy = state.get('trading_strategy', 'high_frequency')
@@ -119,6 +129,12 @@ def create_pattern_agent(llm, tools):
         
         try:
             chart_description = chart_result.get("pattern_image_description", "Candlestick chart generated successfully")
+            # 确保图表描述使用UTF-8编码
+            if isinstance(chart_description, str):
+                chart_description = chart_description.encode('utf-8', errors='replace').decode('utf-8')
+            elif isinstance(chart_description, bytes):
+                chart_description = chart_description.decode('utf-8', errors='replace')
+                
             print(f"🤖 [PatternAgent] 调用LLM进行形态分析，图表描述长度: {len(chart_description)}")
             
             final_response = (analysis_prompt | llm).invoke({
@@ -127,10 +143,33 @@ def create_pattern_agent(llm, tools):
             })
             
             pattern_report = final_response.content if hasattr(final_response, 'content') else str(final_response)
+            # 确保报告使用UTF-8编码
+            if isinstance(pattern_report, str):
+                pattern_report = pattern_report.encode('utf-8', errors='replace').decode('utf-8')
+            elif isinstance(pattern_report, bytes):
+                pattern_report = pattern_report.decode('utf-8', errors='replace')
+                
             print(f"✅ [PatternAgent] LLM形态分析完成，报告长度: {len(pattern_report)}")
             
         except Exception as e:
-            pattern_report = f"Error generating pattern analysis: {str(e)}\n\nChart result: {json.dumps(chart_result, indent=2)}"
+            # 更健壮的错误处理
+            try:
+                error_msg = str(e)
+                if isinstance(error_msg, bytes):
+                    error_msg = error_msg.decode('utf-8', errors='replace')
+                else:
+                    error_msg = error_msg.encode('utf-8', errors='replace').decode('utf-8')
+            except:
+                error_msg = "Unknown encoding error"
+                
+            # 安全地处理chart_result
+            try:
+                chart_result_str = json.dumps(chart_result, indent=2, ensure_ascii=False)
+                chart_result_str = chart_result_str.encode('utf-8', errors='replace').decode('utf-8')
+            except:
+                chart_result_str = "Unable to display chart result"
+                
+            pattern_report = f"Error generating pattern analysis: {error_msg}\n\nChart result: {chart_result_str}"
 
         # 更新state并返回
         state.update({

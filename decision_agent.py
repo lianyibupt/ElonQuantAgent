@@ -82,13 +82,23 @@ def create_decision_agent(llm, tools):
             decision_content = final_response.content if hasattr(final_response, 'content') else str(final_response)
             
         except Exception as e:
+            # 更健壮的错误处理
+            try:
+                error_msg = str(e)
+                if isinstance(error_msg, bytes):
+                    error_msg = error_msg.decode('utf-8', errors='replace')
+                else:
+                    error_msg = error_msg.encode('utf-8', errors='replace').decode('utf-8')
+            except:
+                error_msg = "Unknown encoding error"
+                
             decision_content = json.dumps({
                 "decision": "HOLD",
                 "confidence": "LOW", 
                 "risk_reward_ratio": "1:1",
                 "forecast_horizon": "Unknown",
-                "justification": f"Error generating decision: {str(e)}"
-            }, indent=2)
+                "justification": f"Error generating decision: {error_msg}"
+            }, indent=2, ensure_ascii=False)
 
         # 更新state并返回
         state.update({

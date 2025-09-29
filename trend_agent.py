@@ -32,10 +32,20 @@ def create_trend_agent(llm, tools):
             print(f"  图像描述: {trend_result.get('trend_image_description', '无描述')}")
             
         except Exception as e:
-            print(f"Error generating trend chart: {str(e)}")
+            # 更健壮的错误处理
+            try:
+                error_msg = str(e)
+                if isinstance(error_msg, bytes):
+                    error_msg = error_msg.decode('utf-8', errors='replace')
+                else:
+                    error_msg = error_msg.encode('utf-8', errors='replace').decode('utf-8')
+            except:
+                error_msg = "Unknown encoding error"
+                
+            print(f"Error generating trend chart: {error_msg}")
             trend_image = ""
             trend_image_filename = ""
-            trend_result = {"error": str(e)}
+            trend_result = {"error": error_msg}
 
         # --- Step 2: 根据交易策略生成趋势分析报告 ---
         trading_strategy = state.get('trading_strategy', 'high_frequency')
@@ -82,6 +92,12 @@ def create_trend_agent(llm, tools):
         
         try:
             trend_description = trend_result.get("trend_image_description", "Trend-enhanced chart generated successfully")
+            # 确保趋势描述使用UTF-8编码
+            if isinstance(trend_description, str):
+                trend_description = trend_description.encode('utf-8', errors='replace').decode('utf-8')
+            elif isinstance(trend_description, bytes):
+                trend_description = trend_description.decode('utf-8', errors='replace')
+                
             print(f"🤖 [TrendAgent] 调用LLM进行趋势分析，图表描述长度: {len(trend_description)}")
             
             final_response = (analysis_prompt | llm).invoke({
@@ -89,10 +105,33 @@ def create_trend_agent(llm, tools):
             })
             
             trend_report = final_response.content if hasattr(final_response, 'content') else str(final_response)
+            # 确保报告使用UTF-8编码
+            if isinstance(trend_report, str):
+                trend_report = trend_report.encode('utf-8', errors='replace').decode('utf-8')
+            elif isinstance(trend_report, bytes):
+                trend_report = trend_report.decode('utf-8', errors='replace')
+                
             print(f"✅ [TrendAgent] LLM趋势分析完成，报告长度: {len(trend_report)}")
             
         except Exception as e:
-            trend_report = f"Error generating trend analysis: {str(e)}\n\nTrend result: {json.dumps(trend_result, indent=2)}"
+            # 更健壮的错误处理
+            try:
+                error_msg = str(e)
+                if isinstance(error_msg, bytes):
+                    error_msg = error_msg.decode('utf-8', errors='replace')
+                else:
+                    error_msg = error_msg.encode('utf-8', errors='replace').decode('utf-8')
+            except:
+                error_msg = "Unknown encoding error"
+                
+            # 安全地处理trend_result
+            try:
+                trend_result_str = json.dumps(trend_result, indent=2, ensure_ascii=False)
+                trend_result_str = trend_result_str.encode('utf-8', errors='replace').decode('utf-8')
+            except:
+                trend_result_str = "Unable to display trend result"
+                
+            trend_report = f"Error generating trend analysis: {error_msg}\n\nTrend result: {trend_result_str}"
 
         # 更新state并返回
         state.update({
