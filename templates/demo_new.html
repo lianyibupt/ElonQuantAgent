@@ -2982,8 +2982,8 @@
                     const dateRange = `${record.start_date || '未知开始日期'} - ${record.end_date || '未知结束日期'}`;
 
                     // 策略和图表显示
-                    const strategy = record.tradingStrategy === 'high_frequency' ? '高频' : '低频';
-                    const charts = record.generateCharts ? '是' : '否';
+                    const strategy = record.trading_strategy === 'high_frequency' ? '高频' : '低频';
+                    const charts = record.generate_charts ? '是' : '否';
 
                     // 生成操作按钮 - 确保所有记录都显示"查看详情"按钮
                     const actions = `
