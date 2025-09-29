@@ -911,8 +911,8 @@ def get_api_key_status():
 def index():
     return render_template('demo_new.html')
 
-@app.route('/demo')
-def demo():
+@app.route('/QuantAgent')
+def QuantAgent():
     return render_template('demo_new.html')
 
 @app.route('/output')
