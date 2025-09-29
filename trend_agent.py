@@ -214,12 +214,19 @@ def create_trend_agent_text_only(llm, tools):
         try:
             print(f"🤖 [TrendAgent-Text] 调用LLM进行文本趋势分析...")
             
+            # 确保所有字符串参数使用UTF-8编码
+            open_prices_str = str(price_data["open_prices"][-20:]).encode('utf-8', errors='replace').decode('utf-8')
+            high_prices_str = str(price_data["high_prices"][-20:]).encode('utf-8', errors='replace').decode('utf-8')
+            low_prices_str = str(price_data["low_prices"][-20:]).encode('utf-8', errors='replace').decode('utf-8')
+            close_prices_str = str(price_data["close_prices"][-20:]).encode('utf-8', errors='replace').decode('utf-8')
+            datetimes_str = str(price_data["datetimes"][-20:]).encode('utf-8', errors='replace').decode('utf-8')
+            
             final_response = (analysis_prompt | llm).invoke({
-                "open_prices": str(price_data["open_prices"][-20:]),  # 显示最近20个数据点
-                "high_prices": str(price_data["high_prices"][-20:]),
-                "low_prices": str(price_data["low_prices"][-20:]),
-                "close_prices": str(price_data["close_prices"][-20:]),
-                "datetimes": str(price_data["datetimes"][-20:]),
+                "open_prices": open_prices_str,
+                "high_prices": high_prices_str,
+                "low_prices": low_prices_str,
+                "close_prices": close_prices_str,
+                "datetimes": datetimes_str,
                 "price_change": price_change,
                 "sma_short": sma_short if sma_short is not None else "N/A",
                 "sma_long": sma_long if sma_long is not None else "N/A",
@@ -228,11 +235,15 @@ def create_trend_agent_text_only(llm, tools):
             })
             
             trend_report = final_response.content if hasattr(final_response, 'content') else str(final_response)
+            # 确保报告使用UTF-8编码
+            if isinstance(trend_report, str):
+                trend_report = trend_report.encode('utf-8', errors='replace').decode('utf-8')
             print(f"✅ [TrendAgent-Text] LLM趋势分析完成，报告长度: {len(trend_report)}")
             
         except Exception as e:
-            trend_report = f"Error generating trend analysis: {str(e)}"
-            print(f"❌ [TrendAgent-Text] 趋势分析失败: {str(e)}")
+            error_msg = str(e).encode('utf-8', errors='replace').decode('utf-8')
+            trend_report = f"Error generating trend analysis: {error_msg}"
+            print(f"❌ [TrendAgent-Text] 趋势分析失败: {error_msg}")
 
         # 更新state并返回（不包含图像数据）
         state.update({

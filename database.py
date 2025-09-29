@@ -955,7 +955,7 @@ class DatabaseManager:
             如果存在符合条件的记录，返回记录详情，否则返回None
         """
         with self.get_connection() as conn:
-            # 构建查询条件 - 移除session_id过滤，使用股票ID+周期+日期+策略作为key
+            # 构建查询条件 - 添加session_id过滤，确保每个用户的查询都是独立的
             conditions = [
                 "asset = ?",
                 "timeframe = ?",
@@ -975,7 +975,15 @@ class DatabaseManager:
             else:
                 conditions.append("trading_strategy IS NULL")
             
-            # 移除session_id过滤条件，允许跨session共享缓存
+            # 添加session_id过滤条件，确保每个用户的查询都是独立的
+            if session_id:
+                conditions.append("session_id = ?")
+                params.append(session_id)
+            else:
+                # 如果没有session_id，使用user_ip作为替代标识
+                conditions.append("user_ip = ?")
+                params.append(request.remote_addr if 'request' in globals() else 'unknown')
+            
             where_clause = " AND ".join(conditions)
             
             # 添加详细的调试信息
