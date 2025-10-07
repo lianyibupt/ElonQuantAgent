@@ -9,3 +9,4 @@ read.html
 read_files/
 app/
 .env
+.DS_Store
