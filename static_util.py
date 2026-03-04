@@ -2,6 +2,10 @@ import base64
 import io
 
 import matplotlib
+
+# 设置matplotlib使用非GUI后端（Agg），避免在非主线程中创建GUI窗口
+matplotlib.use("Agg")
+
 import matplotlib.pyplot as plt
 import mplfinance as mpf
 import numpy as np
@@ -14,8 +18,6 @@ from graph_util import (
     get_line_points,
     split_line_into_segments,
 )
-
-matplotlib.use("Agg")
 
 
 def generate_kline_image(kline_data) -> dict:

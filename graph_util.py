@@ -3,6 +3,10 @@ import io
 from typing import Annotated
 
 import matplotlib
+
+# 设置matplotlib使用非GUI后端（Agg），避免在非主线程中创建GUI窗口
+matplotlib.use('Agg')
+
 import matplotlib.pyplot as plt
 import mplfinance as mpf
 import numpy as np
