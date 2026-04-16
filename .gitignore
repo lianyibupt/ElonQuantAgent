@@ -12,3 +12,4 @@ app/
 .DS_Store
 ElonQuantAndriod/
 ios/
+trade_data.db
