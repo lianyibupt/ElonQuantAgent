@@ -73,7 +73,7 @@ class MultiProviderLLM:
                 'name': 'DeepSeek',
                 'client_class': OpenAIClient,
                 'base_url': 'https://api.deepseek.com/v1',
-                'models': ['deepseek-chat', 'deepseek-coder']
+                'models': ['deepseek-v4-flash', 'deepseek-v4-pro']
             },
             'volcengine': {
                 'name': 'Volcengine',

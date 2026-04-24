@@ -57,7 +57,7 @@ class TradingGraph:
                 deepseek_key = os.environ.get("DEEPSEEK_API_KEY")
                 if deepseek_key and deepseek_key != "your-deepseek-api-key-here":
                     # Use DeepSeek model names
-                    deepseek_model = "deepseek-chat" if "gpt" in model.lower() else model
+                    deepseek_model = "deepseek-v4-flash" if "gpt" in model.lower() else model
                     return ChatOpenAI(
                         model=deepseek_model,
                         temperature=temperature,

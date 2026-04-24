@@ -9,8 +9,8 @@ LLM_PROVIDER = os.environ.get("LLM_PROVIDER", "deepseek")
 
 # 根据提供商设置默认模型
 if LLM_PROVIDER == "deepseek":
-    DEFAULT_AGENT_MODEL = "deepseek-chat"
-    DEFAULT_GRAPH_MODEL = "deepseek-chat"
+    DEFAULT_AGENT_MODEL = "deepseek-v4-flash"
+    DEFAULT_GRAPH_MODEL = "deepseek-v4-flash"
 else:  # openai
     DEFAULT_AGENT_MODEL = "gpt-4o-mini"
     DEFAULT_GRAPH_MODEL = "gpt-4o"
