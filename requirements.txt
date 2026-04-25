@@ -1,5 +1,6 @@
 flask
 python-dotenv
+python-dotenv
 yfinance
 pandas
 numpy
@@ -11,9 +12,12 @@ langchain
 langchain-openai
 langchain-anthropic
 langchain-qwq
+langchain-anthropic
+langchain-qwq
 langchain-core
 langgraph
 openai
+anthropic
 anthropic
 ipython
 Pillow
