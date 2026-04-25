@@ -751,7 +751,6 @@ def setup_environment():
     llm_provider = os.environ.get("LLM_PROVIDER", "deepseek")
     deepseek_key = os.environ.get("DEEPSEEK_API_KEY")
     openai_key = os.environ.get("OPENAI_API_KEY")
-    finnhub_key = os.environ.get("FINNHUB_API_KEY")
     
     # Set LLM provider based on environment variables
     if llm_provider == "deepseek" and deepseek_key and deepseek_key != "your-deepseek-api-key-here":
@@ -764,9 +763,6 @@ def setup_environment():
     elif openai_key and openai_key != "your-openai-api-key-here":
         # Fallback to OpenAI
         analyzer.llm_provider.set_provider('openai', openai_key)
-    
-    if finnhub_key and finnhub_key != "your-finnhub-api-key-here":
-        analyzer.data_fetcher.initialize_finnhub(finnhub_key)
 
 # Initialize environment
 setup_environment()

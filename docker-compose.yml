@@ -10,7 +10,6 @@ services:
       - LLM_PROVIDER=${LLM_PROVIDER:-openai}
       - OPENAI_API_KEY=${OPENAI_API_KEY}
       - DEEPSEEK_API_KEY=${DEEPSEEK_API_KEY}
-      - FINNHUB_API_KEY=${FINNHUB_API_KEY}
       - DATA_SOURCE=${DATA_SOURCE:-akshare}
       - PORT=5001
       - DEBUG=${DEBUG:-False}

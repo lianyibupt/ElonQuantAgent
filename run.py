@@ -33,12 +33,7 @@ def check_requirements():
         print("   - OPENAI_API_KEY (OpenAI API密钥)")
         print("   - DEEPSEEK_API_KEY (DeepSeek API密钥)")
         required_vars.append("LLM_API_KEY")
-    
-    # 检查数据源API密钥（可选）
-    finnhub_key = os.environ.get("FINNHUB_API_KEY")
-    if not finnhub_key or finnhub_key == "your-finnhub-api-key-here":
-        print("ℹ️  提示: 未设置Finnhub API密钥，将仅使用akshare数据源")
-    
+
     return len(required_vars) == 0
 
 def install_requirements():
