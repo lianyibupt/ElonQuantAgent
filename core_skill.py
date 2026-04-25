@@ -6,7 +6,7 @@ from pathlib import Path
 import pandas as pd
 import yfinance as yf
 
-from trading_graph import TradingGraph, safe_str
+from core.trading_graph import TradingGraph, safe_str
 
 
 def fetch_yfinance_data(symbol: str, interval: str, start: datetime, end: datetime) -> pd.DataFrame:

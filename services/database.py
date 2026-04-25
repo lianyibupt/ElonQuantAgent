@@ -24,7 +24,7 @@ class DatabaseManager:
         """
         if db_path is None:
             # 默认数据库路径：项目根目录下
-            project_root = Path(__file__).parent
+            project_root = Path(__file__).parent.parent
             db_path = project_root / "trading_data.db"
         
         self.db_path = str(db_path)

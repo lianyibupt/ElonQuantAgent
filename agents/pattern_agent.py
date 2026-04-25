@@ -58,7 +58,7 @@ def create_pattern_agent(llm, tools):
         
         try:
             # 直接调用图表生成工具 - 使用tools参数中的第一个工具
-            from graph_util import TechnicalTools
+            from utils.graph_util import TechnicalTools
             toolkit = TechnicalTools()
             print("🖼️  [PatternAgent] 调用图表生成工具...")
             chart_result = invoke_tool_with_retry(

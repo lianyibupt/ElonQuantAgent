@@ -54,9 +54,10 @@ def safe_str(obj):
             return "Error converting to string"
 
 # Import your existing modules
-from trading_graph import TradingGraph
+from core.trading_graph import TradingGraph
 
-app = Flask(__name__)
+_project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+app = Flask(__name__, template_folder=os.path.join(_project_root, 'templates'))
 
 class MultiProviderLLM:
     """支持多厂商LLM API的类"""
@@ -770,7 +771,7 @@ setup_environment()
 # Initialize database manager at startup
 print("🔍 初始化数据库管理器...")
 try:
-    from database import get_database_manager
+    from services.database import get_database_manager
     db_manager = get_database_manager()
     print(f"✅ 数据库管理器初始化成功")
     print(f"📁 数据库路径: {db_manager.db_path}")
@@ -1222,7 +1223,7 @@ def save_analysis_history():
         data = request.get_json()
         
         # 获取数据库管理器
-        from database import get_database_manager
+        from services.database import get_database_manager
         db_manager = get_database_manager()
         
         # 保存历史记录
@@ -1263,7 +1264,7 @@ def update_analysis_history():
             return jsonify({"success": False, "error": "Missing history_id"}), 400
         
         # 获取数据库管理器
-        from database import get_database_manager
+        from services.database import get_database_manager
         db_manager = get_database_manager()
         
         # 更新历史记录
@@ -1294,7 +1295,7 @@ def get_analysis_history():
         days_back = request.args.get('days_back', 30, type=int)
         
         # 获取数据库管理器
-        from database import get_database_manager
+        from services.database import get_database_manager
         db_manager = get_database_manager()
         
         # 获取历史记录 - 移除session_id过滤，允许跨session查看所有记录
@@ -1318,7 +1319,7 @@ def get_analysis_history_by_id(history_id):
     """根据ID获取分析历史记录详情"""
     try:
         # 获取数据库管理器
-        from database import get_database_manager
+        from services.database import get_database_manager
         db_manager = get_database_manager()
         
         # 获取历史记录详情
@@ -1339,7 +1340,7 @@ def delete_analysis_history(history_id):
     """删除分析历史记录"""
     try:
         # 获取数据库管理器
-        from database import get_database_manager
+        from services.database import get_database_manager
         db_manager = get_database_manager()
         
         # 删除历史记录
@@ -1360,7 +1361,7 @@ def clear_analysis_history():
         days_older_than = data.get('days_older_than')
         
         # 获取数据库管理器
-        from database import get_database_manager
+        from services.database import get_database_manager
         db_manager = get_database_manager()
         
         # 清理历史记录
@@ -1378,7 +1379,7 @@ def clear_analysis_history():
 def serve_assets(filename):
     """Serve static assets"""
     try:
-        assets_dir = os.path.join(os.path.dirname(__file__), 'assets')
+        assets_dir = os.path.join(_project_root, 'assets')
         return send_file(os.path.join(assets_dir, filename))
     except Exception as e:
         return jsonify({"error": f"Asset not found: {safe_str(e)}"}), 404
@@ -1397,7 +1398,7 @@ def get_image(image_type):
     """API endpoint to serve analysis images"""
     try:
         # 根据图片类型返回相应的图片文件
-        image_dir = os.path.join(os.path.dirname(__file__), 'data', 'images')
+        image_dir = os.path.join(_project_root, 'data', 'images')
         
         if image_type == 'pattern':
             # 查找最新的pattern图片

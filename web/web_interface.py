@@ -11,16 +11,17 @@ import yfinance as yf
 from flask import Flask, jsonify, render_template, request, send_file
 from openai import OpenAI
 
-import static_util
-from trading_graph import TradingGraph
+import utils.static_util as static_util
+from core.trading_graph import TradingGraph
 
-app = Flask(__name__)
+_project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+app = Flask(__name__, template_folder=os.path.join(_project_root, 'templates'))
 
 
 class WebTradingAnalyzer:
     def __init__(self):
         """Initialize the web trading analyzer."""
-        from default_config import DEFAULT_CONFIG
+        from config.default_config import DEFAULT_CONFIG
         # Start with default config (OpenAI)
         self.config = DEFAULT_CONFIG.copy()
         self.trading_graph = TradingGraph(config=self.config)

@@ -19,7 +19,7 @@ def create_trend_agent(llm, tools):
         
         try:
             # 直接调用趋势图生成工具
-            from graph_util import TechnicalTools
+            from utils.graph_util import TechnicalTools
             toolkit = TechnicalTools()
             print("📊 [TrendAgent] 调用趋势图生成工具...")
             trend_result = toolkit.generate_trend_image.invoke({"kline_data": kline_data})

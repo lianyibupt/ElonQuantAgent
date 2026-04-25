@@ -14,8 +14,8 @@ from langchain_core.language_models import BaseChatModel
 from langchain_anthropic import ChatAnthropic
 from langchain_core.language_models import BaseChatModel
 from langchain_openai import ChatOpenAI
-from default_config import DEFAULT_CONFIG
-from graph_util import TechnicalTools
+from config.default_config import DEFAULT_CONFIG
+from utils.graph_util import TechnicalTools
 
 def safe_str(obj):
     """Safely convert object to string, handling encoding issues"""
@@ -54,9 +54,6 @@ class TradingGraph:
     Simplified orchestrator for the multi-agent trading system.
     Directly calls agent functions without complex tool calling.
     """
-
-    def __init__(self, config=None):
-
     def __init__(self, config=None):
         # --- Configuration and LLMs ---
         self.config = config if config is not None else DEFAULT_CONFIG.copy()
@@ -171,10 +168,10 @@ class TradingGraph:
         """
         try:
             # Import agent functions
-            from indicator_agent import create_indicator_agent
-            from pattern_agent import create_pattern_agent
-            from trend_agent import create_trend_agent
-            from decision_agent import create_decision_agent
+            from agents.indicator_agent import create_indicator_agent
+            from agents.pattern_agent import create_pattern_agent
+            from agents.trend_agent import create_trend_agent
+            from agents.decision_agent import create_decision_agent
 
             # Create agent functions
             indicator_agent = create_indicator_agent(self.agent_llm, self.toolkit)
@@ -278,10 +275,10 @@ class TradingGraph:
         """
         try:
             # Import agent functions
-            from indicator_agent import create_indicator_agent
-            from pattern_agent import create_pattern_agent_text_only
-            from trend_agent import create_trend_agent_text_only
-            from decision_agent import create_decision_agent
+            from agents.indicator_agent import create_indicator_agent
+            from agents.pattern_agent import create_pattern_agent_text_only
+            from agents.trend_agent import create_trend_agent_text_only
+            from agents.decision_agent import create_decision_agent
 
             # Create agent functions for text-only analysis
             indicator_agent = create_indicator_agent(self.agent_llm, self.toolkit)
@@ -398,10 +395,10 @@ class TradingGraph:
         """
         try:
             # Import agent functions
-            from indicator_agent import create_indicator_agent
-            from pattern_agent import create_pattern_agent
-            from trend_agent import create_trend_agent
-            from decision_agent import create_decision_agent
+            from agents.indicator_agent import create_indicator_agent
+            from agents.pattern_agent import create_pattern_agent
+            from agents.trend_agent import create_trend_agent
+            from agents.decision_agent import create_decision_agent
 
             # Create agent functions
             indicator_agent = create_indicator_agent(self.agent_llm, self.toolkit)
@@ -505,10 +502,10 @@ class TradingGraph:
         """
         try:
             # Import agent functions
-            from indicator_agent import create_indicator_agent
-            from pattern_agent import create_pattern_agent_text_only
-            from trend_agent import create_trend_agent_text_only
-            from decision_agent import create_decision_agent
+            from agents.indicator_agent import create_indicator_agent
+            from agents.pattern_agent import create_pattern_agent_text_only
+            from agents.trend_agent import create_trend_agent_text_only
+            from agents.decision_agent import create_decision_agent
 
             # Create agent functions for text-only analysis
             indicator_agent = create_indicator_agent(self.agent_llm, self.toolkit)

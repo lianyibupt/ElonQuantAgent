@@ -76,7 +76,7 @@ def start_web_interface(port=5001):
     print("\n" + "="*50)
     
     try:
-        from web_interface_new import app
+        from web.web_interface_new import app
         app.run(debug=True, host='127.0.0.1', port=port)
     except ImportError as e:
         print(f"❌ 导入错误: {e}")
