@@ -1566,15 +1566,15 @@
             updateApiKeyFields();
             // Set default dates
             const now = new Date();
-            const thirtyDaysAgo = new Date(now.getTime() - (180 * 24 * 60 * 60 * 1000));
+            const oneYearAgo = new Date(now.getTime() - (365 * 24 * 60 * 60 * 1000));
             
             // Format dates for input fields
             const formatDate = (date) => {
                 return date.toISOString().split('T')[0];
             };
             
-            // Set default start date (30 days ago)
-            document.getElementById('startDate').value = formatDate(thirtyDaysAgo);
+            // Set default start date (1 year ago)
+            document.getElementById('startDate').value = formatDate(oneYearAgo);
             
             // Set default end date (today)
             document.getElementById('endDate').value = formatDate(now);
