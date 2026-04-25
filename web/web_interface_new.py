@@ -1047,9 +1047,54 @@ def analyze():
         
         # Handle Dual Strategy Mode
         if trading_strategy == 'both':
-            print(f"🔍 [Dual Mode] Starting dual strategy analysis for {asset}")
+            print(f"🔍 [Dual Mode] 检查数据库缓存...")
+            print(f"   📊 查询条件: {asset} {timeframe} {start_date}~{end_date}")
             
-            # Fetch data once for both strategies
+            existing_high = db_manager.check_existing_analysis(
+                asset=asset,
+                timeframe=timeframe,
+                start_date=start_date,
+                end_date=end_date,
+                start_time=start_time,
+                end_time=end_time,
+                trading_strategy='high_frequency',
+                analysis_params={"market_data_source": market_data_source or analyzer.data_fetcher.current_source},
+                max_hours_old=24
+            )
+            
+            existing_low = db_manager.check_existing_analysis(
+                asset=asset,
+                timeframe=timeframe,
+                start_date=start_date,
+                end_date=end_date,
+                start_time=start_time,
+                end_time=end_time,
+                trading_strategy='low_frequency',
+                analysis_params={"market_data_source": market_data_source or analyzer.data_fetcher.current_source},
+                max_hours_old=24
+            )
+            
+            if existing_high and existing_low:
+                print(f"✅ [Dual Mode] 两个策略均有缓存，跳过API调用")
+                id_high = existing_high['id']
+                id_low = existing_low['id']
+                
+                if redirect_to_output:
+                    redirect_url = f"/output?id1={id_high}&id2={id_low}&mode=compare"
+                    print(f"📊 [DEBUG] Dual mode使用缓存重定向: {redirect_url}")
+                    return jsonify({"redirect": redirect_url})
+                else:
+                    results_high = existing_high.get('result_details', {})
+                    results_low = existing_low.get('result_details', {})
+                    results_high['cache_info'] = {'cache_id': id_high, 'cache_timestamp': existing_high.get('created_at'), 'is_cached': True}
+                    results_low['cache_info'] = {'cache_id': id_low, 'cache_timestamp': existing_low.get('created_at'), 'is_cached': True}
+                    return jsonify({
+                        "success": True,
+                        "mode": "compare",
+                        "results_high": results_high,
+                        "results_low": results_low
+                    })
+            
             df = analyzer.fetch_market_data(asset, timeframe, start_dt, end_dt, market_data_source=market_data_source)
             if df.empty:
                 error_message = (
@@ -1060,31 +1105,37 @@ def analyze():
             
             display_name = analyzer.asset_mapping.get(asset, asset)
             
-            # 1. Run High Frequency Analysis
-            print(f"📊 [Dual Mode] Running High Frequency Analysis...")
-            results_high = analyzer.run_analysis(df, display_name, timeframe, generate_charts, 'high_frequency')
-            formatted_high = analyzer.extract_analysis_results(results_high)
+            if existing_high:
+                print(f"✅ [Dual Mode] 高频策略有缓存，仅执行低频分析")
+                id_high = existing_high['id']
+                formatted_high = existing_high.get('result_details', {})
+            else:
+                print(f"📊 [Dual Mode] Running High Frequency Analysis...")
+                results_high = analyzer.run_analysis(df, display_name, timeframe, generate_charts, 'high_frequency')
+                formatted_high = analyzer.extract_analysis_results(results_high)
+                id_high = db_manager.save_analysis_history(
+                    asset=asset, timeframe=timeframe, start_date=start_date, end_date=end_date,
+                    start_time=start_time, end_time=end_time, generate_charts=generate_charts,
+                    trading_strategy='high_frequency', result_summary=f"{asset} HF Analysis",
+                    analysis_params={"market_data_source": market_data_source or analyzer.data_fetcher.current_source},
+                    result_details=formatted_high, status='completed', session_id=session_id, user_ip=request.remote_addr
+                )
             
-            id_high = db_manager.save_analysis_history(
-                asset=asset, timeframe=timeframe, start_date=start_date, end_date=end_date,
-                start_time=start_time, end_time=end_time, generate_charts=generate_charts,
-                trading_strategy='high_frequency', result_summary=f"{asset} HF Analysis",
-                analysis_params={"market_data_source": market_data_source or analyzer.data_fetcher.current_source},
-                result_details=formatted_high, status='completed', session_id=session_id, user_ip=request.remote_addr
-            )
-            
-            # 2. Run Low Frequency Analysis
-            print(f"📊 [Dual Mode] Running Low Frequency Analysis...")
-            results_low = analyzer.run_analysis(df, display_name, timeframe, generate_charts, 'low_frequency')
-            formatted_low = analyzer.extract_analysis_results(results_low)
-            
-            id_low = db_manager.save_analysis_history(
-                asset=asset, timeframe=timeframe, start_date=start_date, end_date=end_date,
-                start_time=start_time, end_time=end_time, generate_charts=generate_charts,
-                trading_strategy='low_frequency', result_summary=f"{asset} LF Analysis",
-                analysis_params={"market_data_source": market_data_source or analyzer.data_fetcher.current_source},
-                result_details=formatted_low, status='completed', session_id=session_id, user_ip=request.remote_addr
-            )
+            if existing_low:
+                print(f"✅ [Dual Mode] 低频策略有缓存，仅执行高频分析")
+                id_low = existing_low['id']
+                formatted_low = existing_low.get('result_details', {})
+            else:
+                print(f"📊 [Dual Mode] Running Low Frequency Analysis...")
+                results_low = analyzer.run_analysis(df, display_name, timeframe, generate_charts, 'low_frequency')
+                formatted_low = analyzer.extract_analysis_results(results_low)
+                id_low = db_manager.save_analysis_history(
+                    asset=asset, timeframe=timeframe, start_date=start_date, end_date=end_date,
+                    start_time=start_time, end_time=end_time, generate_charts=generate_charts,
+                    trading_strategy='low_frequency', result_summary=f"{asset} LF Analysis",
+                    analysis_params={"market_data_source": market_data_source or analyzer.data_fetcher.current_source},
+                    result_details=formatted_low, status='completed', session_id=session_id, user_ip=request.remote_addr
+                )
             
             if redirect_to_output:
                 redirect_url = f"/output?id1={id_high}&id2={id_low}&mode=compare"
