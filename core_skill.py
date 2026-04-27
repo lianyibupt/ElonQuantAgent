@@ -73,6 +73,23 @@ def render_markdown(symbol: str, interval: str, start: datetime, end: datetime, 
     pattern_report = final_state.get("pattern_report", "")
     trend_report = final_state.get("trend_report", "")
     decision = final_state.get("final_trade_decision", "")
+    score = final_state.get("single_name_score", {}) or {}
+    score_lines = [
+        f"- 决策: {score.get('decision', 'N/A')}",
+        f"- 推荐账本: {score.get('recommended_book', 'N/A')}",
+        f"- 推荐动作: {score.get('recommended_action', 'N/A')}",
+        f"- 置信度: {score.get('confidence', 'N/A')}",
+        f"- 风险收益比: {score.get('risk_reward_ratio', 'N/A')}",
+        f"- 预测周期: {score.get('forecast_horizon', 'N/A')}",
+        f"- 趋势分: {score.get('trend_score', 'N/A')}",
+        f"- 入场分: {score.get('entry_score', 'N/A')}",
+        f"- 拉伸分: {score.get('valuation_stretch_score', 'N/A')}",
+        f"- 催化分: {score.get('catalyst_score', 'N/A')}",
+        f"- 波动分: {score.get('volatility_score', 'N/A')}",
+        f"- 建议仓位: {score.get('suggested_position_range', 'N/A')}",
+        f"- 失效价: {score.get('invalidation_price', 'N/A')}",
+        f"- 理由: {score.get('justification', 'N/A')}",
+    ]
     return "\n".join(
         [
             f"# 交易分析报告 - {symbol}",
@@ -82,6 +99,9 @@ def render_markdown(symbol: str, interval: str, start: datetime, end: datetime, 
             f"- 周期: {interval}",
             f"- 起始时间: {start.strftime('%Y-%m-%d')}",
             f"- 结束时间: {end.strftime('%Y-%m-%d')}",
+            "",
+            "## 结构化评分卡",
+            *score_lines,
             "",
             "## 指标分析",
             indicator_report or "(空)",

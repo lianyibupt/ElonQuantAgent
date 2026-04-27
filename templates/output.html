@@ -295,12 +295,16 @@
             <h4 class="panel-title">
                 <i class="fas fa-bullseye"></i> Final Trading Decision
             </h4>
+            {% set decision_text = results.final_decision.decision if results.final_decision and results.final_decision.decision else 'HOLD' %}
+            {% if decision_text in ['买入', '加仓', 'BUY', 'LONG'] %}
+                {% set decision_class = 'decision-long' %}
+            {% elif decision_text in ['卖出', '减仓', '退出', 'SELL', 'SHORT'] %}
+                {% set decision_class = 'decision-short' %}
+            {% else %}
+                {% set decision_class = 'decision-hold' %}
+            {% endif %}
             <div class="text-center mb-3">
-                {% if results.final_decision and results.final_decision.decision %}
-                    <span class="decision-badge decision-{{ results.final_decision.decision.lower() }}">{{ results.final_decision.decision }}</span>
-                {% else %}
-                    <span class="decision-badge decision-hold">HOLD</span>
-                {% endif %}
+                <span class="decision-badge {{ decision_class }}">{{ decision_text }}</span>
             </div>
             <div>
                 {% if results.final_decision %}
@@ -311,6 +315,71 @@
                 {% else %}
                     <p>Analysis in progress or failed.</p>
                 {% endif %}
+            </div>
+        </div>
+
+        <!-- Structured Scorecard Panel -->
+        <div class="panel">
+            <h4 class="panel-title">
+                <i class="fas fa-layer-group"></i> Structured Scorecard
+            </h4>
+            <div class="row align-items-stretch mb-3">
+                <div class="col-md-4 d-flex">
+                    <div class="stats-card w-100">
+                        <div class="stats-number">{{ results.single_name_score.recommended_book if results.single_name_score else 'N/A' }}</div>
+                        <div class="stats-label">Recommended Book</div>
+                    </div>
+                </div>
+                <div class="col-md-4 d-flex">
+                    <div class="stats-card w-100">
+                        <div class="stats-number">{{ results.single_name_score.recommended_action if results.single_name_score else 'N/A' }}</div>
+                        <div class="stats-label">Recommended Action</div>
+                    </div>
+                </div>
+                <div class="col-md-4 d-flex">
+                    <div class="stats-card w-100">
+                        <div class="stats-number">{{ results.single_name_score.confidence if results.single_name_score else 'N/A' }}</div>
+                        <div class="stats-label">Confidence</div>
+                    </div>
+                </div>
+            </div>
+            <div class="row align-items-stretch">
+                <div class="col-md-2 col-6 d-flex">
+                    <div class="stats-card w-100">
+                        <div class="stats-number">{{ results.single_name_score.trend_score if results.single_name_score else 0 }}</div>
+                        <div class="stats-label">Trend</div>
+                    </div>
+                </div>
+                <div class="col-md-2 col-6 d-flex">
+                    <div class="stats-card w-100">
+                        <div class="stats-number">{{ results.single_name_score.entry_score if results.single_name_score else 0 }}</div>
+                        <div class="stats-label">Entry</div>
+                    </div>
+                </div>
+                <div class="col-md-3 col-6 d-flex">
+                    <div class="stats-card w-100">
+                        <div class="stats-number">{{ results.single_name_score.valuation_stretch_score if results.single_name_score else 0 }}</div>
+                        <div class="stats-label">Valuation/Stretch</div>
+                    </div>
+                </div>
+                <div class="col-md-2 col-6 d-flex">
+                    <div class="stats-card w-100">
+                        <div class="stats-number">{{ results.single_name_score.catalyst_score if results.single_name_score else 0 }}</div>
+                        <div class="stats-label">Catalyst</div>
+                    </div>
+                </div>
+                <div class="col-md-3 col-12 d-flex">
+                    <div class="stats-card w-100">
+                        <div class="stats-number">{{ results.single_name_score.volatility_score if results.single_name_score else 0 }}</div>
+                        <div class="stats-label">Volatility</div>
+                    </div>
+                </div>
+            </div>
+            <div class="mt-4">
+                <p><strong>Suggested Position Range:</strong> {{ results.single_name_score.suggested_position_range if results.single_name_score else 'N/A' }}</p>
+                <p><strong>Invalidation Price:</strong> {{ results.single_name_score.invalidation_price if results.single_name_score else 'N/A' }}</p>
+                <p><strong>Scorecard Justification:</strong></p>
+                <div class="auto-beautify">{{ results.single_name_score.justification if results.single_name_score else 'No scorecard justification available.' }}</div>
             </div>
         </div>
 

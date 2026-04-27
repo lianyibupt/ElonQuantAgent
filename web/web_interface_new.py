@@ -535,51 +535,40 @@ class WebTradingAnalyzer:
         return pd.DataFrame()
 
     # Keep other methods unchanged, only modify data fetching part
-    def run_analysis(self, df: pd.DataFrame, asset_name: str, timeframe: str, generate_charts: bool = False, trading_strategy: str = 'both') -> Dict[str, Any]:
+    def run_analysis(self, df: pd.DataFrame, asset_name: str, timeframe: str, generate_charts: bool = False, trading_strategy: str = 'both', account_state: Optional[Dict[str, Any]] = None, positions: Optional[List[Dict[str, Any]]] = None, candidates: Optional[List[Dict[str, Any]]] = None) -> Dict[str, Any]:
         """Run the trading analysis on the provided DataFrame."""
         try:
-            # 确保asset_name是安全的字符串
             asset_name = safe_str(asset_name)
             timeframe = safe_str(timeframe)
-            
+
             df_slice = df
-            
-            # 检查必要的列，注意Datetime可能被设置为索引
             required_price_columns = ["Open", "High", "Low", "Close"]
-            
-            # 检查Datetime列是否存在，或者是否在索引中
             has_datetime_column = "Datetime" in df_slice.columns
             has_datetime_index = df_slice.index.name == "Datetime" or isinstance(df_slice.index, pd.DatetimeIndex)
-            
+
             if not all(col in df_slice.columns for col in required_price_columns) or (not has_datetime_column and not has_datetime_index):
                 return {
                     "success": False,
                     "error": f"Missing required columns. Available columns: {list(df_slice.columns)}, Index: {df_slice.index.name}"
                 }
-            
-            # 处理Datetime数据（可能在列中或索引中）
+
             df_slice_dict = {}
-            
-            # 如果Datetime在索引中，重置索引
             if has_datetime_index:
                 df_slice = df_slice.reset_index()
                 has_datetime_column = True
-            
-            # 处理Datetime列
+
             if has_datetime_column:
                 try:
                     df_slice_dict['Datetime'] = df_slice['Datetime'].dt.strftime('%Y-%m-%d %H:%M:%S').tolist()
                 except Exception:
                     df_slice_dict['Datetime'] = [safe_str(dt) for dt in df_slice['Datetime'].tolist()]
-            
-            # 处理价格数据列
+
             for col in required_price_columns:
                 try:
                     df_slice_dict[col] = [float(x) if pd.notna(x) else 0.0 for x in df_slice[col].tolist()]
                 except Exception:
                     df_slice_dict[col] = [safe_str(x) for x in df_slice[col].tolist()]
-            
-            # 添加数据转换后的日志
+
             print(f"\n📊 [数据转换] {asset_name} 转换为字典后:")
             if 'Close' in df_slice_dict:
                 close_prices = df_slice_dict['Close']
@@ -587,7 +576,7 @@ class WebTradingAnalyzer:
                 print(f"  收盘价范围: ${min(close_prices):.2f} - ${max(close_prices):.2f}")
                 print(f"  前3条: {close_prices[:3]}")
                 print(f"  后3条: {close_prices[-3:]}")
-            
+
             display_timeframe = timeframe
             if timeframe.endswith('h'):
                 display_timeframe += 'our'
@@ -595,39 +584,42 @@ class WebTradingAnalyzer:
                 display_timeframe += 'in'
             elif timeframe.endswith('d'):
                 display_timeframe += 'ay'
-            
-            initial_state = {
-                "kline_data": df_slice_dict,
-                "analysis_results": None,
-                "messages": [],
-                "time_frame": safe_str(display_timeframe),
-                "stock_name": safe_str(asset_name),
-                "trading_strategy": safe_str(trading_strategy)  # Add trading strategy to state
-            }
-            
-            # 根据generate_charts参数决定是否生成图表
+
             print(f"📊 [DEBUG] run_analysis 中 generate_charts={generate_charts}")
             if generate_charts:
                 print(f"✅ [DEBUG] 启用图表生成模式")
-                analysis_result = self.trading_graph.analyze(df_slice_dict, asset_name, display_timeframe, trading_strategy)
+                analysis_result = self.trading_graph.analyze(
+                    df_slice_dict,
+                    asset_name,
+                    display_timeframe,
+                    trading_strategy,
+                    account_state=account_state,
+                    positions=positions,
+                    candidates=candidates,
+                )
             else:
                 print(f"⚠️ [DEBUG] 仅文本分析模式，不生成图表")
-                # 只进行文本分析，不生成图表
-                analysis_result = self.trading_graph.analyze_text_only(df_slice_dict, asset_name, display_timeframe, trading_strategy)
-            
-            # 从分析结果中提取final_state
+                analysis_result = self.trading_graph.analyze_text_only(
+                    df_slice_dict,
+                    asset_name,
+                    display_timeframe,
+                    trading_strategy,
+                    account_state=account_state,
+                    positions=positions,
+                    candidates=candidates,
+                )
+
             final_state = analysis_result.get("final_state", {})
             print(f"从TradingGraph提取的final_state键: {list(final_state.keys())}")
             print(f"趋势报告长度: {len(final_state.get('trend_report', ''))}")
             print(f"指标报告长度: {len(final_state.get('indicator_report', ''))}")
             print(f"形态报告长度: {len(final_state.get('pattern_report', ''))}")
-            
-            # 确保final_state中的所有字符串都是安全的
+
             if isinstance(final_state, dict):
-                for key, value in final_state.items():
+                for key, value in list(final_state.items()):
                     if isinstance(value, str):
                         final_state[key] = safe_str(value)
-            
+
             return {
                 "success": True,
                 "final_state": final_state,
@@ -635,10 +627,10 @@ class WebTradingAnalyzer:
                 "timeframe": safe_str(display_timeframe),
                 "data_length": len(df_slice)
             }
-            
+
         except Exception as e:
             error_msg = safe_str(e)
-            
+
             if "authentication" in error_msg.lower():
                 return {"success": False, "error": "API key invalid"}
             elif "rate limit" in error_msg.lower():
@@ -688,44 +680,50 @@ class WebTradingAnalyzer:
         """Extract and format analysis results for web display."""
         if not results["success"]:
             return {"error": safe_str(results["error"])}
-        
+
         final_state = results["final_state"]
-        
-        # Extract analysis results from state fields with safe string conversion
+
         technical_indicators = safe_str(final_state.get("indicator_report", ""))
         pattern_analysis = safe_str(final_state.get("pattern_report", ""))
         trend_analysis = safe_str(final_state.get("trend_report", ""))
         final_decision_raw = safe_str(final_state.get("final_trade_decision", ""))
-        
-        # Extract chart data if available
+        decision_payload = final_state.get("decision_payload", {}) or {}
+        single_name_score = final_state.get("single_name_score", {}) or {}
+
         pattern_chart = safe_str(final_state.get("pattern_image", ""))
         trend_chart = safe_str(final_state.get("trend_image", ""))
         pattern_image_filename = safe_str(final_state.get("pattern_image_filename", ""))
         trend_image_filename = safe_str(final_state.get("trend_image_filename", ""))
-        
-        # Parse final decision
-        final_decision = ""
-        if final_decision_raw:
-            try:
-                # Try to extract JSON from the decision
-                start = final_decision_raw.find('{')
-                end = final_decision_raw.rfind('}') + 1
-                if start != -1 and end != 0:
-                    json_str = final_decision_raw[start:end]
-                    decision_data = json.loads(json_str)
-                    final_decision = {
-                        "decision": safe_str(decision_data.get('decision', 'N/A')),
-                        "risk_reward_ratio": safe_str(decision_data.get('risk_reward_ratio', 'N/A')),
-                        "forecast_horizon": safe_str(decision_data.get('forecast_horizon', 'N/A')),
-                        "justification": safe_str(decision_data.get('justification', 'N/A'))
-                    }
-                else:
-                    # If no JSON found, return the raw text
-                    final_decision = {"raw": safe_str(final_decision_raw)}
-            except json.JSONDecodeError:
-                # If JSON parsing fails, return the raw text
-                final_decision = {"raw": safe_str(final_decision_raw)}
-        
+
+        if decision_payload:
+            final_decision = {
+                "decision": safe_str(decision_payload.get('decision', 'N/A')),
+                "risk_reward_ratio": safe_str(decision_payload.get('risk_reward_ratio', 'N/A')),
+                "forecast_horizon": safe_str(decision_payload.get('forecast_horizon', 'N/A')),
+                "justification": safe_str(decision_payload.get('justification', 'N/A'))
+            }
+        elif final_decision_raw:
+            final_decision = {"raw": safe_str(final_decision_raw)}
+        else:
+            final_decision = {}
+
+        normalized_score = {
+            "decision": safe_str(single_name_score.get("decision", "N/A")),
+            "confidence": safe_str(single_name_score.get("confidence", "N/A")),
+            "risk_reward_ratio": safe_str(single_name_score.get("risk_reward_ratio", "N/A")),
+            "forecast_horizon": safe_str(single_name_score.get("forecast_horizon", "N/A")),
+            "justification": safe_str(single_name_score.get("justification", "N/A")),
+            "recommended_book": safe_str(single_name_score.get("recommended_book", "N/A")),
+            "recommended_action": safe_str(single_name_score.get("recommended_action", "N/A")),
+            "trend_score": single_name_score.get("trend_score", 0),
+            "entry_score": single_name_score.get("entry_score", 0),
+            "valuation_stretch_score": single_name_score.get("valuation_stretch_score", 0),
+            "catalyst_score": single_name_score.get("catalyst_score", 0),
+            "volatility_score": single_name_score.get("volatility_score", 0),
+            "suggested_position_range": safe_str(single_name_score.get("suggested_position_range", "N/A")),
+            "invalidation_price": safe_str(single_name_score.get("invalidation_price", "N/A")),
+        }
+
         return {
             "success": True,
             "asset_name": safe_str(results["asset_name"]),
@@ -738,7 +736,14 @@ class WebTradingAnalyzer:
             "trend_chart": trend_chart,
             "pattern_image_filename": pattern_image_filename,
             "trend_image_filename": trend_image_filename,
-            "final_decision": final_decision
+            "final_decision": final_decision,
+            "single_name_score": normalized_score,
+            "decision_payload": decision_payload,
+            "account_state": final_state.get("account_state", {}),
+            "positions": final_state.get("positions", []),
+            "candidates": final_state.get("candidates", []),
+            "portfolio_directive": final_state.get("portfolio_directive", {}),
+            "dashboard_payload": final_state.get("dashboard_payload", {}),
         }
 
 # Initialize the analyzer
