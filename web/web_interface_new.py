@@ -1176,24 +1176,37 @@ def analyze():
             result_details = existing_analysis.get('result_details', {})
             result_summary = existing_analysis.get('result_summary', '')
             
-            # 构建返回结果
-            formatted_results = {
+            # 构建返回结果，保留结构化字段，避免缓存路径退回旧响应格式
+            formatted_results = dict(result_details) if isinstance(result_details, dict) else {}
+            formatted_results.update({
                 "success": True,
-                "asset_name": asset,
-                "timeframe": timeframe,
-                "data_length": result_details.get('data_length', 0),
-                "technical_indicators": result_details.get('technical_indicators', ''),
-                "pattern_analysis": result_details.get('pattern_analysis', ''),
-                "trend_analysis": result_details.get('trend_analysis', ''),
-                "pattern_chart": result_details.get('pattern_chart', ''),
-                "trend_chart": result_details.get('trend_chart', ''),
-                "pattern_image_filename": result_details.get('pattern_image_filename', ''),
-                "trend_image_filename": result_details.get('trend_image_filename', ''),
-                "final_decision": result_details.get('final_decision', {}),
-                "cached": True,  # 标记为缓存结果
+                "asset_name": formatted_results.get('asset_name', asset),
+                "timeframe": formatted_results.get('timeframe', timeframe),
+                "data_length": formatted_results.get('data_length', 0),
+                "technical_indicators": formatted_results.get('technical_indicators', ''),
+                "pattern_analysis": formatted_results.get('pattern_analysis', ''),
+                "trend_analysis": formatted_results.get('trend_analysis', ''),
+                "pattern_chart": formatted_results.get('pattern_chart', ''),
+                "trend_chart": formatted_results.get('trend_chart', ''),
+                "pattern_image_filename": formatted_results.get('pattern_image_filename', ''),
+                "trend_image_filename": formatted_results.get('trend_image_filename', ''),
+                "final_decision": formatted_results.get('final_decision', {}),
+                "cached": True,
                 "cache_id": existing_analysis['id'],
-                "cache_timestamp": existing_analysis['created_at']
-            }
+                "cache_timestamp": existing_analysis['created_at'],
+                "cache_info": {
+                    "cache_id": existing_analysis['id'],
+                    "cache_timestamp": existing_analysis['created_at'],
+                    "is_cached": True,
+                },
+            })
+            formatted_results.setdefault("single_name_score", {})
+            formatted_results.setdefault("decision_payload", {})
+            formatted_results.setdefault("account_state", {})
+            formatted_results.setdefault("positions", [])
+            formatted_results.setdefault("candidates", [])
+            formatted_results.setdefault("portfolio_directive", {})
+            formatted_results.setdefault("dashboard_payload", {})
             
             
             if redirect_to_output:
