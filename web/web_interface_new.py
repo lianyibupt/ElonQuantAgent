@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 import sys
 import locale
+import hashlib
 
 # Set encoding to handle Unicode characters properly
 if sys.platform.startswith('win'):
@@ -52,6 +53,120 @@ def safe_str(obj):
             return repr(obj)
         except Exception:
             return "Error converting to string"
+
+
+def build_portfolio_cache_key(account_state: Optional[Dict[str, Any]], positions: Optional[List[Dict[str, Any]]], candidates: Optional[List[Dict[str, Any]]]) -> Optional[str]:
+    payload = {
+        "account_state": account_state or {},
+        "positions": positions or [],
+        "candidates": candidates or [],
+    }
+    if not payload["account_state"] and not payload["positions"] and not payload["candidates"]:
+        return None
+    serialized = json.dumps(payload, sort_keys=True, ensure_ascii=False, separators=(",", ":"))
+    return hashlib.sha256(serialized.encode("utf-8")).hexdigest()[:16]
+
+
+STAGE2_DEFAULT_WORKSPACE = {
+    "workspace_name": "default",
+    "account_state": {
+        "nav": 0,
+        "cash": 0,
+        "gross_exposure": 0,
+        "core_exposure": 0,
+        "tactical_exposure": 0,
+        "current_drawdown": 0,
+    },
+    "positions": [],
+    "candidates": [],
+    "notes": "",
+    "created_at": None,
+    "updated_at": None,
+}
+
+
+def _coerce_workspace_float(value: Any) -> float:
+    if value in (None, ""):
+        return 0.0
+    try:
+        return float(value)
+    except (TypeError, ValueError):
+        raise ValueError(f"无法解析数值: {value}")
+
+
+def normalize_stage2_workspace_payload(payload: Optional[Dict[str, Any]]) -> Dict[str, Any]:
+    payload = payload or {}
+    account_state = payload.get("account_state") or {}
+    positions = payload.get("positions") or []
+    candidates = payload.get("candidates") or []
+    notes = safe_str(payload.get("notes", "")).strip()
+    workspace_name = safe_str(payload.get("workspace_name", "default")).strip() or "default"
+
+    if not isinstance(account_state, dict):
+        raise ValueError("account_state 必须是对象")
+    if not isinstance(positions, list):
+        raise ValueError("positions 必须是数组")
+    if not isinstance(candidates, list):
+        raise ValueError("candidates 必须是数组")
+
+    normalized_account = {
+        "nav": _coerce_workspace_float(account_state.get("nav")),
+        "cash": _coerce_workspace_float(account_state.get("cash")),
+        "gross_exposure": _coerce_workspace_float(account_state.get("gross_exposure")),
+        "core_exposure": _coerce_workspace_float(account_state.get("core_exposure")),
+        "tactical_exposure": _coerce_workspace_float(account_state.get("tactical_exposure")),
+        "current_drawdown": _coerce_workspace_float(account_state.get("current_drawdown")),
+    }
+
+    normalized_positions = []
+    for index, position in enumerate(positions):
+        if not isinstance(position, dict):
+            raise ValueError(f"第 {index + 1} 条持仓必须是对象")
+
+        ticker = safe_str(position.get("ticker", "")).strip().upper()
+        book_type = safe_str(position.get("book_type", "")).strip()
+        tags = position.get("factor_tags") or []
+        if isinstance(tags, str):
+            tags = [tag.strip() for tag in tags.split(",") if tag.strip()]
+        if not isinstance(tags, list):
+            raise ValueError(f"第 {index + 1} 条持仓的 factor_tags 必须是数组")
+
+        if not ticker:
+            continue
+        normalized_positions.append({
+            "ticker": ticker,
+            "market_value": _coerce_workspace_float(position.get("market_value")),
+            "book_type": book_type or "观察",
+            "factor_tags": [safe_str(tag).strip() for tag in tags if safe_str(tag).strip()],
+        })
+
+    normalized_candidates = []
+    for index, candidate in enumerate(candidates):
+        if not isinstance(candidate, dict):
+            raise ValueError(f"第 {index + 1} 条候选必须是对象")
+
+        ticker = safe_str(candidate.get("ticker", "")).strip().upper()
+        tags = candidate.get("factor_tags") or []
+        if isinstance(tags, str):
+            tags = [tag.strip() for tag in tags.split(",") if tag.strip()]
+        if not isinstance(tags, list):
+            raise ValueError(f"第 {index + 1} 条候选的 factor_tags 必须是数组")
+
+        if not ticker:
+            continue
+        normalized_candidates.append({
+            "ticker": ticker,
+            "factor_tags": [safe_str(tag).strip() for tag in tags if safe_str(tag).strip()],
+        })
+
+    return {
+        "workspace_name": workspace_name,
+        "account_state": normalized_account,
+        "positions": normalized_positions,
+        "candidates": normalized_candidates,
+        "notes": notes,
+    }
+
 
 # Import your existing modules
 from core.trading_graph import TradingGraph
@@ -723,6 +838,19 @@ class WebTradingAnalyzer:
             "suggested_position_range": safe_str(single_name_score.get("suggested_position_range", "N/A")),
             "invalidation_price": safe_str(single_name_score.get("invalidation_price", "N/A")),
         }
+        dashboard_payload = final_state.get("dashboard_payload", {}) or {}
+        account_summary = dashboard_payload.get("account_summary", {}) or {}
+        portfolio_checks = dashboard_payload.get("portfolio_checks", []) or []
+        normalized_checks = [
+            {
+                "name": safe_str(check.get("name", "N/A")),
+                "status": safe_str(check.get("status", "N/A")),
+                "reason": safe_str(check.get("reason", "N/A")),
+            }
+            for check in portfolio_checks
+            if isinstance(check, dict)
+        ]
+        candidate_summary = dashboard_payload.get("candidate_summary", {}) or {}
 
         return {
             "success": True,
@@ -743,7 +871,24 @@ class WebTradingAnalyzer:
             "positions": final_state.get("positions", []),
             "candidates": final_state.get("candidates", []),
             "portfolio_directive": final_state.get("portfolio_directive", {}),
-            "dashboard_payload": final_state.get("dashboard_payload", {}),
+            "dashboard_payload": {
+                "account_summary": account_summary,
+                "portfolio_checks": normalized_checks,
+                "factor_exposure_summary": dashboard_payload.get("factor_exposure_summary", {}),
+                "candidate_summary": (
+                    {
+                        "ticker": safe_str(candidate_summary.get("ticker", "N/A")),
+                        "recommended_action": safe_str(candidate_summary.get("recommended_action", "N/A")),
+                        "recommended_book": safe_str(candidate_summary.get("recommended_book", "N/A")),
+                        "suggested_position_range": safe_str(candidate_summary.get("suggested_position_range", "N/A")),
+                        "existing_position": bool(candidate_summary.get("existing_position", False)),
+                        "candidate_factor_tags": [safe_str(tag) for tag in candidate_summary.get("candidate_factor_tags", [])],
+                        "blocked_reasons": [safe_str(reason) for reason in candidate_summary.get("blocked_reasons", [])],
+                    }
+                    if candidate_summary else {}
+                ),
+                "manager_actions": [safe_str(action) for action in dashboard_payload.get("manager_actions", [])],
+            },
         }
 
 # Initialize the analyzer
@@ -874,6 +1019,37 @@ def index():
 @app.route('/QuantAgent')
 def QuantAgent():
     return render_template('demo_new.html')
+
+@app.route('/api/stage2-workspace', methods=['GET'])
+def get_stage2_workspace():
+    try:
+        workspace_name = request.args.get('workspace_name', 'default')
+        workspace = db_manager.get_stage2_workspace(workspace_name) or dict(STAGE2_DEFAULT_WORKSPACE)
+        return jsonify({"success": True, "workspace": workspace})
+    except Exception as e:
+        error_msg = safe_str(e)
+        print(f"获取 Stage 2 工作区失败: {error_msg}")
+        return jsonify({"success": False, "error": error_msg}), 500
+
+@app.route('/api/stage2-workspace', methods=['POST'])
+def save_stage2_workspace():
+    try:
+        data = request.get_json() or {}
+        normalized_workspace = normalize_stage2_workspace_payload(data)
+        workspace = db_manager.save_stage2_workspace(
+            workspace_name=normalized_workspace["workspace_name"],
+            account_state=normalized_workspace["account_state"],
+            positions=normalized_workspace["positions"],
+            candidates=normalized_workspace["candidates"],
+            notes=normalized_workspace["notes"],
+        )
+        return jsonify({"success": True, "workspace": workspace})
+    except ValueError as e:
+        return jsonify({"success": False, "error": safe_str(e)}), 400
+    except Exception as e:
+        error_msg = safe_str(e)
+        print(f"保存 Stage 2 工作区失败: {error_msg}")
+        return jsonify({"success": False, "error": error_msg}), 500
 
 @app.route('/output')
 def output():
@@ -1034,6 +1210,14 @@ def analyze():
         generate_charts = data.get('generate_charts', False)  # 新增参数，默认关闭图表生成
         trading_strategy = data.get('trading_strategy', 'high_frequency')  # 新增交易策略参数，默认高频交易
         session_id = data.get('session_id')  # 新增：接收前端传递的session_id
+        account_state = data.get('account_state') or {}
+        positions = data.get('positions') or []
+        candidates = data.get('candidates') or []
+
+        analysis_params = {"market_data_source": market_data_source or analyzer.data_fetcher.current_source}
+        portfolio_cache_key = build_portfolio_cache_key(account_state, positions, candidates)
+        if portfolio_cache_key:
+            analysis_params["portfolio_cache_key"] = portfolio_cache_key
         
         # 添加日志打印，确认策略参数是否正确传递
         print(f"[DEBUG] 收到的交易策略参数: {trading_strategy}")
@@ -1062,7 +1246,7 @@ def analyze():
                 start_time=start_time,
                 end_time=end_time,
                 trading_strategy='high_frequency',
-                analysis_params={"market_data_source": market_data_source or analyzer.data_fetcher.current_source},
+                analysis_params=analysis_params,
                 max_hours_old=24
             )
             
@@ -1074,7 +1258,7 @@ def analyze():
                 start_time=start_time,
                 end_time=end_time,
                 trading_strategy='low_frequency',
-                analysis_params={"market_data_source": market_data_source or analyzer.data_fetcher.current_source},
+                analysis_params=analysis_params,
                 max_hours_old=24
             )
             
@@ -1115,13 +1299,22 @@ def analyze():
                 formatted_high = existing_high.get('result_details', {})
             else:
                 print(f"📊 [Dual Mode] Running High Frequency Analysis...")
-                results_high = analyzer.run_analysis(df, display_name, timeframe, generate_charts, 'high_frequency')
+                results_high = analyzer.run_analysis(
+                    df,
+                    display_name,
+                    timeframe,
+                    generate_charts,
+                    'high_frequency',
+                    account_state=account_state,
+                    positions=positions,
+                    candidates=candidates,
+                )
                 formatted_high = analyzer.extract_analysis_results(results_high)
                 id_high = db_manager.save_analysis_history(
                     asset=asset, timeframe=timeframe, start_date=start_date, end_date=end_date,
                     start_time=start_time, end_time=end_time, generate_charts=generate_charts,
                     trading_strategy='high_frequency', result_summary=f"{asset} HF Analysis",
-                    analysis_params={"market_data_source": market_data_source or analyzer.data_fetcher.current_source},
+                    analysis_params=analysis_params,
                     result_details=formatted_high, status='completed', session_id=session_id, user_ip=request.remote_addr
                 )
             
@@ -1131,13 +1324,22 @@ def analyze():
                 formatted_low = existing_low.get('result_details', {})
             else:
                 print(f"📊 [Dual Mode] Running Low Frequency Analysis...")
-                results_low = analyzer.run_analysis(df, display_name, timeframe, generate_charts, 'low_frequency')
+                results_low = analyzer.run_analysis(
+                    df,
+                    display_name,
+                    timeframe,
+                    generate_charts,
+                    'low_frequency',
+                    account_state=account_state,
+                    positions=positions,
+                    candidates=candidates,
+                )
                 formatted_low = analyzer.extract_analysis_results(results_low)
                 id_low = db_manager.save_analysis_history(
                     asset=asset, timeframe=timeframe, start_date=start_date, end_date=end_date,
                     start_time=start_time, end_time=end_time, generate_charts=generate_charts,
                     trading_strategy='low_frequency', result_summary=f"{asset} LF Analysis",
-                    analysis_params={"market_data_source": market_data_source or analyzer.data_fetcher.current_source},
+                    analysis_params=analysis_params,
                     result_details=formatted_low, status='completed', session_id=session_id, user_ip=request.remote_addr
                 )
             
@@ -1164,7 +1366,7 @@ def analyze():
             start_time=start_time,
             end_time=end_time,
             trading_strategy=trading_strategy,
-            analysis_params={"market_data_source": market_data_source or analyzer.data_fetcher.current_source},
+            analysis_params=analysis_params,
             max_hours_old=24
         )
         
@@ -1239,7 +1441,16 @@ def analyze():
         
         display_name = analyzer.asset_mapping.get(asset, asset)
         print(f"📊 [DEBUG] 调用 run_analysis, generate_charts={generate_charts}")
-        results = analyzer.run_analysis(df, display_name, timeframe, generate_charts, trading_strategy)  # 传递generate_charts和trading_strategy参数
+        results = analyzer.run_analysis(
+            df,
+            display_name,
+            timeframe,
+            generate_charts,
+            trading_strategy,
+            account_state=account_state,
+            positions=positions,
+            candidates=candidates,
+        )  # 传递generate_charts、trading_strategy和组合上下文参数
         formatted_results = analyzer.extract_analysis_results(results)
         
         # 保存分析结果到数据库
@@ -1254,7 +1465,7 @@ def analyze():
                 end_time=end_time,
                 generate_charts=generate_charts,
                 trading_strategy=trading_strategy,
-                analysis_params={"market_data_source": market_data_source or analyzer.data_fetcher.current_source},
+                analysis_params=analysis_params,
                 result_summary=f"{asset} {timeframe} 分析结果",
                 result_details=formatted_results,
                 status='completed',

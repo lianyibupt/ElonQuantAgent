@@ -503,6 +503,136 @@
              background-clip: text;
              filter: drop-shadow(0 2px 4px rgba(86, 39, 216, 0.2));
          }
+
+         .workspace-tab-switcher {
+             display: inline-flex;
+             gap: 0.75rem;
+             padding: 0.5rem;
+             background: var(--gray-100);
+             border-radius: 999px;
+             border: 1px solid var(--gray-200);
+             margin: 0 auto 2rem;
+         }
+
+         .workspace-tab-btn {
+             border: none;
+             background: transparent;
+             color: var(--gray-600);
+             font-weight: 600;
+             padding: 0.85rem 1.5rem;
+             border-radius: 999px;
+             transition: all 0.2s ease;
+         }
+
+         .workspace-tab-btn.active {
+             background: linear-gradient(135deg, var(--etrade-purple-light) 0%, var(--etrade-purple) 100%);
+             color: var(--white);
+             box-shadow: 0 8px 20px rgba(86, 39, 216, 0.2);
+         }
+
+         .workspace-tab-panel {
+             display: none;
+         }
+
+         .workspace-tab-panel.active {
+             display: block;
+         }
+
+         .workspace-status {
+             background: linear-gradient(135deg, #f8f5ff 0%, #ffffff 100%);
+             border: 1px solid rgba(86, 39, 216, 0.15);
+             border-radius: 16px;
+             padding: 1rem 1.25rem;
+             margin-bottom: 1.5rem;
+         }
+
+         .workspace-status-grid {
+             display: grid;
+             grid-template-columns: repeat(3, minmax(0, 1fr));
+             gap: 1rem;
+         }
+
+         .workspace-stat-label {
+             display: block;
+             font-size: 0.8rem;
+             color: var(--gray-500);
+             margin-bottom: 0.25rem;
+             text-transform: uppercase;
+             letter-spacing: 0.04em;
+         }
+
+         .workspace-stat-value {
+             font-size: 1rem;
+             font-weight: 600;
+             color: var(--etrade-purple);
+         }
+
+         .workspace-inline-actions {
+             display: flex;
+             flex-wrap: wrap;
+             gap: 0.75rem;
+             margin-top: 1rem;
+         }
+
+         .workspace-table {
+             width: 100%;
+             border-collapse: collapse;
+         }
+
+         .workspace-table th,
+         .workspace-table td {
+             padding: 0.75rem;
+             border-bottom: 1px solid var(--gray-200);
+             vertical-align: top;
+         }
+
+         .workspace-table th {
+             color: var(--gray-600);
+             font-size: 0.85rem;
+             font-weight: 700;
+             text-transform: uppercase;
+             letter-spacing: 0.04em;
+         }
+
+         .workspace-row-actions {
+             display: flex;
+             justify-content: center;
+         }
+
+         .workspace-empty-state {
+             padding: 1rem;
+             text-align: center;
+             color: var(--gray-500);
+             background: var(--gray-50);
+             border: 1px dashed var(--gray-300);
+             border-radius: 12px;
+         }
+
+         .workspace-section-hint {
+             color: var(--gray-500);
+             font-size: 0.92rem;
+             margin-top: -0.75rem;
+             margin-bottom: 1rem;
+             text-align: center;
+         }
+
+         @media (max-width: 768px) {
+             .workspace-status-grid {
+                 grid-template-columns: 1fr;
+             }
+
+             .workspace-inline-actions {
+                 flex-direction: column;
+                 align-items: stretch;
+             }
+
+             .workspace-tab-switcher {
+                 width: 100%;
+                 display: flex;
+                 flex-direction: column;
+                 border-radius: 16px;
+             }
+         }
          
          .action-panel .panel-title {
              color: var(--white);
@@ -1019,7 +1149,50 @@
                         <h3 style="text-align: center; font-size: 1.6rem; font-weight: 600; color: var(--etrade-purple); margin-bottom: 2rem; display: flex; align-items: center; justify-content: center; gap: 0.75rem;">
                             <i class="fas fa-cog" style="font-size: 1.5rem; color: var(--etrade-purple-light);"></i> Analysis Configuration
                         </h3>
-                        
+
+                        <div class="text-center">
+                            <div class="workspace-tab-switcher" role="tablist" aria-label="Analysis workspace switcher">
+                                <button type="button" class="workspace-tab-btn active" id="analysisTabBtn" onclick="switchWorkspaceTab('analysis')">
+                                    <i class="fas fa-chart-line"></i> Analysis
+                                </button>
+                                <button type="button" class="workspace-tab-btn" id="stage2TabBtn" onclick="switchWorkspaceTab('stage2')">
+                                    <i class="fas fa-briefcase"></i> Stage 2 Workspace
+                                </button>
+                            </div>
+                        </div>
+
+                        <div id="analysisTabPanel" class="workspace-tab-panel active">
+                            <div class="workspace-status">
+                                <div class="workspace-status-grid">
+                                    <div>
+                                        <span class="workspace-stat-label">Workspace</span>
+                                        <span class="workspace-stat-value" id="workspaceLoadedStatus">Not loaded</span>
+                                    </div>
+                                    <div>
+                                        <span class="workspace-stat-label">Last saved</span>
+                                        <span class="workspace-stat-value" id="workspaceLastSaved">Never</span>
+                                    </div>
+                                    <div>
+                                        <span class="workspace-stat-label">Attach on run</span>
+                                        <span class="workspace-stat-value" id="workspaceAttachStatus">Disabled</span>
+                                    </div>
+                                </div>
+                                <div class="workspace-inline-actions">
+                                    <div class="form-check form-switch" style="display: flex; align-items: center; gap: 0.75rem; margin: 0;">
+                                        <input class="form-check-input" type="checkbox" id="useStage2Workspace" style="transform: scale(1.2);">
+                                        <label class="form-check-label" for="useStage2Workspace" style="font-size: 1rem; font-weight: 500; color: #374151; cursor: pointer;">
+                                            Attach saved Stage 2 workspace to the next analysis
+                                        </label>
+                                    </div>
+                                    <button type="button" class="btn btn-outline-primary" onclick="loadStage2Workspace()">
+                                        <i class="fas fa-rotate"></i> Reload Workspace
+                                    </button>
+                                    <button type="button" class="btn btn-outline-primary" onclick="switchWorkspaceTab('stage2')">
+                                        <i class="fas fa-pen"></i> Edit Workspace
+                                    </button>
+                                </div>
+                            </div>
+
                         <!-- Panel 1: Data Selection -->
                         <div class="panel-group">
                             <div class="panel">
@@ -1313,6 +1486,121 @@
                                     </div>
                             </div>
                         </div>
+                        </div>
+                        </div>
+
+                        <div id="stage2TabPanel" class="workspace-tab-panel">
+                            <div class="panel" style="margin-bottom: 2rem;">
+                                <h4 class="panel-title">
+                                    <i class="fas fa-briefcase"></i> Stage 2 Workspace
+                                </h4>
+                                <p class="workspace-section-hint">Maintain your local account snapshot, positions, and candidate list here. Saved data is stored in SQLite and can be attached to analysis on demand.</p>
+                                <div class="workspace-inline-actions" style="justify-content: center;">
+                                    <button type="button" class="btn btn-outline-primary" onclick="loadStage2Workspace()">
+                                        <i class="fas fa-download"></i> Load Saved Workspace
+                                    </button>
+                                    <button type="button" class="btn btn-primary" onclick="saveStage2Workspace()">
+                                        <i class="fas fa-save"></i> Save Workspace
+                                    </button>
+                                    <button type="button" class="btn btn-outline-secondary" onclick="resetStage2Workspace()">
+                                        <i class="fas fa-rotate-left"></i> Reset Unsaved Changes
+                                    </button>
+                                </div>
+                                <div id="stage2WorkspaceMessage" class="alert alert-info mt-3" style="display: none;"></div>
+                            </div>
+
+                            <div class="panel-group">
+                                <div class="panel">
+                                    <h4 class="panel-title">
+                                        <i class="fas fa-wallet"></i> Account State
+                                    </h4>
+                                    <div class="row g-3">
+                                        <div class="col-md-6">
+                                            <label class="form-label">NAV</label>
+                                            <input type="number" step="0.01" class="form-control" id="workspaceNav" placeholder="100000">
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label class="form-label">Cash</label>
+                                            <input type="number" step="0.01" class="form-control" id="workspaceCash" placeholder="25000">
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label class="form-label">Gross Exposure %</label>
+                                            <input type="number" step="0.01" class="form-control" id="workspaceGrossExposure" placeholder="75">
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label class="form-label">Core Exposure %</label>
+                                            <input type="number" step="0.01" class="form-control" id="workspaceCoreExposure" placeholder="45">
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label class="form-label">Tactical Exposure %</label>
+                                            <input type="number" step="0.01" class="form-control" id="workspaceTacticalExposure" placeholder="20">
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label class="form-label">Current Drawdown %</label>
+                                            <input type="number" step="0.01" class="form-control" id="workspaceCurrentDrawdown" placeholder="8">
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="panel">
+                                    <h4 class="panel-title">
+                                        <i class="fas fa-sticky-note"></i> Workspace Notes
+                                    </h4>
+                                    <label class="form-label">Notes</label>
+                                    <textarea class="form-control" id="workspaceNotes" rows="8" placeholder="Optional notes about your book, risk posture, or watchlist."></textarea>
+                                </div>
+                            </div>
+
+                            <div class="panel" style="margin-bottom: 2rem;">
+                                <h4 class="panel-title">
+                                    <i class="fas fa-layer-group"></i> Positions
+                                </h4>
+                                <p class="workspace-section-hint">Track current positions with book type and factor tags for exposure checks.</p>
+                                <div class="table-responsive">
+                                    <table class="workspace-table">
+                                        <thead>
+                                            <tr>
+                                                <th>Ticker</th>
+                                                <th>Market Value</th>
+                                                <th>Book Type</th>
+                                                <th>Factor Tags</th>
+                                                <th style="width: 88px;">Action</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="workspacePositionsBody"></tbody>
+                                    </table>
+                                </div>
+                                <div class="workspace-inline-actions" style="justify-content: center; margin-top: 1rem;">
+                                    <button type="button" class="btn btn-outline-primary" onclick="addPositionRow()">
+                                        <i class="fas fa-plus"></i> Add Position
+                                    </button>
+                                </div>
+                            </div>
+
+                            <div class="panel">
+                                <h4 class="panel-title">
+                                    <i class="fas fa-binoculars"></i> Candidates
+                                </h4>
+                                <p class="workspace-section-hint">Keep a lightweight watchlist for factor overlap and manager-level context.</p>
+                                <div class="table-responsive">
+                                    <table class="workspace-table">
+                                        <thead>
+                                            <tr>
+                                                <th>Ticker</th>
+                                                <th>Factor Tags</th>
+                                                <th style="width: 88px;">Action</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="workspaceCandidatesBody"></tbody>
+                                    </table>
+                                </div>
+                                <div class="workspace-inline-actions" style="justify-content: center; margin-top: 1rem;">
+                                    <button type="button" class="btn btn-outline-primary" onclick="addCandidateRow()">
+                                        <i class="fas fa-plus"></i> Add Candidate
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </section>
@@ -1332,6 +1620,308 @@
             SELECTED_ASSET: 'quantagent_selected_asset',
             SELECTED_TIMEFRAME: 'quantagent_selected_timeframe'
         };
+
+        const STAGE2_DEFAULT_WORKSPACE = {
+            workspace_name: 'default',
+            account_state: {
+                nav: 0,
+                cash: 0,
+                gross_exposure: 0,
+                core_exposure: 0,
+                tactical_exposure: 0,
+                current_drawdown: 0
+            },
+            positions: [],
+            candidates: [],
+            notes: '',
+            created_at: null,
+            updated_at: null
+        };
+
+        let stage2WorkspaceState = JSON.parse(JSON.stringify(STAGE2_DEFAULT_WORKSPACE));
+        let stage2WorkspaceSnapshot = JSON.parse(JSON.stringify(STAGE2_DEFAULT_WORKSPACE));
+
+        function cloneWorkspace(workspace) {
+            return JSON.parse(JSON.stringify(workspace || STAGE2_DEFAULT_WORKSPACE));
+        }
+
+        function switchWorkspaceTab(tab) {
+            const isAnalysis = tab === 'analysis';
+            document.getElementById('analysisTabBtn').classList.toggle('active', isAnalysis);
+            document.getElementById('stage2TabBtn').classList.toggle('active', !isAnalysis);
+            document.getElementById('analysisTabPanel').classList.toggle('active', isAnalysis);
+            document.getElementById('stage2TabPanel').classList.toggle('active', !isAnalysis);
+            if (!isAnalysis) {
+                hideStage2WorkspaceMessage();
+            }
+        }
+
+        function formatWorkspaceTimestamp(value) {
+            if (!value) return 'Never';
+            const normalized = value.includes('T') ? value : value.replace(' ', 'T');
+            const date = new Date(normalized);
+            if (Number.isNaN(date.getTime())) {
+                return value;
+            }
+            return date.toLocaleString();
+        }
+
+        function setStage2WorkspaceMessage(message, level = 'info') {
+            const el = document.getElementById('stage2WorkspaceMessage');
+            if (!el) return;
+            if (!message) {
+                el.style.display = 'none';
+                el.textContent = '';
+                el.className = 'alert mt-3';
+                return;
+            }
+            el.className = `alert alert-${level} mt-3`;
+            el.textContent = message;
+            el.style.display = 'block';
+        }
+
+        function parseTagInput(value) {
+            return String(value || '')
+                .split(',')
+                .map(tag => tag.trim())
+                .filter(Boolean);
+        }
+
+        function readWorkspaceNumber(id) {
+            const raw = document.getElementById(id)?.value?.trim() || '';
+            if (!raw) return 0;
+            const parsed = Number(raw);
+            if (Number.isNaN(parsed)) {
+                throw new Error(`Invalid numeric value in ${id}`);
+            }
+            return parsed;
+        }
+
+        function hideStage2WorkspaceMessage() {
+            setStage2WorkspaceMessage('');
+        }
+
+        function buildEmptyPosition() {
+            return { ticker: '', market_value: 0, book_type: '核心仓', factor_tags: [] };
+        }
+
+        function buildEmptyCandidate() {
+            return { ticker: '', factor_tags: [] };
+        }
+
+        function renderPositionsTable() {
+            const body = document.getElementById('workspacePositionsBody');
+            if (!body) return;
+            const positions = stage2WorkspaceState.positions || [];
+            if (!positions.length) {
+                body.innerHTML = `<tr><td colspan="5"><div class="workspace-empty-state">No positions yet. Add one to persist your live book context.</div></td></tr>`;
+                return;
+            }
+            body.innerHTML = positions.map((position, index) => `
+                <tr>
+                    <td><input type="text" class="form-control" value="${escapeHtml(position.ticker || '')}" onchange="updatePositionField(${index}, 'ticker', this.value)" placeholder="MSTR"></td>
+                    <td><input type="number" step="0.01" class="form-control" value="${position.market_value ?? 0}" onchange="updatePositionField(${index}, 'market_value', this.value)" placeholder="25000"></td>
+                    <td>
+                        <select class="form-select" onchange="updatePositionField(${index}, 'book_type', this.value)">
+                            <option value="核心仓" ${position.book_type === '核心仓' ? 'selected' : ''}>核心仓</option>
+                            <option value="战术仓" ${position.book_type === '战术仓' ? 'selected' : ''}>战术仓</option>
+                            <option value="观察" ${position.book_type === '观察' ? 'selected' : ''}>观察</option>
+                        </select>
+                    </td>
+                    <td><input type="text" class="form-control" value="${escapeHtml((position.factor_tags || []).join(', '))}" onchange="updatePositionField(${index}, 'factor_tags', this.value)" placeholder="crypto, momentum"></td>
+                    <td><div class="workspace-row-actions"><button type="button" class="btn btn-outline-danger btn-sm" onclick="removePositionRow(${index})"><i class="fas fa-trash"></i></button></div></td>
+                </tr>
+            `).join('');
+        }
+
+        function renderCandidatesTable() {
+            const body = document.getElementById('workspaceCandidatesBody');
+            if (!body) return;
+            const candidates = stage2WorkspaceState.candidates || [];
+            if (!candidates.length) {
+                body.innerHTML = `<tr><td colspan="3"><div class="workspace-empty-state">No candidates yet. Add watchlist names to feed Stage 2 overlap checks.</div></td></tr>`;
+                return;
+            }
+            body.innerHTML = candidates.map((candidate, index) => `
+                <tr>
+                    <td><input type="text" class="form-control" value="${escapeHtml(candidate.ticker || '')}" onchange="updateCandidateField(${index}, 'ticker', this.value)" placeholder="CRCL"></td>
+                    <td><input type="text" class="form-control" value="${escapeHtml((candidate.factor_tags || []).join(', '))}" onchange="updateCandidateField(${index}, 'factor_tags', this.value)" placeholder="fintech, growth"></td>
+                    <td><div class="workspace-row-actions"><button type="button" class="btn btn-outline-danger btn-sm" onclick="removeCandidateRow(${index})"><i class="fas fa-trash"></i></button></div></td>
+                </tr>
+            `).join('');
+        }
+
+        function applyStage2WorkspaceToForm(workspace) {
+            const safeWorkspace = cloneWorkspace(workspace);
+            const accountState = safeWorkspace.account_state || {};
+            document.getElementById('workspaceNav').value = accountState.nav ?? 0;
+            document.getElementById('workspaceCash').value = accountState.cash ?? 0;
+            document.getElementById('workspaceGrossExposure').value = accountState.gross_exposure ?? 0;
+            document.getElementById('workspaceCoreExposure').value = accountState.core_exposure ?? 0;
+            document.getElementById('workspaceTacticalExposure').value = accountState.tactical_exposure ?? 0;
+            document.getElementById('workspaceCurrentDrawdown').value = accountState.current_drawdown ?? 0;
+            document.getElementById('workspaceNotes').value = safeWorkspace.notes || '';
+            stage2WorkspaceState = safeWorkspace;
+            renderPositionsTable();
+            renderCandidatesTable();
+            updateWorkspaceStatusSummary();
+        }
+
+        function collectStage2WorkspaceFromForm() {
+            const nextWorkspace = {
+                workspace_name: 'default',
+                account_state: {
+                    nav: readWorkspaceNumber('workspaceNav'),
+                    cash: readWorkspaceNumber('workspaceCash'),
+                    gross_exposure: readWorkspaceNumber('workspaceGrossExposure'),
+                    core_exposure: readWorkspaceNumber('workspaceCoreExposure'),
+                    tactical_exposure: readWorkspaceNumber('workspaceTacticalExposure'),
+                    current_drawdown: readWorkspaceNumber('workspaceCurrentDrawdown')
+                },
+                positions: (stage2WorkspaceState.positions || []).map(position => ({
+                    ticker: String(position.ticker || '').trim().toUpperCase(),
+                    market_value: Number(position.market_value || 0),
+                    book_type: String(position.book_type || '观察').trim() || '观察',
+                    factor_tags: Array.isArray(position.factor_tags) ? position.factor_tags.filter(Boolean) : []
+                })).filter(position => position.ticker),
+                candidates: (stage2WorkspaceState.candidates || []).map(candidate => ({
+                    ticker: String(candidate.ticker || '').trim().toUpperCase(),
+                    factor_tags: Array.isArray(candidate.factor_tags) ? candidate.factor_tags.filter(Boolean) : []
+                })).filter(candidate => candidate.ticker),
+                notes: document.getElementById('workspaceNotes').value.trim(),
+                created_at: stage2WorkspaceState.created_at || null,
+                updated_at: stage2WorkspaceState.updated_at || null
+            };
+            stage2WorkspaceState = nextWorkspace;
+            return nextWorkspace;
+        }
+
+        function updateWorkspaceStatusSummary() {
+            const useWorkspace = document.getElementById('useStage2Workspace')?.checked;
+            const hasWorkspace = Boolean(
+                stage2WorkspaceSnapshot.updated_at ||
+                (stage2WorkspaceSnapshot.positions || []).length ||
+                (stage2WorkspaceSnapshot.candidates || []).length ||
+                Object.values(stage2WorkspaceSnapshot.account_state || {}).some(value => Number(value || 0) !== 0)
+            );
+            document.getElementById('workspaceLoadedStatus').textContent = hasWorkspace ? 'Loaded' : 'Not loaded';
+            document.getElementById('workspaceLastSaved').textContent = formatWorkspaceTimestamp(stage2WorkspaceSnapshot.updated_at);
+            document.getElementById('workspaceAttachStatus').textContent = useWorkspace ? 'Enabled' : 'Disabled';
+        }
+
+        function updatePositionField(index, field, value) {
+            if (!stage2WorkspaceState.positions[index]) return;
+            if (field === 'ticker') {
+                stage2WorkspaceState.positions[index][field] = String(value || '').trim().toUpperCase();
+            } else if (field === 'market_value') {
+                const parsed = Number(value || 0);
+                stage2WorkspaceState.positions[index][field] = Number.isNaN(parsed) ? 0 : parsed;
+            } else if (field === 'factor_tags') {
+                stage2WorkspaceState.positions[index][field] = parseTagInput(value);
+            } else {
+                stage2WorkspaceState.positions[index][field] = value;
+            }
+        }
+
+        function updateCandidateField(index, field, value) {
+            if (!stage2WorkspaceState.candidates[index]) return;
+            if (field === 'ticker') {
+                stage2WorkspaceState.candidates[index][field] = String(value || '').trim().toUpperCase();
+            } else if (field === 'factor_tags') {
+                stage2WorkspaceState.candidates[index][field] = parseTagInput(value);
+            } else {
+                stage2WorkspaceState.candidates[index][field] = value;
+            }
+        }
+
+        function addPositionRow() {
+            stage2WorkspaceState.positions = stage2WorkspaceState.positions || [];
+            stage2WorkspaceState.positions.push(buildEmptyPosition());
+            renderPositionsTable();
+        }
+
+        function removePositionRow(index) {
+            stage2WorkspaceState.positions.splice(index, 1);
+            renderPositionsTable();
+        }
+
+        function addCandidateRow() {
+            stage2WorkspaceState.candidates = stage2WorkspaceState.candidates || [];
+            stage2WorkspaceState.candidates.push(buildEmptyCandidate());
+            renderCandidatesTable();
+        }
+
+        function removeCandidateRow(index) {
+            stage2WorkspaceState.candidates.splice(index, 1);
+            renderCandidatesTable();
+        }
+
+        async function loadStage2Workspace(showToast = true) {
+            try {
+                const response = await fetch('/api/stage2-workspace');
+                const data = await response.json();
+                if (!response.ok || !data.success) {
+                    throw new Error(data.error || 'Failed to load workspace');
+                }
+                stage2WorkspaceSnapshot = cloneWorkspace(data.workspace || STAGE2_DEFAULT_WORKSPACE);
+                applyStage2WorkspaceToForm(stage2WorkspaceSnapshot);
+                if (showToast) {
+                    setStage2WorkspaceMessage('Stage 2 workspace loaded from SQLite.', 'success');
+                }
+            } catch (error) {
+                console.error('Failed to load Stage 2 workspace:', error);
+                stage2WorkspaceSnapshot = cloneWorkspace(STAGE2_DEFAULT_WORKSPACE);
+                applyStage2WorkspaceToForm(stage2WorkspaceSnapshot);
+                if (showToast) {
+                    setStage2WorkspaceMessage(error.message || 'Failed to load Stage 2 workspace.', 'danger');
+                }
+            }
+        }
+
+        async function saveStage2Workspace() {
+            try {
+                const payload = collectStage2WorkspaceFromForm();
+                const response = await fetch('/api/stage2-workspace', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                const data = await response.json();
+                if (!response.ok || !data.success) {
+                    throw new Error(data.error || 'Failed to save workspace');
+                }
+                stage2WorkspaceSnapshot = cloneWorkspace(data.workspace || payload);
+                applyStage2WorkspaceToForm(stage2WorkspaceSnapshot);
+                setStage2WorkspaceMessage('Stage 2 workspace saved to SQLite.', 'success');
+                switchWorkspaceTab('analysis');
+            } catch (error) {
+                console.error('Failed to save Stage 2 workspace:', error);
+                setStage2WorkspaceMessage(error.message || 'Failed to save Stage 2 workspace.', 'danger');
+            }
+        }
+
+        function resetStage2Workspace() {
+            applyStage2WorkspaceToForm(stage2WorkspaceSnapshot);
+            setStage2WorkspaceMessage('Unsaved changes were discarded.', 'info');
+        }
+
+        function buildWorkspaceAnalysisPayload() {
+            collectStage2WorkspaceFromForm();
+            return {
+                account_state: stage2WorkspaceSnapshot.account_state || {},
+                positions: stage2WorkspaceSnapshot.positions || [],
+                candidates: stage2WorkspaceSnapshot.candidates || []
+            };
+        }
+
+        function escapeHtml(value) {
+            return String(value || '')
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#39;');
+        }
 
         // Add or render a custom asset button into the grid
         function addCustomAssetButton(symbol, isServerLoaded = false) {
@@ -1661,12 +2251,14 @@
             
             // Check API key status on page load
             checkApiKeyStatus();
-            
+            loadStage2Workspace(false);
+            document.getElementById('useStage2Workspace').addEventListener('change', updateWorkspaceStatusSummary);
+
             // Set initial provider dropdown state
-            const savedProvider = localStorage.getItem('quantagent_provider') || 'openai';
-            if (savedProvider) {
-                document.getElementById('llmProviderSelect').value = savedProvider;
-                handleProviderChange();
+            const savedProvider = localStorage.getItem('quantagent_provider');
+            if (savedProvider && document.getElementById('apiProviderSelect')) {
+                document.getElementById('apiProviderSelect').value = savedProvider;
+                updateApiKeyFields();
             }
         });
         
@@ -2496,41 +3088,35 @@
 
         // 修改runAnalysis函数以保存查询记录
         function runAnalysis() {
-            const dataSource = 'live'; // Always use live data
+            const dataSource = 'live';
             const timeframe = selectedTimeframe;
-              
-            // Get asset value from selected asset
+            const useWorkspace = document.getElementById('useStage2Workspace').checked;
+
             let asset = selectedAsset;
-              
-            // Validate inputs
+
             if (!asset || !timeframe) {
                 alert('Please select both asset and timeframe.');
                 return;
             }
-              
-            // Get date and time values
+
             const startDate = document.getElementById('startDate').value;
             const startTime = document.getElementById('startTime').value;
             const endDate = document.getElementById('endDate').value;
             const endTime = document.getElementById('endTime').value;
             const useCurrentTime = document.getElementById('useCurrentTime').checked;
-              
-            // Validate dates
+
             if (!startDate || !endDate) {
                 alert('Please select both start and end dates.');
                 return;
             }
-              
-            // Show loading state
+
             const analyzeBtn = document.getElementById('analyzeBtn');
             const originalText = analyzeBtn.innerHTML;
             analyzeBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Analyzing...';
             analyzeBtn.disabled = true;
-              
-            // Get chart generation setting
+
             const generateCharts = document.getElementById('generateCharts').checked;
-              
-            // Prepare request data
+
             const requestData = {
                 data_source: dataSource,
                 asset: asset,
@@ -2541,12 +3127,20 @@
                 end_time: endTime,
                 use_current_time: useCurrentTime,
                 generate_charts: generateCharts,
-                trading_strategy: selectedStrategy, // Add trading strategy to request data
+                trading_strategy: selectedStrategy,
                 redirect_to_output: true
             };
+
+            if (useWorkspace) {
+                const workspacePayload = buildWorkspaceAnalysisPayload();
+                requestData.account_state = workspacePayload.account_state;
+                requestData.positions = workspacePayload.positions;
+                requestData.candidates = workspacePayload.candidates;
+            }
             
+            updateWorkspaceStatusSummary();
             console.log('开始分析，准备保存查询记录:', requestData);
-            
+
             // 在发送API请求前先保存查询记录
             saveQueryRecord(requestData);
             

@@ -158,7 +158,20 @@ class DatabaseManager:
                     updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
                 )
             """)
-            
+
+            conn.execute("""
+                CREATE TABLE IF NOT EXISTS stage2_workspaces (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    workspace_name TEXT NOT NULL UNIQUE,
+                    account_state TEXT,
+                    positions TEXT,
+                    candidates TEXT,
+                    notes TEXT,
+                    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+                )
+            """)
+
             # 创建索引提高查询性能
             conn.execute("CREATE INDEX IF NOT EXISTS idx_query_records_timestamp ON query_records(timestamp)")
             conn.execute("CREATE INDEX IF NOT EXISTS idx_query_records_tickers ON query_records(tickers)")
@@ -174,7 +187,8 @@ class DatabaseManager:
             conn.execute("CREATE INDEX IF NOT EXISTS idx_analysis_history_timeframe ON analysis_history(timeframe)")
             conn.execute("CREATE INDEX IF NOT EXISTS idx_analysis_history_status ON analysis_history(status)")
             conn.execute("CREATE INDEX IF NOT EXISTS idx_analysis_history_session ON analysis_history(session_id)")
-            
+            conn.execute("CREATE INDEX IF NOT EXISTS idx_stage2_workspaces_name ON stage2_workspaces(workspace_name)")
+
             conn.commit()
     
     def save_query_record(
@@ -838,25 +852,92 @@ class DatabaseManager:
         
         return df
     
+    def get_stage2_workspace(self, workspace_name: str = 'default') -> Optional[Dict[str, Any]]:
+        """获取Stage 2工作区"""
+        with self.get_connection() as conn:
+            cursor = conn.execute("""
+                SELECT * FROM stage2_workspaces WHERE workspace_name = ?
+            """, (workspace_name,))
+            row = cursor.fetchone()
+            if not row:
+                return None
+
+            record = dict(row)
+            record['account_state'] = json.loads(record['account_state']) if record.get('account_state') else {}
+            record['positions'] = json.loads(record['positions']) if record.get('positions') else []
+            record['candidates'] = json.loads(record['candidates']) if record.get('candidates') else []
+            return record
+
+    def save_stage2_workspace(
+        self,
+        workspace_name: str = 'default',
+        account_state: Dict[str, Any] = None,
+        positions: List[Dict[str, Any]] = None,
+        candidates: List[Dict[str, Any]] = None,
+        notes: str = None,
+    ) -> Dict[str, Any]:
+        """保存或更新Stage 2工作区"""
+        with self.get_connection() as conn:
+            conn.execute("""
+                INSERT INTO stage2_workspaces (
+                    workspace_name,
+                    account_state,
+                    positions,
+                    candidates,
+                    notes,
+                    created_at,
+                    updated_at
+                )
+                VALUES (?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+                ON CONFLICT(workspace_name) DO UPDATE SET
+                    account_state = excluded.account_state,
+                    positions = excluded.positions,
+                    candidates = excluded.candidates,
+                    notes = excluded.notes,
+                    updated_at = CURRENT_TIMESTAMP
+            """, (
+                workspace_name,
+                json.dumps(account_state or {}, ensure_ascii=False),
+                json.dumps(positions or [], ensure_ascii=False),
+                json.dumps(candidates or [], ensure_ascii=False),
+                notes,
+            ))
+            conn.commit()
+
+        saved = self.get_stage2_workspace(workspace_name)
+        if not saved:
+            raise ValueError("保存 Stage 2 工作区失败")
+        return saved
+
+    def list_stage2_workspaces(self) -> List[Dict[str, Any]]:
+        """列出Stage 2工作区"""
+        with self.get_connection() as conn:
+            cursor = conn.execute("""
+                SELECT id, workspace_name, notes, created_at, updated_at
+                FROM stage2_workspaces
+                ORDER BY updated_at DESC, workspace_name ASC
+            """)
+            return [dict(row) for row in cursor.fetchall()]
+
     def cleanup_expired_cache(self):
         """清理过期的缓存数据"""
         with self.get_connection() as conn:
             # 清理过期的价格缓存
             cursor = conn.execute("""
-                DELETE FROM price_cache 
+                DELETE FROM price_cache
                 WHERE expires_at <= CURRENT_TIMESTAMP
             """)
             price_deleted = cursor.rowcount
-            
+
             # 清理过期的财务数据缓存
             cursor = conn.execute("""
-                DELETE FROM financial_cache 
+                DELETE FROM financial_cache
                 WHERE expires_at <= CURRENT_TIMESTAMP
             """)
             financial_deleted = cursor.rowcount
-            
+
             conn.commit()
-            
+
             if price_deleted > 0 or financial_deleted > 0:
                 print(f"🧹 清理过期缓存: 价格数据 {price_deleted} 条, 财务数据 {financial_deleted} 条")
     

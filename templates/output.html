@@ -383,6 +383,129 @@
             </div>
         </div>
 
+        {% if results.dashboard_payload and (results.dashboard_payload.account_summary or results.portfolio_directive) %}
+        <div class="panel">
+            <h4 class="panel-title">
+                <i class="fas fa-briefcase"></i> Portfolio Manager Dashboard
+            </h4>
+            {% set account_summary = results.dashboard_payload.account_summary if results.dashboard_payload.account_summary else {} %}
+            {% set portfolio_directive = results.portfolio_directive if results.portfolio_directive else {} %}
+            {% set candidate_summary = results.dashboard_payload.candidate_summary if results.dashboard_payload.candidate_summary else {} %}
+            {% set manager_actions = results.dashboard_payload.manager_actions if results.dashboard_payload.manager_actions else [] %}
+            {% set portfolio_checks = results.dashboard_payload.portfolio_checks if results.dashboard_payload.portfolio_checks else [] %}
+            {% set factor_summary = results.dashboard_payload.factor_exposure_summary if results.dashboard_payload.factor_exposure_summary else {} %}
+
+            {% if account_summary %}
+            <div class="row align-items-stretch mb-3">
+                <div class="col-md-3 col-6 d-flex">
+                    <div class="stats-card w-100">
+                        <div class="stats-number">{{ account_summary.nav if account_summary.nav is not none else 'N/A' }}</div>
+                        <div class="stats-label">NAV</div>
+                    </div>
+                </div>
+                <div class="col-md-3 col-6 d-flex">
+                    <div class="stats-card w-100">
+                        <div class="stats-number">{{ account_summary.cash_pct if account_summary.cash_pct is not none else 'N/A' }}%</div>
+                        <div class="stats-label">Cash %</div>
+                    </div>
+                </div>
+                <div class="col-md-3 col-6 d-flex">
+                    <div class="stats-card w-100">
+                        <div class="stats-number">{{ account_summary.gross_exposure if account_summary.gross_exposure is not none else 'N/A' }}%</div>
+                        <div class="stats-label">Gross Exposure</div>
+                    </div>
+                </div>
+                <div class="col-md-3 col-6 d-flex">
+                    <div class="stats-card w-100">
+                        <div class="stats-number">{{ account_summary.current_drawdown if account_summary.current_drawdown is not none else 'N/A' }}%</div>
+                        <div class="stats-label">Drawdown</div>
+                    </div>
+                </div>
+            </div>
+            <div class="row align-items-stretch mb-4">
+                <div class="col-md-4 d-flex">
+                    <div class="stats-card w-100">
+                        <div class="stats-number">{{ account_summary.core_exposure if account_summary.core_exposure is not none else 'N/A' }}%</div>
+                        <div class="stats-label">Core Exposure</div>
+                    </div>
+                </div>
+                <div class="col-md-4 d-flex">
+                    <div class="stats-card w-100">
+                        <div class="stats-number">{{ account_summary.tactical_exposure if account_summary.tactical_exposure is not none else 'N/A' }}%</div>
+                        <div class="stats-label">Tactical Exposure</div>
+                    </div>
+                </div>
+                <div class="col-md-4 d-flex">
+                    <div class="stats-card w-100">
+                        <div class="stats-number">{{ account_summary.position_count if account_summary.position_count is not none else '0' }}</div>
+                        <div class="stats-label">Positions</div>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+
+            {% if portfolio_directive %}
+            <div class="mt-4">
+                <p><strong>Market Regime:</strong> {{ portfolio_directive.market_regime if portfolio_directive.market_regime else 'N/A' }}</p>
+                <p><strong>Target Gross Exposure:</strong> {{ portfolio_directive.target_gross_exposure if portfolio_directive.target_gross_exposure else 'N/A' }}</p>
+                <p><strong>Target Core Exposure:</strong> {{ portfolio_directive.target_core_exposure if portfolio_directive.target_core_exposure else 'N/A' }}</p>
+                <p><strong>Target Tactical Exposure:</strong> {{ portfolio_directive.target_tactical_exposure if portfolio_directive.target_tactical_exposure else 'N/A' }}</p>
+                <p><strong>Remaining Risk Budget:</strong> {{ portfolio_directive.remaining_risk_budget if portfolio_directive.remaining_risk_budget else 'N/A' }}</p>
+                <p><strong>Crowded Exposures:</strong> {{ portfolio_directive.crowded_exposures | join(', ') if portfolio_directive.crowded_exposures else 'None' }}</p>
+                <p><strong>Add Candidates:</strong> {{ portfolio_directive.add_candidates | join(', ') if portfolio_directive.add_candidates else 'None' }}</p>
+                <p><strong>Trim Candidates:</strong> {{ portfolio_directive.trim_candidates | join(', ') if portfolio_directive.trim_candidates else 'None' }}</p>
+                <p><strong>Blocked Candidates:</strong> {{ portfolio_directive.blocked_candidates | join(' | ') if portfolio_directive.blocked_candidates else 'None' }}</p>
+            </div>
+            {% endif %}
+
+            {% if candidate_summary %}
+            <div class="mt-4">
+                <h5 style="color: var(--etrade-purple);">Candidate Context</h5>
+                <p><strong>Ticker:</strong> {{ candidate_summary.ticker if candidate_summary.ticker else 'N/A' }}</p>
+                <p><strong>Recommended Action:</strong> {{ candidate_summary.recommended_action if candidate_summary.recommended_action else 'N/A' }}</p>
+                <p><strong>Recommended Book:</strong> {{ candidate_summary.recommended_book if candidate_summary.recommended_book else 'N/A' }}</p>
+                <p><strong>Suggested Position Range:</strong> {{ candidate_summary.suggested_position_range if candidate_summary.suggested_position_range else 'N/A' }}</p>
+                <p><strong>Existing Position:</strong> {{ 'Yes' if candidate_summary.existing_position else 'No' }}</p>
+                <p><strong>Factor Tags:</strong> {{ candidate_summary.candidate_factor_tags | join(', ') if candidate_summary.candidate_factor_tags else 'None' }}</p>
+                <p><strong>Blocked Reasons:</strong> {{ candidate_summary.blocked_reasons | join(' | ') if candidate_summary.blocked_reasons else 'None' }}</p>
+            </div>
+            {% endif %}
+
+            {% if portfolio_checks %}
+            <div class="mt-4">
+                <h5 style="color: var(--etrade-purple);">Portfolio Checks</h5>
+                <ul>
+                    {% for check in portfolio_checks %}
+                    <li><strong>[{{ check.status if check.status else 'N/A' }}]</strong> {{ check.name if check.name else 'check' }} — {{ check.reason if check.reason else 'N/A' }}</li>
+                    {% endfor %}
+                </ul>
+            </div>
+            {% endif %}
+
+            {% if factor_summary %}
+            <div class="mt-4">
+                <h5 style="color: var(--etrade-purple);">Factor Exposure Summary</h5>
+                <ul>
+                    {% for factor_name, factor_value in factor_summary.items() %}
+                    <li><strong>{{ factor_name }}</strong>: {{ factor_value }}</li>
+                    {% endfor %}
+                </ul>
+            </div>
+            {% endif %}
+
+            {% if manager_actions %}
+            <div class="mt-4">
+                <h5 style="color: var(--etrade-purple);">Manager Actions</h5>
+                <ul>
+                    {% for action in manager_actions %}
+                    <li>{{ action }}</li>
+                    {% endfor %}
+                </ul>
+            </div>
+            {% endif %}
+        </div>
+        {% endif %}
+
         <!-- Technical Indicators Panel -->
         <div class="large-panel">
             <h3 class="large-panel-title">

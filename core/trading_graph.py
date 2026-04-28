@@ -2,6 +2,7 @@
 
 import json
 import os
+from collections import Counter
 from typing import Any, Dict, Optional
 
 from langchain_openai import ChatOpenAI
@@ -190,12 +191,269 @@ class TradingGraph:
             "invalidation_price": safe_str(payload.get("invalidation_price", "待确认")),
         }
 
+    def _coerce_float(self, value: Any, default: float = 0.0) -> float:
+        try:
+            if value in (None, "", "N/A"):
+                return default
+            return float(value)
+        except (TypeError, ValueError):
+            return default
+
+    def _format_pct(self, value: float) -> str:
+        return f"{value:.1f}%"
+
+    def _format_amount(self, value: float) -> str:
+        return f"{value:,.2f}"
+
+    def _normalize_ticker(self, value: Any) -> str:
+        return safe_str(value or "").strip().upper()
+
+    def _normalize_tags(self, item: Dict[str, Any]) -> list:
+        if not isinstance(item, dict):
+            return []
+        tags = item.get("factor_tags") or item.get("tags") or []
+        if isinstance(tags, str):
+            return [safe_str(tags).strip()] if safe_str(tags).strip() else []
+        if isinstance(tags, list):
+            normalized = []
+            for tag in tags:
+                tag_text = safe_str(tag).strip()
+                if tag_text:
+                    normalized.append(tag_text)
+            return normalized
+        return []
+
+    def _find_candidate_context(self, asset_symbol: str, candidates: list) -> Dict[str, Any]:
+        normalized_symbol = self._normalize_ticker(asset_symbol)
+        for candidate in candidates:
+            if not isinstance(candidate, dict):
+                continue
+            candidate_symbol = self._normalize_ticker(
+                candidate.get("ticker") or candidate.get("symbol") or candidate.get("asset_symbol")
+            )
+            if candidate_symbol == normalized_symbol:
+                return candidate
+        return {}
+
+    def _portfolio_targets(self, current_drawdown: float) -> Dict[str, float]:
+        if current_drawdown >= 15:
+            return {
+                "market_regime": "防守",
+                "gross_min": 20.0,
+                "gross_max": 40.0,
+                "core_min": 15.0,
+                "core_max": 30.0,
+                "tactical_min": 0.0,
+                "tactical_max": 10.0,
+            }
+        if current_drawdown >= 10:
+            return {
+                "market_regime": "收缩",
+                "gross_min": 40.0,
+                "gross_max": 60.0,
+                "core_min": 25.0,
+                "core_max": 40.0,
+                "tactical_min": 5.0,
+                "tactical_max": 15.0,
+            }
+        return {
+            "market_regime": "进攻",
+            "gross_min": 60.0,
+            "gross_max": 85.0,
+            "core_min": 35.0,
+            "core_max": 60.0,
+            "tactical_min": 10.0,
+            "tactical_max": 25.0,
+        }
+
+    def _evaluate_portfolio(self, state: Dict[str, Any], single_name_score: Dict[str, Any]) -> tuple[Dict[str, Any], Dict[str, Any]]:
+        account_state = state.get("account_state", {}) or {}
+        positions = state.get("positions", []) or account_state.get("positions", []) or []
+        candidates = state.get("candidates", []) or []
+        asset_symbol = safe_str(state.get("asset_symbol", "")).strip()
+
+        if not account_state and not positions and not candidates:
+            return {}, {}
+
+        normalized_positions = [position for position in positions if isinstance(position, dict)]
+        candidate_context = self._find_candidate_context(asset_symbol, candidates)
+        candidate_tags = self._normalize_tags(candidate_context)
+        position_values = [self._coerce_float(position.get("market_value")) for position in normalized_positions]
+        total_market_value = sum(position_values)
+        nav = self._coerce_float(account_state.get("nav"))
+        cash = self._coerce_float(account_state.get("cash"))
+        current_drawdown = self._coerce_float(account_state.get("current_drawdown"))
+
+        if nav <= 0 and (cash > 0 or total_market_value > 0):
+            nav = cash + total_market_value
+
+        gross_exposure = self._coerce_float(account_state.get("gross_exposure"))
+        if gross_exposure <= 0 and nav > 0 and total_market_value > 0:
+            gross_exposure = (total_market_value / nav) * 100
+
+        core_value = sum(
+            self._coerce_float(position.get("market_value"))
+            for position in normalized_positions
+            if safe_str(position.get("book_type", "")).strip() == "核心仓"
+        )
+        tactical_value = sum(
+            self._coerce_float(position.get("market_value"))
+            for position in normalized_positions
+            if safe_str(position.get("book_type", "")).strip() == "战术仓"
+        )
+
+        core_exposure = self._coerce_float(account_state.get("core_exposure"))
+        tactical_exposure = self._coerce_float(account_state.get("tactical_exposure"))
+        if core_exposure <= 0 and nav > 0 and core_value > 0:
+            core_exposure = (core_value / nav) * 100
+        if tactical_exposure <= 0 and nav > 0 and tactical_value > 0:
+            tactical_exposure = (tactical_value / nav) * 100
+
+        cash_pct = (cash / nav) * 100 if nav > 0 else 0.0
+        targets = self._portfolio_targets(current_drawdown)
+        remaining_risk_budget = max(targets["gross_max"] - gross_exposure, 0.0)
+
+        position_tickers = [
+            self._normalize_ticker(position.get("ticker") or position.get("symbol"))
+            for position in normalized_positions
+        ]
+        existing_position = self._normalize_ticker(asset_symbol) in position_tickers
+
+        factor_counter = Counter()
+        for position in normalized_positions:
+            factor_counter.update(self._normalize_tags(position))
+        crowded_exposures = [tag for tag, count in factor_counter.items() if count >= 2]
+        crowded_candidate_tags = [tag for tag in candidate_tags if tag in crowded_exposures]
+
+        recommended_action = safe_str(single_name_score.get("recommended_action", "观察"))
+        recommended_book = safe_str(single_name_score.get("recommended_book", "观察"))
+        decision = safe_str(single_name_score.get("decision", "持有"))
+        is_add_risk = recommended_action in {"买入", "加仓"} or decision == "买入"
+        is_trim_risk = recommended_action in {"减仓", "退出"} or decision == "卖出"
+
+        portfolio_checks = []
+        blocked_reasons = []
+
+        def record_check(name: str, passed: bool, reason: str):
+            portfolio_checks.append({
+                "name": name,
+                "status": "pass" if passed else "block",
+                "reason": reason,
+            })
+            if not passed:
+                blocked_reasons.append(reason)
+
+        if is_add_risk:
+            record_check("cash_buffer", cash > 0, "现金不足，无法继续新增风险。")
+            record_check(
+                "gross_exposure",
+                gross_exposure < targets["gross_max"],
+                f"总仓位 {self._format_pct(gross_exposure)} 已达到或超过目标上限 {self._format_pct(targets['gross_max'])}。",
+            )
+            if recommended_book == "核心仓":
+                record_check(
+                    "core_book_limit",
+                    core_exposure < targets["core_max"],
+                    f"核心仓暴露 {self._format_pct(core_exposure)} 已达到或超过目标上限 {self._format_pct(targets['core_max'])}。",
+                )
+            if recommended_book == "战术仓":
+                record_check(
+                    "tactical_book_limit",
+                    tactical_exposure < targets["tactical_max"],
+                    f"战术仓暴露 {self._format_pct(tactical_exposure)} 已达到或超过目标上限 {self._format_pct(targets['tactical_max'])}。",
+                )
+            record_check(
+                "drawdown_limit",
+                current_drawdown < 15.0,
+                f"当前回撤 {self._format_pct(current_drawdown)} 已进入防守阈值，不宜继续加风险。",
+            )
+            record_check(
+                "duplicate_ticker",
+                not existing_position,
+                f"{asset_symbol} 已存在持仓，新增前需要先确认是否属于加仓而非重复建仓。",
+            )
+            record_check(
+                "crowded_theme",
+                len(crowded_candidate_tags) == 0,
+                f"候选标的与已拥挤暴露重合: {', '.join(crowded_candidate_tags)}。",
+            )
+
+        manager_actions = []
+        if blocked_reasons:
+            manager_actions.append(f"暂停新增 {asset_symbol} 风险：{'；'.join(blocked_reasons)}")
+        elif is_add_risk:
+            manager_actions.append(
+                f"可按 {single_name_score.get('suggested_position_range', '0% - 0%')} 评估 {asset_symbol} 的新增仓位。"
+            )
+        if is_trim_risk:
+            manager_actions.append(f"{asset_symbol} 进入减仓/退出观察列表，优先核对失效价与仓位来源。")
+        if current_drawdown >= 15:
+            manager_actions.append("账户处于防守模式，优先降波动与保留现金。")
+        elif current_drawdown >= 10:
+            manager_actions.append("账户处于收缩模式，新仓只保留高置信度机会。")
+        if crowded_exposures:
+            manager_actions.append(f"当前拥挤主题: {', '.join(crowded_exposures)}，避免进一步集中。")
+        if not manager_actions:
+            manager_actions.append("当前组合约束中性，可继续观察信号演进。")
+
+        largest_position = ""
+        largest_position_value = 0.0
+        for position in normalized_positions:
+            market_value = self._coerce_float(position.get("market_value"))
+            if market_value > largest_position_value:
+                largest_position_value = market_value
+                largest_position = self._normalize_ticker(position.get("ticker") or position.get("symbol"))
+
+        portfolio_directive = {
+            "market_regime": targets["market_regime"],
+            "target_gross_exposure": f"{self._format_pct(targets['gross_min'])} - {self._format_pct(targets['gross_max'])}",
+            "target_core_exposure": f"{self._format_pct(targets['core_min'])} - {self._format_pct(targets['core_max'])}",
+            "target_tactical_exposure": f"{self._format_pct(targets['tactical_min'])} - {self._format_pct(targets['tactical_max'])}",
+            "remaining_risk_budget": self._format_pct(remaining_risk_budget),
+            "crowded_exposures": crowded_exposures,
+            "add_candidates": [asset_symbol] if is_add_risk and not blocked_reasons else [],
+            "trim_candidates": [asset_symbol] if is_trim_risk else [],
+            "blocked_candidates": [f"{asset_symbol}: {'；'.join(blocked_reasons)}"] if blocked_reasons else [],
+            "manager_actions": manager_actions,
+        }
+
+        dashboard_payload = {
+            "account_summary": {
+                "nav": nav,
+                "cash": cash,
+                "cash_pct": round(cash_pct, 2),
+                "gross_exposure": round(gross_exposure, 2),
+                "core_exposure": round(core_exposure, 2),
+                "tactical_exposure": round(tactical_exposure, 2),
+                "current_drawdown": round(current_drawdown, 2),
+                "position_count": len(normalized_positions),
+                "largest_position": largest_position or "N/A",
+                "largest_position_value": round(largest_position_value, 2),
+            },
+            "portfolio_checks": portfolio_checks,
+            "factor_exposure_summary": dict(sorted(factor_counter.items())),
+            "candidate_summary": {
+                "ticker": asset_symbol,
+                "recommended_action": recommended_action,
+                "recommended_book": recommended_book,
+                "suggested_position_range": safe_str(single_name_score.get("suggested_position_range", "N/A")),
+                "existing_position": existing_position,
+                "candidate_factor_tags": candidate_tags,
+                "blocked_reasons": blocked_reasons,
+            },
+            "manager_actions": manager_actions,
+        }
+        return portfolio_directive, dashboard_payload
+
     def _build_final_state(self, state: Dict[str, Any], text_only: bool = False) -> Dict[str, Any]:
         raw_decision = state.get("final_trade_decision", "")
         decision_payload = self._parse_decision_payload(raw_decision)
         single_name_score = self._normalize_scorecard(decision_payload)
+        portfolio_directive, dashboard_payload = self._evaluate_portfolio(state, single_name_score)
         state["decision_payload"] = decision_payload
         state["single_name_score"] = single_name_score
+        state["portfolio_directive"] = portfolio_directive
+        state["dashboard_payload"] = dashboard_payload
 
         return {
             "indicator_report": state.get("indicator_report", ""),
@@ -207,8 +465,8 @@ class TradingGraph:
             "account_state": state.get("account_state", {}),
             "positions": state.get("positions", []),
             "candidates": state.get("candidates", []),
-            "portfolio_directive": state.get("portfolio_directive", {}),
-            "dashboard_payload": state.get("dashboard_payload", {}),
+            "portfolio_directive": portfolio_directive,
+            "dashboard_payload": dashboard_payload,
             "pattern_image": "" if text_only else state.get("pattern_image", ""),
             "trend_image": "" if text_only else state.get("trend_image", ""),
             "pattern_image_filename": "" if text_only else state.get("pattern_image_filename", ""),
