@@ -35,6 +35,8 @@ from openai import OpenAI as OpenAIClient
 from dotenv import load_dotenv
 import yfinance as yf
 
+from services.stage2_workspace import build_default_workspace, normalize_workspace_payload
+
 # Load environment variables
 load_dotenv()
 
@@ -861,6 +863,49 @@ def get_api_key_status():
         return jsonify(result)
     except Exception as e:
         return jsonify({"error": safe_str(e)})
+
+def _build_stage2_workspace_response(workspace=None, workspace_name='default', created_at=None, updated_at=None):
+    response_workspace = normalize_workspace_payload(workspace or {})
+    response_workspace['workspace_name'] = workspace_name or 'default'
+    response_workspace['created_at'] = created_at
+    response_workspace['updated_at'] = updated_at
+    return response_workspace
+
+
+@app.route('/api/stage2-workspace', methods=['GET'])
+def get_stage2_workspace():
+    try:
+        workspace_name = (request.args.get('workspace_name') or 'default').strip() or 'default'
+        stored_workspace = db_manager.get_stage2_workspace(workspace_name)
+        if stored_workspace:
+            return jsonify({"success": True, "workspace": _build_stage2_workspace_response(
+                workspace=stored_workspace,
+                workspace_name=stored_workspace.get('workspace_name', workspace_name),
+                created_at=stored_workspace.get('created_at'),
+                updated_at=stored_workspace.get('updated_at'),
+            )})
+
+        return jsonify({"success": True, "workspace": _build_stage2_workspace_response(workspace_name=workspace_name)})
+    except Exception as e:
+        return jsonify({"success": False, "error": safe_str(e)}), 500
+
+
+@app.route('/api/stage2-workspace', methods=['POST'])
+def save_stage2_workspace():
+    try:
+        payload = request.get_json() or {}
+        workspace_name = str(payload.get('workspace_name', 'default')).strip() or 'default'
+        normalized_workspace = normalize_workspace_payload(payload)
+        saved_workspace = db_manager.save_stage2_workspace(normalized_workspace, workspace_name=workspace_name)
+        return jsonify({"success": True, "workspace": _build_stage2_workspace_response(
+            workspace=saved_workspace,
+            workspace_name=saved_workspace.get('workspace_name', workspace_name),
+            created_at=saved_workspace.get('created_at'),
+            updated_at=saved_workspace.get('updated_at'),
+        )})
+    except Exception as e:
+        return jsonify({"success": False, "error": safe_str(e)}), 500
+
 
 # Keep other routes unchanged
 @app.route('/')

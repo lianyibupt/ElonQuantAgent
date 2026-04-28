@@ -1171,7 +1171,101 @@
                                 <p class="text-muted mt-2" style="font-size: 1rem;">Configure your asset, timeframe, and date range above, then click to start analysis</p>
                             </div>
                         </div>
-                        
+
+                        <!-- Stage 2 Workspace Scaffold -->
+                        <div class="panel" id="stage2WorkspacePanel" style="width: 100%; margin-top: 2rem;">
+                            <div class="d-flex flex-column flex-lg-row justify-content-between align-items-lg-center gap-3 mb-3">
+                                <div>
+                                    <h4 class="panel-title mb-1">
+                                        <i class="fas fa-briefcase"></i> Stage 2 Account Workspace
+                                    </h4>
+                                    <p class="text-muted mb-0">Minimal account-tracking scaffold for holdings review and account-level analysis.</p>
+                                </div>
+                                <div class="d-flex flex-wrap gap-2">
+                                    <button type="button" class="btn btn-outline-primary" id="workspaceAccountAnalysisBtn" onclick="runAccountAnalysis()">
+                                        <i class="fas fa-chart-pie me-2"></i>Account Analysis
+                                    </button>
+                                </div>
+                            </div>
+
+                            <div class="table-responsive mb-3">
+                                <table class="table table-sm align-middle" id="workspacePositionsTable">
+                                    <thead>
+                                        <tr>
+                                            <th>Ticker</th>
+                                            <th>Book Type</th>
+                                            <th>cost_basis</th>
+                                            <th>shares</th>
+                                            <th>tracking_status</th>
+                                            <th>Latest Price</th>
+                                            <th>Market Value</th>
+                                            <th>Position Weight</th>
+                                            <th>Unrealized PnL</th>
+                                            <th>Unrealized PnL %</th>
+                                            <th>Updated</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="workspacePositionsTableBody"></tbody>
+                                </table>
+                            </div>
+
+                            <div class="row g-3 mb-3">
+                                <div class="col-md-4">
+                                    <label class="form-label" for="workspacePositionTicker">Ticker</label>
+                                    <input type="text" class="form-control" id="workspacePositionTicker" placeholder="AAPL">
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label" for="workspacePositionBookType">Book Type</label>
+                                    <input type="text" class="form-control" id="workspacePositionBookType" placeholder="core / trading">
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label" for="workspacePositionTrackingStatus">Tracking Status</label>
+                                    <input type="text" class="form-control" id="workspacePositionTrackingStatus" placeholder="tracking_status">
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label" for="workspacePositionCostBasis">Cost Basis</label>
+                                    <input type="number" class="form-control" id="workspacePositionCostBasis" step="0.01" placeholder="cost_basis">
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label" for="workspacePositionShares">Shares</label>
+                                    <input type="number" class="form-control" id="workspacePositionShares" step="0.0001" placeholder="shares">
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label" for="workspacePositionLatestPrice">Latest Price</label>
+                                    <input type="text" class="form-control" id="workspacePositionLatestPrice" placeholder="latest price" readonly>
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label" for="workspacePositionMarketValue">Market Value</label>
+                                    <input type="text" class="form-control" id="workspacePositionMarketValue" placeholder="market value" readonly>
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label" for="workspacePositionWeight">Position Weight</label>
+                                    <input type="text" class="form-control" id="workspacePositionWeight" placeholder="position weight" readonly>
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label" for="workspacePositionUnrealizedPnl">Unrealized PnL</label>
+                                    <input type="text" class="form-control" id="workspacePositionUnrealizedPnl" placeholder="unrealized pnl" readonly>
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label" for="workspacePositionUnrealizedPnlPct">Unrealized PnL %</label>
+                                    <input type="text" class="form-control" id="workspacePositionUnrealizedPnlPct" placeholder="unrealized pnl pct" readonly>
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label" for="workspacePositionUpdatedAt">Updated Timestamp</label>
+                                    <input type="text" class="form-control" id="workspacePositionUpdatedAt" placeholder="updated timestamp" readonly>
+                                </div>
+                            </div>
+
+                            <div class="d-flex flex-column flex-lg-row gap-3 align-items-start">
+                                <div class="flex-grow-1 w-100">
+                                    <label class="form-label" for="workspaceAnalysisHistoryList">Account Analysis History</label>
+                                    <ul class="list-group" id="workspaceAnalysisHistoryList">
+                                        <li class="list-group-item text-muted">No account analysis snapshots yet.</li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+
                         <!-- Panel 3: Settings & Security - Full Width -->
                         <div class="panel" style="width: 100%; margin-top: 2rem;">
                             <h4 class="panel-title">
@@ -1325,7 +1419,8 @@
         // Global variables
         let currentAsset = '';
         let currentTimeframe = '';
-        
+        let workspacePositions = [];
+
         // Persisted state keys
         const STORAGE_KEYS = {
             CUSTOM_ASSETS: 'quantagent_custom_assets',
@@ -1560,6 +1655,98 @@
         //     // No specific action needed as all timeframes are already available
         // }
 
+        function buildEmptyPosition() {
+            return {
+                ticker: '',
+                book_type: '',
+                cost_basis: '',
+                shares: '',
+                tracking_status: 'watch',
+                latest_price: '',
+                market_value: '',
+                position_weight: '',
+                unrealized_pnl: '',
+                unrealized_pnl_pct: '',
+                updated_at: ''
+            };
+        }
+
+        function renderWorkspacePositions() {
+            const tableBody = document.getElementById('workspacePositionsTableBody');
+            if (!tableBody) return;
+
+            if (!workspacePositions.length) {
+                tableBody.innerHTML = `
+                    <tr>
+                        <td colspan="11" class="text-muted text-center py-3">No holdings added yet.</td>
+                    </tr>
+                `;
+                return;
+            }
+
+            tableBody.innerHTML = workspacePositions.map(position => `
+                <tr>
+                    <td>${position.ticker || '—'}</td>
+                    <td>${position.book_type || '—'}</td>
+                    <td>${position.cost_basis || '—'}</td>
+                    <td>${position.shares || '—'}</td>
+                    <td>${position.tracking_status || '—'}</td>
+                    <td>${position.latest_price || '—'}</td>
+                    <td>${position.market_value || '—'}</td>
+                    <td>${position.position_weight || '—'}</td>
+                    <td>${position.unrealized_pnl || '—'}</td>
+                    <td>${position.unrealized_pnl_pct || '—'}</td>
+                    <td>${position.updated_at || '—'}</td>
+                </tr>
+            `).join('');
+        }
+
+        function updatePositionField(field, value) {
+            if (!workspacePositions.length) {
+                workspacePositions = [buildEmptyPosition()];
+            }
+            workspacePositions[0][field] = value;
+            renderWorkspacePositions();
+        }
+
+        function initializeStage2WorkspaceUI() {
+            workspacePositions = [buildEmptyPosition()];
+            renderWorkspacePositions();
+
+            const fieldMappings = {
+                workspacePositionTicker: 'ticker',
+                workspacePositionBookType: 'book_type',
+                workspacePositionCostBasis: 'cost_basis',
+                workspacePositionShares: 'shares',
+                workspacePositionTrackingStatus: 'tracking_status',
+                workspacePositionLatestPrice: 'latest_price',
+                workspacePositionMarketValue: 'market_value',
+                workspacePositionWeight: 'position_weight',
+                workspacePositionUnrealizedPnl: 'unrealized_pnl',
+                workspacePositionUnrealizedPnlPct: 'unrealized_pnl_pct',
+                workspacePositionUpdatedAt: 'updated_at'
+            };
+
+            Object.entries(fieldMappings).forEach(([elementId, field]) => {
+                const input = document.getElementById(elementId);
+                if (!input) return;
+                input.addEventListener('input', event => updatePositionField(field, event.target.value));
+            });
+        }
+
+        function runAccountAnalysis() {
+            const historyList = document.getElementById('workspaceAnalysisHistoryList');
+            if (!historyList) return;
+
+            const timestamp = new Date().toISOString();
+            historyList.innerHTML = `
+                <li class="list-group-item d-flex justify-content-between align-items-center">
+                    <span>UI-only account analysis placeholder</span>
+                    <small class="text-muted">${timestamp}</small>
+                </li>
+            `;
+        }
+
         // On page load, restore selected asset/timeframe and custom assets
         document.addEventListener('DOMContentLoaded', function() {
             // Initialize API provider fields
@@ -1583,6 +1770,8 @@
             // (this will disable & populate end date/time if the checkbox is checked by default)
             try { handleUseCurrentTimeChange(); } catch (e) { console.warn('handleUseCurrentTimeChange not available yet', e); }
             
+            initializeStage2WorkspaceUI();
+
             // Load custom assets and server-synced assets
             loadCustomAssets();
 
@@ -1867,97 +2056,6 @@
             // Use a non-blocking notification (replace alert with console + subtle DOM message if desired)
             console.log(`Custom asset "${symbol}" selected and persisted`);
          }
-        
-                 function runAnalysis() {
-             const dataSource = 'live'; // Always use live data
-             const timeframe = selectedTimeframe;
-              
-             // Get asset value from selected asset
-             let asset = selectedAsset;
-              
-             // Validate inputs
-             if (!asset || !timeframe) {
-                 alert('Please select both asset and timeframe.');
-                 return;
-             }
-              
-             // Get date and time values
-             const startDate = document.getElementById('startDate').value;
-             const startTime = document.getElementById('startTime').value;
-             const endDate = document.getElementById('endDate').value;
-             const endTime = document.getElementById('endTime').value;
-             const useCurrentTime = document.getElementById('useCurrentTime').checked;
-              
-             // Validate dates
-             if (!startDate || !endDate) {
-                 alert('Please select both start and end dates.');
-                 return;
-             }
-              
-             // Show loading state
-             const analyzeBtn = document.getElementById('analyzeBtn');
-             const originalText = analyzeBtn.innerHTML;
-             analyzeBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Analyzing...';
-             analyzeBtn.disabled = true;
-              
-             // Get chart generation setting
-             const generateCharts = document.getElementById('generateCharts').checked;
-              
-             // Prepare request data
-             const requestData = {
-                 data_source: dataSource,
-                 asset: asset,
-                 timeframe: timeframe,
-                 start_date: startDate,
-                 start_time: startTime,
-                 end_date: endDate,
-                 end_time: endTime,
-                 use_current_time: useCurrentTime,
-                 generate_charts: generateCharts,
-                 trading_strategy: selectedStrategy, // Add trading strategy to request data
-                 redirect_to_output: true
-             };
-             
-             // Make API call
-             fetch('/api/analyze', {
-                 method: 'POST',
-                 headers: {
-                     'Content-Type': 'application/json',
-                 },
-                 body: JSON.stringify(requestData)
-             })
-             .then(response => response.json())
-            .then(data => {
-                if (data.redirect) {
-                    // Store full results (with images) in sessionStorage before redirect
-                    if (data.full_results) {
-                        sessionStorage.setItem('analysisResults', JSON.stringify(data.full_results));
-                    }
-                    // Redirect to output page with results
-                    window.location.href = data.redirect;
-                 } else if (data.error) {
-                     // Show error message
-                     alert('Analysis failed: ' + data.error);
-                     // Reset button
-                     analyzeBtn.innerHTML = originalText;
-                     analyzeBtn.disabled = false;
-                 } else {
-                     // Handle other responses
-                     console.log('Analysis completed:', data);
-                     alert('Analysis completed successfully!');
-                     // Reset button
-                     analyzeBtn.innerHTML = originalText;
-                     analyzeBtn.disabled = false;
-                 }
-             })
-             .catch(error => {
-                 console.error('Error:', error);
-                 alert('An error occurred during analysis. Please try again.');
-                 // Reset button
-                 analyzeBtn.innerHTML = originalText;
-                 analyzeBtn.disabled = false;
-             });
-        }
         
         function handleUseCurrentTimeChange() {
             const useCurrentTime = document.getElementById('useCurrentTime');

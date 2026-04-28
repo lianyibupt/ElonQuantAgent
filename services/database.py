@@ -6,10 +6,13 @@ SQLite数据库管理模块
 import sqlite3
 import json
 import pandas as pd
+from copy import deepcopy
 from datetime import datetime, timedelta
 from typing import Dict, Any, List, Optional, Union
 from pathlib import Path
 import os
+
+from services.stage2_workspace import build_default_workspace, normalize_workspace_payload
 
 
 class DatabaseManager:
@@ -159,6 +162,15 @@ class DatabaseManager:
                 )
             """)
             
+            conn.execute("""
+                CREATE TABLE IF NOT EXISTS stage2_workspaces (
+                    workspace_name TEXT PRIMARY KEY,
+                    workspace_data TEXT NOT NULL,
+                    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+                )
+            """)
+
             # 创建索引提高查询性能
             conn.execute("CREATE INDEX IF NOT EXISTS idx_query_records_timestamp ON query_records(timestamp)")
             conn.execute("CREATE INDEX IF NOT EXISTS idx_query_records_tickers ON query_records(tickers)")
@@ -167,21 +179,64 @@ class DatabaseManager:
             conn.execute("CREATE INDEX IF NOT EXISTS idx_financial_cache_ticker ON financial_cache(ticker)")
             conn.execute("CREATE INDEX IF NOT EXISTS idx_price_cache_expires ON price_cache(expires_at)")
             conn.execute("CREATE INDEX IF NOT EXISTS idx_financial_cache_expires ON financial_cache(expires_at)")
-            
+            conn.execute("CREATE INDEX IF NOT EXISTS idx_stage2_workspaces_updated_at ON stage2_workspaces(updated_at)")
+
             # 历史记录表索引
             conn.execute("CREATE INDEX IF NOT EXISTS idx_analysis_history_timestamp ON analysis_history(timestamp)")
             conn.execute("CREATE INDEX IF NOT EXISTS idx_analysis_history_asset ON analysis_history(asset)")
             conn.execute("CREATE INDEX IF NOT EXISTS idx_analysis_history_timeframe ON analysis_history(timeframe)")
             conn.execute("CREATE INDEX IF NOT EXISTS idx_analysis_history_status ON analysis_history(status)")
             conn.execute("CREATE INDEX IF NOT EXISTS idx_analysis_history_session ON analysis_history(session_id)")
-            
+
             conn.commit()
     
+    def get_stage2_workspace(self, workspace_name: str = 'default') -> Optional[Dict[str, Any]]:
+        with self.get_connection() as conn:
+            cursor = conn.execute(
+                """
+                SELECT workspace_name, workspace_data, created_at, updated_at
+                FROM stage2_workspaces
+                WHERE workspace_name = ?
+                """,
+                (workspace_name,)
+            )
+            row = cursor.fetchone()
+            if not row:
+                return None
+
+            raw_workspace = json.loads(row['workspace_data']) if row['workspace_data'] else deepcopy(build_default_workspace())
+            workspace = normalize_workspace_payload(raw_workspace)
+            workspace['workspace_name'] = row['workspace_name']
+            workspace['created_at'] = row['created_at']
+            workspace['updated_at'] = row['updated_at']
+            return workspace
+
+    def save_stage2_workspace(self, workspace: Dict[str, Any], workspace_name: str = 'default') -> Dict[str, Any]:
+        workspace_payload = normalize_workspace_payload(deepcopy(workspace or {}))
+        workspace_payload.pop('workspace_name', None)
+        workspace_payload.pop('created_at', None)
+        workspace_payload.pop('updated_at', None)
+
+        with self.get_connection() as conn:
+            conn.execute(
+                """
+                INSERT INTO stage2_workspaces (workspace_name, workspace_data)
+                VALUES (?, ?)
+                ON CONFLICT(workspace_name) DO UPDATE SET
+                    workspace_data = excluded.workspace_data,
+                    updated_at = CURRENT_TIMESTAMP
+                """,
+                (workspace_name, json.dumps(workspace_payload, ensure_ascii=False))
+            )
+            conn.commit()
+
+        return self.get_stage2_workspace(workspace_name)
+
     def save_query_record(
-        self, 
-        tickers: List[str], 
-        start_date: str, 
-        end_date: str, 
+        self,
+        tickers: List[str],
+        start_date: str,
+        end_date: str,
         analysis_params: Dict[str, Any] = None,
         session_id: str = None,
         user_ip: str = None
