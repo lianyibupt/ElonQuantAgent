@@ -146,7 +146,7 @@ class AccountAnalysisApiTests(unittest.TestCase):
         self.assertFalse(payload["success"])
         self.assertIn("Workspace not found", payload["error"])
 
-    def test_post_account_analysis_returns_server_error_on_malformed_llm_json(self):
+    def test_post_account_analysis_recovers_when_llm_output_has_single_json_comma_error(self):
         self.test_db_manager.save_stage2_workspace(
             {
                 "account_state": {"nav": 1000, "cash": 500},
@@ -166,6 +166,19 @@ class AccountAnalysisApiTests(unittest.TestCase):
             }
         )
 
+        malformed_but_recoverable_json = """{
+  \"summary\": \"Portfolio check\",
+  \"portfolio_health_score\": 80,
+  \"holding_health\": [
+    {\"ticker\": \"AAPL\", \"status\": \"healthy\"}
+    {\"ticker\": \"MSFT\", \"status\": \"watch\"}
+  ],
+  \"pnl_breakdown\": {},
+  \"concentration_risks\": [],
+  \"crowded_exposures\": [],
+  \"manager_actions\": []
+}"""
+
         bad_response = type(
             "FakeResponse",
             (),
@@ -174,7 +187,7 @@ class AccountAnalysisApiTests(unittest.TestCase):
                     type(
                         "FakeChoice",
                         (),
-                        {"message": type("FakeMessage", (), {"content": "not-json"})()},
+                        {"message": type("FakeMessage", (), {"content": malformed_but_recoverable_json})()},
                     )
                 ]
             },
@@ -187,10 +200,11 @@ class AccountAnalysisApiTests(unittest.TestCase):
 
             response = self.client.post("/api/account-analysis", json={"workspace_name": "default"})
 
-        self.assertEqual(response.status_code, 500)
+        self.assertEqual(response.status_code, 200)
         payload = response.get_json()
-        self.assertFalse(payload["success"])
-        self.assertIn("JSON", payload["error"])
+        self.assertTrue(payload["success"])
+        self.assertEqual(payload["analysis"]["summary"], "Portfolio check")
+        self.assertEqual(payload["analysis"]["portfolio_health_score"], 80.0)
 
     def test_get_account_analysis_history_returns_latest_entries(self):
         self.test_db_manager.save_stage2_workspace(

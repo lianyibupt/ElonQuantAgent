@@ -1021,22 +1021,65 @@ def _parse_account_analysis_payload(raw_text):
         text = re.sub(r'^```(?:json)?\s*', '', text)
         text = re.sub(r'\s*```$', '', text)
 
+    def _load_or_raise(payload_text):
+        parsed_payload = json.loads(payload_text)
+        if not isinstance(parsed_payload, dict):
+            raise ValueError('Account analysis response JSON must be an object.')
+        return parsed_payload
+
+    def _repair_single_missing_comma(payload_text, error):
+        if 'Expecting' not in safe_str(error) or 'delimiter' not in safe_str(error):
+            return None
+
+        insert_at = getattr(error, 'pos', None)
+        if not isinstance(insert_at, int) or insert_at < 0 or insert_at > len(payload_text):
+            return None
+
+        left = insert_at - 1
+        while left >= 0 and payload_text[left].isspace():
+            left -= 1
+
+        right = insert_at
+        while right < len(payload_text) and payload_text[right].isspace():
+            right += 1
+
+        if left < 0 or right >= len(payload_text):
+            return None
+
+        left_char = payload_text[left]
+        right_char = payload_text[right]
+        left_candidates = set(']}"0123456789eE')
+        right_candidates = set('{["-0123456789tfn')
+
+        if left_char not in left_candidates or right_char not in right_candidates:
+            return None
+
+        repaired = payload_text[:right] + ',' + payload_text[right:]
+        try:
+            return _load_or_raise(repaired)
+        except (json.JSONDecodeError, ValueError):
+            return None
+
     try:
-        parsed = json.loads(text)
-        if isinstance(parsed, dict):
-            return parsed
-    except json.JSONDecodeError:
-        pass
+        return _load_or_raise(text)
+    except json.JSONDecodeError as first_error:
+        repaired = _repair_single_missing_comma(text, first_error)
+        if repaired is not None:
+            return repaired
 
     start = text.find('{')
     end = text.rfind('}') + 1
     if start == -1 or end <= start:
         raise ValueError('Account analysis response did not contain JSON output.')
 
-    parsed = json.loads(text[start:end])
-    if not isinstance(parsed, dict):
-        raise ValueError('Account analysis response JSON must be an object.')
-    return parsed
+    sliced = text[start:end]
+    try:
+        return _load_or_raise(sliced)
+    except json.JSONDecodeError as sliced_error:
+        repaired = _repair_single_missing_comma(sliced, sliced_error)
+        if repaired is not None:
+            return repaired
+        raise
 
 
 def _normalize_account_analysis_payload(payload):
