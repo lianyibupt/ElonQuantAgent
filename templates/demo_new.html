@@ -474,6 +474,7 @@
              padding: 1.5rem;
              box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
              transition: all 0.3s ease;
+             min-width: 0;
          }
          
          .panel:hover {
@@ -614,6 +615,10 @@
              margin-top: -0.75rem;
              margin-bottom: 1rem;
              text-align: center;
+         }
+
+         .stage2-panel-group {
+             grid-template-columns: 1fr;
          }
 
          @media (max-width: 768px) {
@@ -1126,8 +1131,8 @@
                                         </a>
                                     </div>
                                     <div>
-                                        <a class="hero-btn" href="#stage2WorkspacePanel" style="padding: 1rem 2rem; font-size: 1rem; background: rgba(255,255,255,0.14); border: 1px solid rgba(255,255,255,0.35);">
-                                            <span class="hero-btn-text">Stage 2 Workspace</span>
+                                        <a class="hero-btn" href="#analysis" onclick="switchWorkspaceTab('stage2')" style="padding: 1rem 2rem; font-size: 1rem; background: rgba(255,255,255,0.14); border: 1px solid rgba(255,255,255,0.35);">
+                                            <span class="hero-btn-text">Account Analysis</span>
                                             <span class="hero-btn-icon">
                                                 <i class="fas fa-briefcase"></i>
                                             </span>
@@ -1164,7 +1169,7 @@
                                     <i class="fas fa-chart-line"></i> Analysis
                                 </button>
                                 <button type="button" class="workspace-tab-btn" id="stage2TabBtn" onclick="switchWorkspaceTab('stage2')">
-                                    <i class="fas fa-briefcase"></i> Stage 2 Workspace
+                                    <i class="fas fa-briefcase"></i> Account Analysis
                                 </button>
                             </div>
                         </div>
@@ -1353,112 +1358,6 @@
                             </div>
                         </div>
 
-                        <!-- Stage 2 Workspace Scaffold -->
-                        <div class="panel" id="stage2WorkspacePanel" style="width: 100%; margin-top: 2rem; scroll-margin-top: 110px; border: 2px solid rgba(86, 39, 216, 0.18); box-shadow: 0 12px 30px rgba(86, 39, 216, 0.08);">
-                            <div class="d-flex flex-column flex-lg-row justify-content-between align-items-lg-center gap-3 mb-3">
-                                <div>
-                                    <div class="text-uppercase fw-semibold mb-2" style="font-size: 0.78rem; letter-spacing: 0.08em; color: var(--etrade-purple);">Stage 2 Workspace</div>
-                                    <h4 class="panel-title mb-1">
-                                        <i class="fas fa-briefcase"></i> Stage 2 Account Workspace
-                                    </h4>
-                                    <p class="text-muted mb-0">Manage tracked holdings here, then run account-level AI analysis for the whole portfolio.</p>
-                                </div>
-                                <div class="d-flex flex-wrap gap-2">
-                                    <a href="#stage2WorkspacePanel" class="btn btn-outline-secondary">
-                                        <i class="fas fa-arrow-down me-2"></i>Jump Here
-                                    </a>
-                                    <button type="button" class="btn btn-primary" id="workspaceAccountAnalysisBtn" onclick="runAccountAnalysis()">
-                                        <i class="fas fa-chart-pie me-2"></i>Run Account Analysis
-                                    </button>
-                                </div>
-                            </div>
-
-                            <div class="alert alert-info py-2 px-3 mb-3">
-                                <strong>Use this panel for Stage 2.</strong> Maintain your holdings, review the refreshed PnL fields, and click <strong>Run Account Analysis</strong> for the portfolio-level workflow.
-                            </div>
-
-                            <div class="alert alert-secondary py-2 px-3 mb-3" id="workspaceLastAnalysisStatus">
-                                No account analysis run yet.
-                            </div>
-
-                            <div class="table-responsive mb-3">
-                                <table class="table table-sm align-middle" id="workspacePositionsTable">
-                                    <thead>
-                                        <tr>
-                                            <th>Ticker</th>
-                                            <th>Book Type</th>
-                                            <th>cost_basis</th>
-                                            <th>shares</th>
-                                            <th>tracking_status</th>
-                                            <th>Latest Price</th>
-                                            <th>Market Value</th>
-                                            <th>Position Weight</th>
-                                            <th>Unrealized PnL</th>
-                                            <th>Unrealized PnL %</th>
-                                            <th>Updated</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody id="workspacePositionsTableBody"></tbody>
-                                </table>
-                            </div>
-
-                            <div class="row g-3 mb-3">
-                                <div class="col-md-4">
-                                    <label class="form-label" for="workspacePositionTicker">Ticker</label>
-                                    <input type="text" class="form-control" id="workspacePositionTicker" placeholder="AAPL">
-                                </div>
-                                <div class="col-md-4">
-                                    <label class="form-label" for="workspacePositionBookType">Book Type</label>
-                                    <input type="text" class="form-control" id="workspacePositionBookType" placeholder="core / trading">
-                                </div>
-                                <div class="col-md-4">
-                                    <label class="form-label" for="workspacePositionTrackingStatus">Tracking Status</label>
-                                    <input type="text" class="form-control" id="workspacePositionTrackingStatus" placeholder="tracking_status">
-                                </div>
-                                <div class="col-md-4">
-                                    <label class="form-label" for="workspacePositionCostBasis">Cost Basis</label>
-                                    <input type="number" class="form-control" id="workspacePositionCostBasis" step="0.01" placeholder="cost_basis">
-                                </div>
-                                <div class="col-md-4">
-                                    <label class="form-label" for="workspacePositionShares">Shares</label>
-                                    <input type="number" class="form-control" id="workspacePositionShares" step="0.0001" placeholder="shares">
-                                </div>
-                                <div class="col-md-4">
-                                    <label class="form-label" for="workspacePositionLatestPrice">Latest Price</label>
-                                    <input type="text" class="form-control" id="workspacePositionLatestPrice" placeholder="latest price" readonly>
-                                </div>
-                                <div class="col-md-4">
-                                    <label class="form-label" for="workspacePositionMarketValue">Market Value</label>
-                                    <input type="text" class="form-control" id="workspacePositionMarketValue" placeholder="market value" readonly>
-                                </div>
-                                <div class="col-md-4">
-                                    <label class="form-label" for="workspacePositionWeight">Position Weight</label>
-                                    <input type="text" class="form-control" id="workspacePositionWeight" placeholder="position weight" readonly>
-                                </div>
-                                <div class="col-md-4">
-                                    <label class="form-label" for="workspacePositionUnrealizedPnl">Unrealized PnL</label>
-                                    <input type="text" class="form-control" id="workspacePositionUnrealizedPnl" placeholder="unrealized pnl" readonly>
-                                </div>
-                                <div class="col-md-4">
-                                    <label class="form-label" for="workspacePositionUnrealizedPnlPct">Unrealized PnL %</label>
-                                    <input type="text" class="form-control" id="workspacePositionUnrealizedPnlPct" placeholder="unrealized pnl pct" readonly>
-                                </div>
-                                <div class="col-md-4">
-                                    <label class="form-label" for="workspacePositionUpdatedAt">Updated Timestamp</label>
-                                    <input type="text" class="form-control" id="workspacePositionUpdatedAt" placeholder="updated timestamp" readonly>
-                                </div>
-                            </div>
-
-                            <div class="d-flex flex-column flex-lg-row gap-3 align-items-start">
-                                <div class="flex-grow-1 w-100">
-                                    <label class="form-label" for="workspaceAnalysisHistoryList">Account Analysis History</label>
-                                    <ul class="list-group" id="workspaceAnalysisHistoryList">
-                                        <li class="list-group-item text-muted">No account analysis snapshots yet.</li>
-                                    </ul>
-                                </div>
-                            </div>
-                        </div>
-
                         <!-- Panel 3: Settings & Security - Full Width -->
                         <div class="panel" style="width: 100%; margin-top: 2rem;">
                             <h4 class="panel-title">
@@ -1604,55 +1503,129 @@
                         </div>
 
                         <div id="stage2TabPanel" class="workspace-tab-panel">
-                            <div class="panel" style="margin-bottom: 2rem;">
-                                <h4 class="panel-title">
-                                    <i class="fas fa-briefcase"></i> Stage 2 Workspace
-                                </h4>
-                                <p class="workspace-section-hint">Maintain your local account snapshot, positions, and candidate list here. Saved data is stored in SQLite and can be attached to analysis on demand.</p>
-                                <div class="workspace-inline-actions" style="justify-content: center;">
-                                    <button type="button" class="btn btn-outline-primary" onclick="loadStage2Workspace()">
-                                        <i class="fas fa-download"></i> Load Saved Workspace
-                                    </button>
-                                    <button type="button" class="btn btn-primary" onclick="saveStage2Workspace()">
-                                        <i class="fas fa-save"></i> Save Workspace
-                                    </button>
-                                    <button type="button" class="btn btn-outline-secondary" onclick="resetStage2Workspace()">
-                                        <i class="fas fa-rotate-left"></i> Reset Unsaved Changes
-                                    </button>
+                            <div class="panel" style="margin-bottom: 2rem; scroll-margin-top: 110px; border: 2px solid rgba(86, 39, 216, 0.18); box-shadow: 0 12px 30px rgba(86, 39, 216, 0.08);">
+                                <div class="d-flex flex-column flex-lg-row justify-content-between align-items-lg-center gap-3 mb-3">
+                                    <div>
+                                        <div class="text-uppercase fw-semibold mb-2" style="font-size: 0.78rem; letter-spacing: 0.08em; color: var(--etrade-purple);">Stage 2 Workspace</div>
+                                        <h4 class="panel-title mb-1">
+                                            <i class="fas fa-briefcase"></i> Stage 2 Account Workspace
+                                        </h4>
+                                        <p class="text-muted mb-0">Maintain tracked holdings, keep account state current, and run account-level AI analysis for the whole portfolio.</p>
+                                    </div>
+                                    <div class="d-flex flex-wrap gap-2">
+                                        <button type="button" class="btn btn-outline-primary" onclick="loadStage2Workspace()">
+                                            <i class="fas fa-download me-2"></i>Load Saved Workspace
+                                        </button>
+                                        <button type="button" class="btn btn-primary" onclick="saveStage2Workspace()">
+                                            <i class="fas fa-save me-2"></i>Save Workspace
+                                        </button>
+                                        <button type="button" class="btn btn-outline-secondary" onclick="resetStage2Workspace()">
+                                            <i class="fas fa-rotate-left me-2"></i>Reset Unsaved Changes
+                                        </button>
+                                        <button type="button" class="btn btn-primary" id="workspaceAccountAnalysisBtn" onclick="runAccountAnalysis()">
+                                            <i class="fas fa-chart-pie me-2"></i>Run Account Analysis
+                                        </button>
+                                    </div>
                                 </div>
+
+                                <div class="alert alert-info py-2 px-3 mb-3">
+                                    <strong>Stage 2 is account analysis.</strong> Keep your saved book current here, let single-name analysis refresh position PnL, then run the portfolio-level workflow.
+                                </div>
+
                                 <div id="stage2WorkspaceMessage" class="alert alert-info mt-3" style="display: none;"></div>
+                                <div class="alert alert-secondary py-2 px-3 mb-3" id="workspaceLastAnalysisStatus">
+                                    No account analysis run yet.
+                                </div>
                             </div>
 
-                            <div class="panel-group">
+                            <div class="panel-group stage2-panel-group">
                                 <div class="panel">
                                     <h4 class="panel-title">
                                         <i class="fas fa-wallet"></i> Account State
                                     </h4>
                                     <div class="row g-3">
-                                        <div class="col-md-6">
+                                        <div class="col-md-4">
                                             <label class="form-label">NAV</label>
                                             <input type="number" step="0.01" class="form-control" id="workspaceNav" placeholder="100000">
                                         </div>
-                                        <div class="col-md-6">
+                                        <div class="col-md-4">
                                             <label class="form-label">Cash</label>
                                             <input type="number" step="0.01" class="form-control" id="workspaceCash" placeholder="25000">
                                         </div>
-                                        <div class="col-md-6">
-                                            <label class="form-label">Gross Exposure %</label>
-                                            <input type="number" step="0.01" class="form-control" id="workspaceGrossExposure" placeholder="75">
-                                        </div>
-                                        <div class="col-md-6">
-                                            <label class="form-label">Core Exposure %</label>
-                                            <input type="number" step="0.01" class="form-control" id="workspaceCoreExposure" placeholder="45">
-                                        </div>
-                                        <div class="col-md-6">
-                                            <label class="form-label">Tactical Exposure %</label>
-                                            <input type="number" step="0.01" class="form-control" id="workspaceTacticalExposure" placeholder="20">
-                                        </div>
-                                        <div class="col-md-6">
+                                        <div class="col-md-4">
                                             <label class="form-label">Current Drawdown %</label>
                                             <input type="number" step="0.01" class="form-control" id="workspaceCurrentDrawdown" placeholder="8">
                                         </div>
+                                        <div class="col-md-4">
+                                            <label class="form-label">Gross Exposure %</label>
+                                            <input type="number" step="0.01" class="form-control" id="workspaceGrossExposure" placeholder="auto after refresh" readonly>
+                                        </div>
+                                        <div class="col-md-4">
+                                            <label class="form-label">Core Exposure %</label>
+                                            <input type="number" step="0.01" class="form-control" id="workspaceCoreExposure" placeholder="auto after refresh" readonly>
+                                        </div>
+                                        <div class="col-md-4">
+                                            <label class="form-label">Tactical Exposure %</label>
+                                            <input type="number" step="0.01" class="form-control" id="workspaceTacticalExposure" placeholder="auto after refresh" readonly>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="panel" style="margin-bottom: 2rem;">
+                                    <h4 class="panel-title">
+                                        <i class="fas fa-layer-group"></i> Positions
+                                    </h4>
+                                    <p class="workspace-section-hint">Track positions with cost_basis and shares. Latest price, market value, position weight, and unrealized PnL are refreshed by analysis.</p>
+                                    <div class="table-responsive mb-3">
+                                        <table class="table table-sm align-middle" id="workspacePositionsTable">
+                                            <thead>
+                                                <tr>
+                                                    <th>Ticker</th>
+                                                    <th>Book Type</th>
+                                                    <th>cost_basis</th>
+                                                    <th>shares</th>
+                                                    <th>tracking_status</th>
+                                                    <th>Factor Tags</th>
+                                                    <th>Latest Price</th>
+                                                    <th>Market Value</th>
+                                                    <th>Position Weight</th>
+                                                    <th>Unrealized PnL</th>
+                                                    <th>Unrealized PnL %</th>
+                                                    <th>Updated</th>
+                                                    <th style="width: 88px;">Action</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody id="workspacePositionsTableBody"></tbody>
+                                        </table>
+                                    </div>
+                                    <div class="workspace-inline-actions" style="justify-content: center; margin-top: 1rem;">
+                                        <button type="button" class="btn btn-outline-primary" onclick="addPositionRow()">
+                                            <i class="fas fa-plus"></i> Add Position
+                                        </button>
+                                    </div>
+                                </div>
+
+                                <div class="panel">
+                                    <h4 class="panel-title">
+                                        <i class="fas fa-binoculars"></i> Candidates
+                                    </h4>
+                                    <p class="workspace-section-hint">Keep a lightweight watchlist for factor overlap and manager-level context.</p>
+                                    <div class="table-responsive">
+                                        <table class="workspace-table">
+                                            <thead>
+                                                <tr>
+                                                    <th>Ticker</th>
+                                                    <th>Factor Tags</th>
+                                                    <th style="width: 88px;">Action</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody id="workspaceCandidatesBody"></tbody>
+                                        </table>
+                                    </div>
+                                    <div class="workspace-inline-actions" style="justify-content: center; margin-top: 1rem;">
+                                        <button type="button" class="btn btn-outline-primary" onclick="addCandidateRow()">
+                                            <i class="fas fa-plus"></i> Add Candidate
+                                        </button>
                                     </div>
                                 </div>
 
@@ -1663,55 +1636,16 @@
                                     <label class="form-label">Notes</label>
                                     <textarea class="form-control" id="workspaceNotes" rows="8" placeholder="Optional notes about your book, risk posture, or watchlist."></textarea>
                                 </div>
-                            </div>
 
-                            <div class="panel" style="margin-bottom: 2rem;">
-                                <h4 class="panel-title">
-                                    <i class="fas fa-layer-group"></i> Positions
-                                </h4>
-                                <p class="workspace-section-hint">Track current positions with book type and factor tags for exposure checks.</p>
-                                <div class="table-responsive">
-                                    <table class="workspace-table">
-                                        <thead>
-                                            <tr>
-                                                <th>Ticker</th>
-                                                <th>Market Value</th>
-                                                <th>Book Type</th>
-                                                <th>Factor Tags</th>
-                                                <th style="width: 88px;">Action</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody id="workspacePositionsBody"></tbody>
-                                    </table>
-                                </div>
-                                <div class="workspace-inline-actions" style="justify-content: center; margin-top: 1rem;">
-                                    <button type="button" class="btn btn-outline-primary" onclick="addPositionRow()">
-                                        <i class="fas fa-plus"></i> Add Position
-                                    </button>
-                                </div>
-                            </div>
-
-                            <div class="panel">
-                                <h4 class="panel-title">
-                                    <i class="fas fa-binoculars"></i> Candidates
-                                </h4>
-                                <p class="workspace-section-hint">Keep a lightweight watchlist for factor overlap and manager-level context.</p>
-                                <div class="table-responsive">
-                                    <table class="workspace-table">
-                                        <thead>
-                                            <tr>
-                                                <th>Ticker</th>
-                                                <th>Factor Tags</th>
-                                                <th style="width: 88px;">Action</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody id="workspaceCandidatesBody"></tbody>
-                                    </table>
-                                </div>
-                                <div class="workspace-inline-actions" style="justify-content: center; margin-top: 1rem;">
-                                    <button type="button" class="btn btn-outline-primary" onclick="addCandidateRow()">
-                                        <i class="fas fa-plus"></i> Add Candidate
-                                    </button>
+                                <div class="panel">
+                                    <div class="d-flex flex-column flex-lg-row gap-3 align-items-start">
+                                        <div class="flex-grow-1 w-100">
+                                            <label class="form-label" for="workspaceAnalysisHistoryList">Account Analysis History</label>
+                                            <ul class="list-group" id="workspaceAnalysisHistoryList">
+                                                <li class="list-group-item text-muted">No account analysis snapshots yet.</li>
+                                            </ul>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -1727,7 +1661,6 @@
         // Global variables
         let currentAsset = '';
         let currentTimeframe = '';
-        let workspacePositions = [];
         let workspaceAnalysisHistory = [];
 
         // Persisted state keys
@@ -1818,7 +1751,20 @@
         }
 
         function buildEmptyPosition() {
-            return { ticker: '', market_value: 0, book_type: '核心仓', factor_tags: [] };
+            return {
+                ticker: '',
+                book_type: '',
+                cost_basis: 0,
+                shares: 0,
+                tracking_status: 'watch',
+                factor_tags: [],
+                latest_price: 0,
+                market_value: 0,
+                position_weight: 0,
+                unrealized_pnl: 0,
+                unrealized_pnl_pct: 0,
+                updated_at: ''
+            };
         }
 
         function buildEmptyCandidate() {
@@ -1826,25 +1772,32 @@
         }
 
         function renderPositionsTable() {
-            const body = document.getElementById('workspacePositionsBody');
-            if (!body) return;
+            const tableBody = document.getElementById('workspacePositionsTableBody');
+            if (!tableBody) return;
             const positions = stage2WorkspaceState.positions || [];
             if (!positions.length) {
-                body.innerHTML = `<tr><td colspan="5"><div class="workspace-empty-state">No positions yet. Add one to persist your live book context.</div></td></tr>`;
+                tableBody.innerHTML = `
+                    <tr>
+                        <td colspan="13" class="text-muted text-center py-3">No holdings added yet.</td>
+                    </tr>
+                `;
                 return;
             }
-            body.innerHTML = positions.map((position, index) => `
+
+            tableBody.innerHTML = positions.map((position, index) => `
                 <tr>
-                    <td><input type="text" class="form-control" value="${escapeHtml(position.ticker || '')}" onchange="updatePositionField(${index}, 'ticker', this.value)" placeholder="MSTR"></td>
-                    <td><input type="number" step="0.01" class="form-control" value="${position.market_value ?? 0}" onchange="updatePositionField(${index}, 'market_value', this.value)" placeholder="25000"></td>
-                    <td>
-                        <select class="form-select" onchange="updatePositionField(${index}, 'book_type', this.value)">
-                            <option value="核心仓" ${position.book_type === '核心仓' ? 'selected' : ''}>核心仓</option>
-                            <option value="战术仓" ${position.book_type === '战术仓' ? 'selected' : ''}>战术仓</option>
-                            <option value="观察" ${position.book_type === '观察' ? 'selected' : ''}>观察</option>
-                        </select>
-                    </td>
+                    <td><input type="text" class="form-control" value="${escapeHtml(position.ticker || '')}" onchange="updatePositionField(${index}, 'ticker', this.value)" placeholder="AAPL"></td>
+                    <td><input type="text" class="form-control" value="${escapeHtml(position.book_type || '')}" onchange="updatePositionField(${index}, 'book_type', this.value)" placeholder="core / tactical"></td>
+                    <td><input type="number" step="0.01" class="form-control" value="${position.cost_basis ?? 0}" onchange="updatePositionField(${index}, 'cost_basis', this.value)" placeholder="cost_basis"></td>
+                    <td><input type="number" step="0.0001" class="form-control" value="${position.shares ?? 0}" onchange="updatePositionField(${index}, 'shares', this.value)" placeholder="shares"></td>
+                    <td><input type="text" class="form-control" value="${escapeHtml(position.tracking_status || '')}" onchange="updatePositionField(${index}, 'tracking_status', this.value)" placeholder="tracking_status"></td>
                     <td><input type="text" class="form-control" value="${escapeHtml((position.factor_tags || []).join(', '))}" onchange="updatePositionField(${index}, 'factor_tags', this.value)" placeholder="crypto, momentum"></td>
+                    <td>${position.latest_price || '—'}</td>
+                    <td>${position.market_value || '—'}</td>
+                    <td>${position.position_weight || '—'}</td>
+                    <td>${position.unrealized_pnl || '—'}</td>
+                    <td>${position.unrealized_pnl_pct || '—'}</td>
+                    <td>${position.updated_at || '—'}</td>
                     <td><div class="workspace-row-actions"><button type="button" class="btn btn-outline-danger btn-sm" onclick="removePositionRow(${index})"><i class="fas fa-trash"></i></button></div></td>
                 </tr>
             `).join('');
@@ -1896,9 +1849,17 @@
                 },
                 positions: (stage2WorkspaceState.positions || []).map(position => ({
                     ticker: String(position.ticker || '').trim().toUpperCase(),
+                    book_type: String(position.book_type || '').trim().toLowerCase(),
+                    cost_basis: Number(position.cost_basis || 0),
+                    shares: Number(position.shares || 0),
+                    tracking_status: String(position.tracking_status || '').trim(),
+                    factor_tags: Array.isArray(position.factor_tags) ? position.factor_tags.filter(Boolean) : [],
+                    latest_price: Number(position.latest_price || 0),
                     market_value: Number(position.market_value || 0),
-                    book_type: String(position.book_type || '观察').trim() || '观察',
-                    factor_tags: Array.isArray(position.factor_tags) ? position.factor_tags.filter(Boolean) : []
+                    position_weight: Number(position.position_weight || 0),
+                    unrealized_pnl: Number(position.unrealized_pnl || 0),
+                    unrealized_pnl_pct: Number(position.unrealized_pnl_pct || 0),
+                    updated_at: position.updated_at || ''
                 })).filter(position => position.ticker),
                 candidates: (stage2WorkspaceState.candidates || []).map(candidate => ({
                     ticker: String(candidate.ticker || '').trim().toUpperCase(),
@@ -1929,7 +1890,7 @@
             if (!stage2WorkspaceState.positions[index]) return;
             if (field === 'ticker') {
                 stage2WorkspaceState.positions[index][field] = String(value || '').trim().toUpperCase();
-            } else if (field === 'market_value') {
+            } else if (['cost_basis', 'shares'].includes(field)) {
                 const parsed = Number(value || 0);
                 stage2WorkspaceState.positions[index][field] = Number.isNaN(parsed) ? 0 : parsed;
             } else if (field === 'factor_tags') {
@@ -1937,6 +1898,7 @@
             } else {
                 stage2WorkspaceState.positions[index][field] = value;
             }
+            renderPositionsTable();
         }
 
         function updateCandidateField(index, field, value) {
@@ -1948,6 +1910,7 @@
             } else {
                 stage2WorkspaceState.candidates[index][field] = value;
             }
+            renderCandidatesTable();
         }
 
         function addPositionRow() {
@@ -2022,11 +1985,11 @@
         }
 
         function buildWorkspaceAnalysisPayload() {
-            collectStage2WorkspaceFromForm();
+            const workspace = collectStage2WorkspaceFromForm();
             return {
-                account_state: stage2WorkspaceSnapshot.account_state || {},
-                positions: stage2WorkspaceSnapshot.positions || [],
-                candidates: stage2WorkspaceSnapshot.candidates || []
+                account_state: workspace.account_state || {},
+                positions: workspace.positions || [],
+                candidates: workspace.candidates || []
             };
         }
 
@@ -2266,85 +2229,6 @@
         //     // No specific action needed as all timeframes are already available
         // }
 
-        function buildEmptyPosition() {
-            return {
-                ticker: '',
-                book_type: '',
-                cost_basis: '',
-                shares: '',
-                tracking_status: 'watch',
-                latest_price: '',
-                market_value: '',
-                position_weight: '',
-                unrealized_pnl: '',
-                unrealized_pnl_pct: '',
-                updated_at: ''
-            };
-        }
-
-        function renderWorkspacePositions() {
-            const tableBody = document.getElementById('workspacePositionsTableBody');
-            if (!tableBody) return;
-
-            if (!workspacePositions.length) {
-                tableBody.innerHTML = `
-                    <tr>
-                        <td colspan="11" class="text-muted text-center py-3">No holdings added yet.</td>
-                    </tr>
-                `;
-                return;
-            }
-
-            tableBody.innerHTML = workspacePositions.map(position => `
-                <tr>
-                    <td>${position.ticker || '—'}</td>
-                    <td>${position.book_type || '—'}</td>
-                    <td>${position.cost_basis || '—'}</td>
-                    <td>${position.shares || '—'}</td>
-                    <td>${position.tracking_status || '—'}</td>
-                    <td>${position.latest_price || '—'}</td>
-                    <td>${position.market_value || '—'}</td>
-                    <td>${position.position_weight || '—'}</td>
-                    <td>${position.unrealized_pnl || '—'}</td>
-                    <td>${position.unrealized_pnl_pct || '—'}</td>
-                    <td>${position.updated_at || '—'}</td>
-                </tr>
-            `).join('');
-        }
-
-        function updatePositionField(field, value) {
-            if (!workspacePositions.length) {
-                workspacePositions = [buildEmptyPosition()];
-            }
-            workspacePositions[0][field] = value;
-            renderWorkspacePositions();
-        }
-
-        function initializeStage2WorkspaceUI() {
-            workspacePositions = [buildEmptyPosition()];
-            renderWorkspacePositions();
-
-            const fieldMappings = {
-                workspacePositionTicker: 'ticker',
-                workspacePositionBookType: 'book_type',
-                workspacePositionCostBasis: 'cost_basis',
-                workspacePositionShares: 'shares',
-                workspacePositionTrackingStatus: 'tracking_status',
-                workspacePositionLatestPrice: 'latest_price',
-                workspacePositionMarketValue: 'market_value',
-                workspacePositionWeight: 'position_weight',
-                workspacePositionUnrealizedPnl: 'unrealized_pnl',
-                workspacePositionUnrealizedPnlPct: 'unrealized_pnl_pct',
-                workspacePositionUpdatedAt: 'updated_at'
-            };
-
-            Object.entries(fieldMappings).forEach(([elementId, field]) => {
-                const input = document.getElementById(elementId);
-                if (!input) return;
-                input.addEventListener('input', event => updatePositionField(field, event.target.value));
-            });
-        }
-
         function setWorkspaceAnalysisStatus(message, tone = 'secondary') {
             const status = document.getElementById('workspaceLastAnalysisStatus');
             if (!status) return;
@@ -2429,11 +2313,17 @@
 
                 renderAccountAnalysisHistory([data.artifacts, ...workspaceAnalysisHistory]);
                 if (data.workspace && Array.isArray(data.workspace.positions)) {
-                    workspacePositions = data.workspace.positions.map(position => ({
+                    stage2WorkspaceState.positions = data.workspace.positions.map(position => ({
                         ...position,
                         updated_at: position.last_price_update_at || position.last_analyzed_at || position.updated_at || ''
                     }));
-                    renderWorkspacePositions();
+                    stage2WorkspaceSnapshot = cloneWorkspace({
+                        ...stage2WorkspaceSnapshot,
+                        ...data.workspace,
+                        positions: stage2WorkspaceState.positions
+                    });
+                    renderPositionsTable();
+                    updateWorkspaceStatusSummary();
                 }
                 setWorkspaceAnalysisStatus(`Last account analysis: ${data.artifacts.created_at}`, 'success');
             } catch (error) {
@@ -2454,23 +2344,22 @@
             // Set default dates
             const now = new Date();
             const oneYearAgo = new Date(now.getTime() - (365 * 24 * 60 * 60 * 1000));
-            
+
             // Format dates for input fields
             const formatDate = (date) => {
                 return date.toISOString().split('T')[0];
             };
-            
+
             // Set default start date (1 year ago)
             document.getElementById('startDate').value = formatDate(oneYearAgo);
-            
+
             // Set default end date (today)
             document.getElementById('endDate').value = formatDate(now);
-            
+
             // Apply the current-time checkbox behavior immediately on load
             // (this will disable & populate end date/time if the checkbox is checked by default)
             try { handleUseCurrentTimeChange(); } catch (e) { console.warn('handleUseCurrentTimeChange not available yet', e); }
-            
-            initializeStage2WorkspaceUI();
+
             loadAccountAnalysisHistory();
 
             // Load custom assets and server-synced assets

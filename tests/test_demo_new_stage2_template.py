@@ -1,3 +1,4 @@
+import re
 import unittest
 from pathlib import Path
 
@@ -19,9 +20,8 @@ class DemoNewStage2TemplateTests(unittest.TestCase):
             'workspaceAccountAnalysisBtn',
             'workspaceAnalysisHistoryList',
             'workspaceLastAnalysisStatus',
-            'Stage 2 Workspace',
+            'Stage 2 Account Workspace',
             'Run Account Analysis',
-            'href="#stage2WorkspacePanel"',
             'async function runAccountAnalysis()',
             'async function loadAccountAnalysisHistory()',
             "fetch('/api/account-analysis',",
@@ -30,6 +30,16 @@ class DemoNewStage2TemplateTests(unittest.TestCase):
         ]:
             with self.subTest(marker=marker):
                 self.assertIn(marker, self.template_text)
+
+    def test_template_uses_single_stage2_surface(self):
+        self.assertEqual(self.template_text.count('id="stage2TabPanel"'), 1)
+        self.assertNotIn('id="stage2WorkspacePanel"', self.template_text)
+        self.assertEqual(self.template_text.count('function buildEmptyPosition()'), 1)
+
+    def test_account_analysis_uses_single_column_layout_group(self):
+        self.assertIn('class="panel-group stage2-panel-group"', self.template_text)
+        self.assertIn('.stage2-panel-group {', self.template_text)
+        self.assertIn('grid-template-columns: 1fr;', self.template_text)
 
     def test_template_renders_history_without_inner_html_interpolation(self):
         self.assertIn("document.createElement('li')", self.template_text)
