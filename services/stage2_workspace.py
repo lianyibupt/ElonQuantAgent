@@ -209,10 +209,23 @@ def refresh_position_after_analysis(workspace, asset, latest_price, analysis_sum
 
     if updated_index is not None:
         refreshed = recalculate_account_state(refreshed)
+        metadata = {
+            "updated": True,
+            "message": f"Updated saved workspace position for {updated_ticker}.",
+            "updated_ticker": updated_ticker,
+            "updated_at": timestamp,
+            "position_index": updated_index,
+            "analysis_summary": str(analysis_summary or ""),
+        }
+        return refreshed, metadata
+
     metadata = {
+        "updated": False,
+        "message": f"No saved workspace holding matched {updated_ticker}.",
         "updated_ticker": updated_ticker,
         "updated_at": timestamp,
         "position_index": updated_index,
+        "analysis_summary": str(analysis_summary or ""),
     }
     return refreshed, metadata
 

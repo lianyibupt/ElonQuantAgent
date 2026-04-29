@@ -6,9 +6,10 @@ SQLite数据库管理模块
 import sqlite3
 import json
 import pandas as pd
+from contextlib import contextmanager
 from copy import deepcopy
 from datetime import datetime, timedelta
-from typing import Dict, Any, List, Optional, Union
+from typing import Dict, Any, Iterator, List, Optional, Union
 from pathlib import Path
 import os
 
@@ -40,11 +41,15 @@ class DatabaseManager:
         if db_dir and not os.path.exists(db_dir):
             os.makedirs(db_dir, exist_ok=True)
     
-    def get_connection(self) -> sqlite3.Connection:
+    @contextmanager
+    def get_connection(self) -> Iterator[sqlite3.Connection]:
         """获取数据库连接"""
         conn = sqlite3.connect(self.db_path)
         conn.row_factory = sqlite3.Row  # 允许通过列名访问
-        return conn
+        try:
+            yield conn
+        finally:
+            conn.close()
     
     def _init_tables(self):
         """初始化数据库表结构"""

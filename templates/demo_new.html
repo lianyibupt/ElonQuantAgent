@@ -986,12 +986,20 @@
                                 <p class="text-lg text-white mb-6" style="font-size: 1.1rem; margin-top: 1rem;">Advanced multi-agent system combining technical indicators, pattern recognition, and trend analysis for comprehensive market insights.</p>
 
                                 <!-- Buttons -->
-                                <div class="max-w-xs mx-auto sm:max-w-none sm:flex sm:justify-center mb-8 md:mb-0">
+                                <div class="max-w-xs mx-auto sm:max-w-none sm:flex sm:justify-center gap-3 mb-8 md:mb-0">
                                     <div>
                                         <a class="hero-btn" href="#analysis" style="padding: 1rem 2rem; font-size: 1rem;">
                                             <span class="hero-btn-text">Start Analysis</span>
                                             <span class="hero-btn-icon">
                                                 <i class="fas fa-arrow-right"></i>
+                                            </span>
+                                        </a>
+                                    </div>
+                                    <div>
+                                        <a class="hero-btn" href="#stage2WorkspacePanel" style="padding: 1rem 2rem; font-size: 1rem; background: rgba(255,255,255,0.14); border: 1px solid rgba(255,255,255,0.35);">
+                                            <span class="hero-btn-text">Stage 2 Workspace</span>
+                                            <span class="hero-btn-icon">
+                                                <i class="fas fa-briefcase"></i>
                                             </span>
                                         </a>
                                     </div>
@@ -1173,19 +1181,31 @@
                         </div>
 
                         <!-- Stage 2 Workspace Scaffold -->
-                        <div class="panel" id="stage2WorkspacePanel" style="width: 100%; margin-top: 2rem;">
+                        <div class="panel" id="stage2WorkspacePanel" style="width: 100%; margin-top: 2rem; scroll-margin-top: 110px; border: 2px solid rgba(86, 39, 216, 0.18); box-shadow: 0 12px 30px rgba(86, 39, 216, 0.08);">
                             <div class="d-flex flex-column flex-lg-row justify-content-between align-items-lg-center gap-3 mb-3">
                                 <div>
+                                    <div class="text-uppercase fw-semibold mb-2" style="font-size: 0.78rem; letter-spacing: 0.08em; color: var(--etrade-purple);">Stage 2 Workspace</div>
                                     <h4 class="panel-title mb-1">
                                         <i class="fas fa-briefcase"></i> Stage 2 Account Workspace
                                     </h4>
-                                    <p class="text-muted mb-0">Minimal account-tracking scaffold for holdings review and account-level analysis.</p>
+                                    <p class="text-muted mb-0">Manage tracked holdings here, then run account-level AI analysis for the whole portfolio.</p>
                                 </div>
                                 <div class="d-flex flex-wrap gap-2">
-                                    <button type="button" class="btn btn-outline-primary" id="workspaceAccountAnalysisBtn" onclick="runAccountAnalysis()">
-                                        <i class="fas fa-chart-pie me-2"></i>Account Analysis
+                                    <a href="#stage2WorkspacePanel" class="btn btn-outline-secondary">
+                                        <i class="fas fa-arrow-down me-2"></i>Jump Here
+                                    </a>
+                                    <button type="button" class="btn btn-primary" id="workspaceAccountAnalysisBtn" onclick="runAccountAnalysis()">
+                                        <i class="fas fa-chart-pie me-2"></i>Run Account Analysis
                                     </button>
                                 </div>
+                            </div>
+
+                            <div class="alert alert-info py-2 px-3 mb-3">
+                                <strong>Use this panel for Stage 2.</strong> Maintain your holdings, review the refreshed PnL fields, and click <strong>Run Account Analysis</strong> for the portfolio-level workflow.
+                            </div>
+
+                            <div class="alert alert-secondary py-2 px-3 mb-3" id="workspaceLastAnalysisStatus">
+                                No account analysis run yet.
                             </div>
 
                             <div class="table-responsive mb-3">
@@ -1420,6 +1440,7 @@
         let currentAsset = '';
         let currentTimeframe = '';
         let workspacePositions = [];
+        let workspaceAnalysisHistory = [];
 
         // Persisted state keys
         const STORAGE_KEYS = {
@@ -1734,17 +1755,106 @@
             });
         }
 
-        function runAccountAnalysis() {
+        function setWorkspaceAnalysisStatus(message, tone = 'secondary') {
+            const status = document.getElementById('workspaceLastAnalysisStatus');
+            if (!status) return;
+            status.className = `alert alert-${tone} py-2 px-3 mb-3`;
+            status.textContent = message;
+        }
+
+        function renderAccountAnalysisHistory(history = []) {
+            workspaceAnalysisHistory = Array.isArray(history) ? history : [];
             const historyList = document.getElementById('workspaceAnalysisHistoryList');
             if (!historyList) return;
 
-            const timestamp = new Date().toISOString();
-            historyList.innerHTML = `
-                <li class="list-group-item d-flex justify-content-between align-items-center">
-                    <span>UI-only account analysis placeholder</span>
-                    <small class="text-muted">${timestamp}</small>
-                </li>
-            `;
+            historyList.innerHTML = '';
+            if (!workspaceAnalysisHistory.length) {
+                const emptyItem = document.createElement('li');
+                emptyItem.className = 'list-group-item text-muted';
+                emptyItem.textContent = 'No account analysis snapshots yet.';
+                historyList.appendChild(emptyItem);
+                return;
+            }
+
+            workspaceAnalysisHistory.forEach(entry => {
+                const item = document.createElement('li');
+                item.className = 'list-group-item d-flex justify-content-between align-items-start gap-3';
+
+                const left = document.createElement('div');
+                const summary = document.createElement('div');
+                summary.className = 'fw-semibold';
+                summary.textContent = entry.summary || 'No summary provided.';
+                const workspace = document.createElement('div');
+                workspace.className = 'text-muted small';
+                workspace.textContent = entry.workspace_name || 'default';
+                left.appendChild(summary);
+                left.appendChild(workspace);
+
+                const createdAt = document.createElement('small');
+                createdAt.className = 'text-muted text-nowrap';
+                createdAt.textContent = entry.created_at || '—';
+
+                item.appendChild(left);
+                item.appendChild(createdAt);
+                historyList.appendChild(item);
+            });
+        }
+
+        async function loadAccountAnalysisHistory() {
+            try {
+                const response = await fetch('/api/account-analysis/history?workspace_name=default');
+                const data = await response.json();
+                if (!response.ok || !data.success) {
+                    throw new Error(data.error || 'Failed to load account analysis history.');
+                }
+                renderAccountAnalysisHistory(data.history || []);
+            } catch (error) {
+                console.error('Failed to load account analysis history:', error);
+                setWorkspaceAnalysisStatus(error.message || 'Failed to load account analysis history.', 'warning');
+            }
+        }
+
+        async function runAccountAnalysis() {
+            const actionButton = document.getElementById('workspaceAccountAnalysisBtn');
+            const originalText = actionButton ? actionButton.innerHTML : '';
+
+            try {
+                if (actionButton) {
+                    actionButton.disabled = true;
+                    actionButton.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Running...';
+                }
+                setWorkspaceAnalysisStatus('Running account analysis...', 'info');
+
+                const response = await fetch('/api/account-analysis', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ workspace_name: 'default' })
+                });
+                const data = await response.json();
+                if (!response.ok || !data.success) {
+                    throw new Error(data.error || 'Account analysis failed.');
+                }
+
+                renderAccountAnalysisHistory([data.artifacts, ...workspaceAnalysisHistory]);
+                if (data.workspace && Array.isArray(data.workspace.positions)) {
+                    workspacePositions = data.workspace.positions.map(position => ({
+                        ...position,
+                        updated_at: position.last_price_update_at || position.last_analyzed_at || position.updated_at || ''
+                    }));
+                    renderWorkspacePositions();
+                }
+                setWorkspaceAnalysisStatus(`Last account analysis: ${data.artifacts.created_at}`, 'success');
+            } catch (error) {
+                console.error('Account analysis failed:', error);
+                setWorkspaceAnalysisStatus(error.message || 'Account analysis failed.', 'danger');
+            } finally {
+                if (actionButton) {
+                    actionButton.disabled = false;
+                    actionButton.innerHTML = originalText;
+                }
+            }
         }
 
         // On page load, restore selected asset/timeframe and custom assets
@@ -1771,6 +1881,7 @@
             try { handleUseCurrentTimeChange(); } catch (e) { console.warn('handleUseCurrentTimeChange not available yet', e); }
             
             initializeStage2WorkspaceUI();
+            loadAccountAnalysisHistory();
 
             // Load custom assets and server-synced assets
             loadCustomAssets();
