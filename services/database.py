@@ -6,10 +6,14 @@ SQLite数据库管理模块
 import sqlite3
 import json
 import pandas as pd
+from contextlib import contextmanager
+from copy import deepcopy
 from datetime import datetime, timedelta
-from typing import Dict, Any, List, Optional, Union
+from typing import Dict, Any, Iterator, List, Optional, Union
 from pathlib import Path
 import os
+
+from services.stage2_workspace import build_default_workspace, normalize_workspace_payload
 
 
 class DatabaseManager:
@@ -37,11 +41,15 @@ class DatabaseManager:
         if db_dir and not os.path.exists(db_dir):
             os.makedirs(db_dir, exist_ok=True)
     
-    def get_connection(self) -> sqlite3.Connection:
+    @contextmanager
+    def get_connection(self) -> Iterator[sqlite3.Connection]:
         """获取数据库连接"""
         conn = sqlite3.connect(self.db_path)
         conn.row_factory = sqlite3.Row  # 允许通过列名访问
-        return conn
+        try:
+            yield conn
+        finally:
+            conn.close()
     
     def _init_tables(self):
         """初始化数据库表结构"""
@@ -158,15 +166,10 @@ class DatabaseManager:
                     updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
                 )
             """)
-
             conn.execute("""
                 CREATE TABLE IF NOT EXISTS stage2_workspaces (
-                    id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    workspace_name TEXT NOT NULL UNIQUE,
-                    account_state TEXT,
-                    positions TEXT,
-                    candidates TEXT,
-                    notes TEXT,
+                    workspace_name TEXT PRIMARY KEY,
+                    workspace_data TEXT NOT NULL,
                     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
                     updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
                 )
@@ -180,22 +183,64 @@ class DatabaseManager:
             conn.execute("CREATE INDEX IF NOT EXISTS idx_financial_cache_ticker ON financial_cache(ticker)")
             conn.execute("CREATE INDEX IF NOT EXISTS idx_price_cache_expires ON price_cache(expires_at)")
             conn.execute("CREATE INDEX IF NOT EXISTS idx_financial_cache_expires ON financial_cache(expires_at)")
-            
+            conn.execute("CREATE INDEX IF NOT EXISTS idx_stage2_workspaces_updated_at ON stage2_workspaces(updated_at)")
+
             # 历史记录表索引
             conn.execute("CREATE INDEX IF NOT EXISTS idx_analysis_history_timestamp ON analysis_history(timestamp)")
             conn.execute("CREATE INDEX IF NOT EXISTS idx_analysis_history_asset ON analysis_history(asset)")
             conn.execute("CREATE INDEX IF NOT EXISTS idx_analysis_history_timeframe ON analysis_history(timeframe)")
             conn.execute("CREATE INDEX IF NOT EXISTS idx_analysis_history_status ON analysis_history(status)")
             conn.execute("CREATE INDEX IF NOT EXISTS idx_analysis_history_session ON analysis_history(session_id)")
-            conn.execute("CREATE INDEX IF NOT EXISTS idx_stage2_workspaces_name ON stage2_workspaces(workspace_name)")
 
             conn.commit()
     
+    def get_stage2_workspace(self, workspace_name: str = 'default') -> Optional[Dict[str, Any]]:
+        with self.get_connection() as conn:
+            cursor = conn.execute(
+                """
+                SELECT workspace_name, workspace_data, created_at, updated_at
+                FROM stage2_workspaces
+                WHERE workspace_name = ?
+                """,
+                (workspace_name,)
+            )
+            row = cursor.fetchone()
+            if not row:
+                return None
+
+            raw_workspace = json.loads(row['workspace_data']) if row['workspace_data'] else deepcopy(build_default_workspace())
+            workspace = normalize_workspace_payload(raw_workspace)
+            workspace['workspace_name'] = row['workspace_name']
+            workspace['created_at'] = row['created_at']
+            workspace['updated_at'] = row['updated_at']
+            return workspace
+
+    def save_stage2_workspace(self, workspace: Dict[str, Any], workspace_name: str = 'default') -> Dict[str, Any]:
+        workspace_payload = normalize_workspace_payload(deepcopy(workspace or {}))
+        workspace_payload.pop('workspace_name', None)
+        workspace_payload.pop('created_at', None)
+        workspace_payload.pop('updated_at', None)
+
+        with self.get_connection() as conn:
+            conn.execute(
+                """
+                INSERT INTO stage2_workspaces (workspace_name, workspace_data)
+                VALUES (?, ?)
+                ON CONFLICT(workspace_name) DO UPDATE SET
+                    workspace_data = excluded.workspace_data,
+                    updated_at = CURRENT_TIMESTAMP
+                """,
+                (workspace_name, json.dumps(workspace_payload, ensure_ascii=False))
+            )
+            conn.commit()
+
+        return self.get_stage2_workspace(workspace_name)
+
     def save_query_record(
-        self, 
-        tickers: List[str], 
-        start_date: str, 
-        end_date: str, 
+        self,
+        tickers: List[str],
+        start_date: str,
+        end_date: str,
         analysis_params: Dict[str, Any] = None,
         session_id: str = None,
         user_ip: str = None
@@ -852,72 +897,6 @@ class DatabaseManager:
         
         return df
     
-    def get_stage2_workspace(self, workspace_name: str = 'default') -> Optional[Dict[str, Any]]:
-        """获取Stage 2工作区"""
-        with self.get_connection() as conn:
-            cursor = conn.execute("""
-                SELECT * FROM stage2_workspaces WHERE workspace_name = ?
-            """, (workspace_name,))
-            row = cursor.fetchone()
-            if not row:
-                return None
-
-            record = dict(row)
-            record['account_state'] = json.loads(record['account_state']) if record.get('account_state') else {}
-            record['positions'] = json.loads(record['positions']) if record.get('positions') else []
-            record['candidates'] = json.loads(record['candidates']) if record.get('candidates') else []
-            return record
-
-    def save_stage2_workspace(
-        self,
-        workspace_name: str = 'default',
-        account_state: Dict[str, Any] = None,
-        positions: List[Dict[str, Any]] = None,
-        candidates: List[Dict[str, Any]] = None,
-        notes: str = None,
-    ) -> Dict[str, Any]:
-        """保存或更新Stage 2工作区"""
-        with self.get_connection() as conn:
-            conn.execute("""
-                INSERT INTO stage2_workspaces (
-                    workspace_name,
-                    account_state,
-                    positions,
-                    candidates,
-                    notes,
-                    created_at,
-                    updated_at
-                )
-                VALUES (?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
-                ON CONFLICT(workspace_name) DO UPDATE SET
-                    account_state = excluded.account_state,
-                    positions = excluded.positions,
-                    candidates = excluded.candidates,
-                    notes = excluded.notes,
-                    updated_at = CURRENT_TIMESTAMP
-            """, (
-                workspace_name,
-                json.dumps(account_state or {}, ensure_ascii=False),
-                json.dumps(positions or [], ensure_ascii=False),
-                json.dumps(candidates or [], ensure_ascii=False),
-                notes,
-            ))
-            conn.commit()
-
-        saved = self.get_stage2_workspace(workspace_name)
-        if not saved:
-            raise ValueError("保存 Stage 2 工作区失败")
-        return saved
-
-    def list_stage2_workspaces(self) -> List[Dict[str, Any]]:
-        """列出Stage 2工作区"""
-        with self.get_connection() as conn:
-            cursor = conn.execute("""
-                SELECT id, workspace_name, notes, created_at, updated_at
-                FROM stage2_workspaces
-                ORDER BY updated_at DESC, workspace_name ASC
-            """)
-            return [dict(row) for row in cursor.fetchall()]
 
     def cleanup_expired_cache(self):
         """清理过期的缓存数据"""

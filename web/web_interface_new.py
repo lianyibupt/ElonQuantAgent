@@ -25,7 +25,8 @@ import pandas as pd
 from pathlib import Path
 import json
 import re
-from datetime import datetime, timedelta, date
+from copy import deepcopy
+from datetime import datetime, timedelta, date, timezone
 from typing import Dict, Any, Optional, List
 import base64
 import io
@@ -35,6 +36,15 @@ import numpy as np
 from openai import OpenAI as OpenAIClient
 from dotenv import load_dotenv
 import yfinance as yf
+
+from services.account_analysis import list_account_analysis_history, save_account_analysis_artifacts
+from services.stage2_workspace import (
+    PRICE_SOURCE_ANALYSIS_REFRESH,
+    build_default_workspace,
+    normalize_workspace_payload,
+    recalculate_account_state,
+    refresh_position_after_analysis,
+)
 
 # Load environment variables
 load_dotenv()
@@ -67,111 +77,11 @@ def build_portfolio_cache_key(account_state: Optional[Dict[str, Any]], positions
     return hashlib.sha256(serialized.encode("utf-8")).hexdigest()[:16]
 
 
-STAGE2_DEFAULT_WORKSPACE = {
-    "workspace_name": "default",
-    "account_state": {
-        "nav": 0,
-        "cash": 0,
-        "gross_exposure": 0,
-        "core_exposure": 0,
-        "tactical_exposure": 0,
-        "current_drawdown": 0,
-    },
-    "positions": [],
-    "candidates": [],
-    "notes": "",
-    "created_at": None,
-    "updated_at": None,
-}
-
-
-def _coerce_workspace_float(value: Any) -> float:
-    if value in (None, ""):
-        return 0.0
-    try:
-        return float(value)
-    except (TypeError, ValueError):
-        raise ValueError(f"无法解析数值: {value}")
-
-
-def normalize_stage2_workspace_payload(payload: Optional[Dict[str, Any]]) -> Dict[str, Any]:
-    payload = payload or {}
-    account_state = payload.get("account_state") or {}
-    positions = payload.get("positions") or []
-    candidates = payload.get("candidates") or []
-    notes = safe_str(payload.get("notes", "")).strip()
-    workspace_name = safe_str(payload.get("workspace_name", "default")).strip() or "default"
-
-    if not isinstance(account_state, dict):
-        raise ValueError("account_state 必须是对象")
-    if not isinstance(positions, list):
-        raise ValueError("positions 必须是数组")
-    if not isinstance(candidates, list):
-        raise ValueError("candidates 必须是数组")
-
-    normalized_account = {
-        "nav": _coerce_workspace_float(account_state.get("nav")),
-        "cash": _coerce_workspace_float(account_state.get("cash")),
-        "gross_exposure": _coerce_workspace_float(account_state.get("gross_exposure")),
-        "core_exposure": _coerce_workspace_float(account_state.get("core_exposure")),
-        "tactical_exposure": _coerce_workspace_float(account_state.get("tactical_exposure")),
-        "current_drawdown": _coerce_workspace_float(account_state.get("current_drawdown")),
-    }
-
-    normalized_positions = []
-    for index, position in enumerate(positions):
-        if not isinstance(position, dict):
-            raise ValueError(f"第 {index + 1} 条持仓必须是对象")
-
-        ticker = safe_str(position.get("ticker", "")).strip().upper()
-        book_type = safe_str(position.get("book_type", "")).strip()
-        tags = position.get("factor_tags") or []
-        if isinstance(tags, str):
-            tags = [tag.strip() for tag in tags.split(",") if tag.strip()]
-        if not isinstance(tags, list):
-            raise ValueError(f"第 {index + 1} 条持仓的 factor_tags 必须是数组")
-
-        if not ticker:
-            continue
-        normalized_positions.append({
-            "ticker": ticker,
-            "market_value": _coerce_workspace_float(position.get("market_value")),
-            "book_type": book_type or "观察",
-            "factor_tags": [safe_str(tag).strip() for tag in tags if safe_str(tag).strip()],
-        })
-
-    normalized_candidates = []
-    for index, candidate in enumerate(candidates):
-        if not isinstance(candidate, dict):
-            raise ValueError(f"第 {index + 1} 条候选必须是对象")
-
-        ticker = safe_str(candidate.get("ticker", "")).strip().upper()
-        tags = candidate.get("factor_tags") or []
-        if isinstance(tags, str):
-            tags = [tag.strip() for tag in tags.split(",") if tag.strip()]
-        if not isinstance(tags, list):
-            raise ValueError(f"第 {index + 1} 条候选的 factor_tags 必须是数组")
-
-        if not ticker:
-            continue
-        normalized_candidates.append({
-            "ticker": ticker,
-            "factor_tags": [safe_str(tag).strip() for tag in tags if safe_str(tag).strip()],
-        })
-
-    return {
-        "workspace_name": workspace_name,
-        "account_state": normalized_account,
-        "positions": normalized_positions,
-        "candidates": normalized_candidates,
-        "notes": notes,
-    }
-
-
 # Import your existing modules
 from core.trading_graph import TradingGraph
 
 _project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+ACCOUNT_ANALYSIS_DIR = Path(_project_root) / 'artifacts' / 'account_analysis'
 app = Flask(__name__, template_folder=os.path.join(_project_root, 'templates'))
 
 class MultiProviderLLM:
@@ -791,13 +701,14 @@ class WebTradingAnalyzer:
             print(f"Failed to save custom asset: {safe_str(e)}")
             return False
 
-    def extract_analysis_results(self, results: Dict[str, Any]) -> Dict[str, Any]:
+    def extract_analysis_results(self, results: Dict[str, Any], workspace_writeback: Dict[str, Any] = None) -> Dict[str, Any]:
         """Extract and format analysis results for web display."""
         if not results["success"]:
             return {"error": safe_str(results["error"])}
 
         final_state = results["final_state"]
 
+        # Extract analysis results from state fields with safe string conversion
         technical_indicators = safe_str(final_state.get("indicator_report", ""))
         pattern_analysis = safe_str(final_state.get("pattern_report", ""))
         trend_analysis = safe_str(final_state.get("trend_report", ""))
@@ -889,6 +800,7 @@ class WebTradingAnalyzer:
                 ),
                 "manager_actions": [safe_str(action) for action in dashboard_payload.get("manager_actions", [])],
             },
+            "workspace_writeback": workspace_writeback or {"updated": False, "message": "No workspace writeback attempted."}
         }
 
 # Initialize the analyzer
@@ -1011,6 +923,412 @@ def get_api_key_status():
     except Exception as e:
         return jsonify({"error": safe_str(e)})
 
+def _build_stage2_workspace_response(workspace=None, workspace_name='default', created_at=None, updated_at=None):
+    response_workspace = normalize_workspace_payload(workspace or {})
+    response_workspace['workspace_name'] = workspace_name or 'default'
+    response_workspace['created_at'] = created_at
+    response_workspace['updated_at'] = updated_at
+    return response_workspace
+
+
+def _latest_close_price(df):
+    if df is None or df.empty or 'Close' not in df.columns:
+        return None
+    try:
+        return float(df['Close'].iloc[-1])
+    except (TypeError, ValueError, IndexError):
+        return None
+
+
+def _build_analysis_summary(formatted_results):
+    if not isinstance(formatted_results, dict):
+        return ''
+
+    final_decision = formatted_results.get('final_decision')
+    if isinstance(final_decision, dict):
+        justification = safe_str(final_decision.get('justification', '')).strip()
+        if justification and justification != 'N/A':
+            return justification
+        raw = safe_str(final_decision.get('raw', '')).strip()
+        if raw:
+            return raw
+
+    for field in ('trend_analysis', 'pattern_analysis', 'technical_indicators'):
+        value = safe_str(formatted_results.get(field, '')).strip()
+        if value:
+            return value[:500]
+    return ''
+
+
+def _attempt_workspace_writeback(asset, latest_price, formatted_results):
+    asset_ticker = safe_str(asset).strip().upper()
+    if not asset_ticker:
+        return {"updated": False, "message": "Missing asset ticker for workspace writeback."}
+    if latest_price is None:
+        return {"updated": False, "message": f"No latest close available for {asset_ticker} workspace writeback."}
+
+    stored_workspace = db_manager.get_stage2_workspace('default')
+    if not stored_workspace:
+        return {"updated": False, "message": f"No saved Stage 2 workspace found for {asset_ticker}."}
+
+    analysis_summary = _build_analysis_summary(formatted_results)
+    refreshed_workspace, metadata = refresh_position_after_analysis(
+        stored_workspace,
+        asset=asset_ticker,
+        latest_price=latest_price,
+        analysis_summary=analysis_summary,
+    )
+
+    if metadata.get('updated'):
+        saved_workspace = db_manager.save_stage2_workspace(refreshed_workspace, workspace_name='default')
+        metadata['workspace_name'] = saved_workspace.get('workspace_name', 'default')
+        metadata['workspace_updated_at'] = saved_workspace.get('updated_at')
+    else:
+        metadata['workspace_name'] = stored_workspace.get('workspace_name', 'default')
+    return metadata
+
+
+def _utc_now_iso():
+    return datetime.now(timezone.utc).replace(microsecond=0).isoformat().replace('+00:00', 'Z')
+
+
+def _extract_llm_message_content(response):
+    try:
+        content = response.choices[0].message.content
+    except Exception:
+        content = None
+
+    if isinstance(content, str):
+        return content
+    if isinstance(content, list):
+        parts = []
+        for item in content:
+            if isinstance(item, dict):
+                text = item.get('text')
+                if text:
+                    parts.append(safe_str(text))
+            else:
+                text = getattr(item, 'text', None)
+                if text:
+                    parts.append(safe_str(text))
+        return "\n".join(parts)
+    return safe_str(content or '')
+
+
+def _parse_account_analysis_payload(raw_text):
+    text = safe_str(raw_text).strip()
+    if text.startswith('```'):
+        text = re.sub(r'^```(?:json)?\s*', '', text)
+        text = re.sub(r'\s*```$', '', text)
+
+    try:
+        parsed = json.loads(text)
+        if isinstance(parsed, dict):
+            return parsed
+    except json.JSONDecodeError:
+        pass
+
+    start = text.find('{')
+    end = text.rfind('}') + 1
+    if start == -1 or end <= start:
+        raise ValueError('Account analysis response did not contain JSON output.')
+
+    parsed = json.loads(text[start:end])
+    if not isinstance(parsed, dict):
+        raise ValueError('Account analysis response JSON must be an object.')
+    return parsed
+
+
+def _normalize_account_analysis_payload(payload):
+    payload = payload if isinstance(payload, dict) else {}
+
+    def ensure_list(value):
+        return value if isinstance(value, list) else []
+
+    def ensure_dict(value):
+        return value if isinstance(value, dict) else {}
+
+    try:
+        health_score = float(payload.get('portfolio_health_score', 0) or 0)
+    except (TypeError, ValueError):
+        health_score = 0.0
+
+    return {
+        'summary': safe_str(payload.get('summary', '')).strip(),
+        'portfolio_health_score': round(health_score, 4),
+        'holding_health': ensure_list(payload.get('holding_health')),
+        'pnl_breakdown': ensure_dict(payload.get('pnl_breakdown')),
+        'concentration_risks': ensure_list(payload.get('concentration_risks')),
+        'crowded_exposures': ensure_list(payload.get('crowded_exposures')),
+        'manager_actions': ensure_list(payload.get('manager_actions')),
+    }
+
+
+def _format_account_analysis_markdown(workspace_name, created_at, analysis_payload):
+    summary = safe_str(analysis_payload.get('summary', '')).strip() or 'No summary provided.'
+    score = analysis_payload.get('portfolio_health_score', 0)
+
+    lines = [
+        '# Account Analysis',
+        '',
+        f'- Workspace: {safe_str(workspace_name)}',
+        f'- Created At: {safe_str(created_at)}',
+        f'- Portfolio Health Score: {score}',
+        '',
+        '## Summary',
+        summary,
+    ]
+
+    manager_actions = analysis_payload.get('manager_actions') or []
+    lines.extend(['', '## Manager Actions'])
+    if manager_actions:
+        for action in manager_actions:
+            if isinstance(action, dict):
+                label = safe_str(action.get('action') or action.get('title') or action.get('ticker') or 'Action').strip()
+                detail = safe_str(action.get('reason') or action.get('summary') or action.get('notes') or '').strip()
+                lines.append(f'- {label}: {detail}' if detail else f'- {label}')
+            else:
+                lines.append(f'- {safe_str(action)}')
+    else:
+        lines.append('- None')
+
+    holding_health = analysis_payload.get('holding_health') or []
+    lines.extend(['', '## Holding Health'])
+    if holding_health:
+        for item in holding_health:
+            if isinstance(item, dict):
+                ticker = safe_str(item.get('ticker') or item.get('symbol') or 'UNKNOWN').strip()
+                status = safe_str(item.get('status') or item.get('health') or '').strip()
+                detail = safe_str(item.get('summary') or item.get('reason') or item.get('notes') or '').strip()
+                base_line = f'- {ticker}'
+                if status:
+                    base_line += f' [{status}]'
+                if detail:
+                    base_line += f': {detail}'
+                lines.append(base_line)
+            else:
+                lines.append(f'- {safe_str(item)}')
+    else:
+        lines.append('- None')
+
+    for section_title, field_name in (
+        ('Concentration Risks', 'concentration_risks'),
+        ('Crowded Exposures', 'crowded_exposures'),
+    ):
+        items = analysis_payload.get(field_name) or []
+        lines.extend(['', f'## {section_title}'])
+        if items:
+            for item in items:
+                if isinstance(item, dict):
+                    label = safe_str(item.get('ticker') or item.get('name') or item.get('risk') or 'Item').strip()
+                    detail = safe_str(item.get('summary') or item.get('reason') or item.get('notes') or '').strip()
+                    lines.append(f'- {label}: {detail}' if detail else f'- {label}')
+                else:
+                    lines.append(f'- {safe_str(item)}')
+        else:
+            lines.append('- None')
+
+    pnl_breakdown = analysis_payload.get('pnl_breakdown') or {}
+    lines.extend(['', '## PnL Breakdown'])
+    if pnl_breakdown:
+        for key, value in pnl_breakdown.items():
+            lines.append(f'- {safe_str(key)}: {safe_str(value)}')
+    else:
+        lines.append('- None')
+
+    return '\n'.join(lines)
+
+
+def _refresh_workspace_prices_for_account_analysis(workspace, market_data_source=None):
+    refreshed_workspace = normalize_workspace_payload(deepcopy(workspace or {}))
+    now = datetime.now(timezone.utc)
+    start_dt = now - timedelta(days=10)
+    updated_positions = []
+    skipped_positions = []
+    refresh_timestamp = _utc_now_iso()
+
+    for position in refreshed_workspace.get('positions', []):
+        ticker = safe_str(position.get('ticker', '')).strip().upper()
+        if not ticker:
+            skipped_positions.append({'ticker': '', 'reason': 'Missing ticker.'})
+            continue
+
+        try:
+            df = analyzer.fetch_market_data(ticker, '1d', start_dt, now, market_data_source=market_data_source)
+        except Exception as e:
+            skipped_positions.append({'ticker': ticker, 'reason': safe_str(e)})
+            continue
+
+        latest_price = _latest_close_price(df)
+        if latest_price is None:
+            skipped_positions.append({'ticker': ticker, 'reason': 'No latest close available.'})
+            continue
+
+        position['latest_price'] = float(latest_price)
+        position['price_source'] = PRICE_SOURCE_ANALYSIS_REFRESH
+        position['last_price_update_at'] = refresh_timestamp
+        updated_positions.append({'ticker': ticker, 'latest_price': float(latest_price)})
+
+    refreshed_workspace = recalculate_account_state(refreshed_workspace)
+    metadata = {
+        'updated_count': len(updated_positions),
+        'updated_positions': updated_positions,
+        'skipped_positions': skipped_positions,
+        'refreshed_at': refresh_timestamp,
+    }
+    return refreshed_workspace, metadata
+
+
+def _account_analysis_output_dir(workspace_name):
+    safe_workspace_name = re.sub(r'[^A-Za-z0-9._-]+', '-', safe_str(workspace_name).strip() or 'default')
+    return ACCOUNT_ANALYSIS_DIR / safe_workspace_name
+
+
+def _list_all_account_analysis_history():
+    if not ACCOUNT_ANALYSIS_DIR.exists() or not ACCOUNT_ANALYSIS_DIR.is_dir():
+        return []
+
+    history = []
+    for child in ACCOUNT_ANALYSIS_DIR.iterdir():
+        if child.is_dir():
+            history.extend(list_account_analysis_history(child))
+    history.sort(key=lambda item: str(item.get('created_at') or ''), reverse=True)
+    return history[:10]
+
+
+def _run_account_analysis_llm(workspace_name, workspace):
+    provider_config = analyzer.llm_provider.providers.get(analyzer.llm_provider.current_provider, {})
+    model = provider_config.get('models', ['gpt-4o-mini'])[0]
+    client = analyzer.llm_provider.get_client()
+    prompt_payload = {
+        'workspace_name': safe_str(workspace_name),
+        'account_state': workspace.get('account_state', {}),
+        'positions': workspace.get('positions', []),
+        'candidates': workspace.get('candidates', []),
+        'output_schema': {
+            'summary': 'string',
+            'portfolio_health_score': 'number',
+            'holding_health': 'array',
+            'pnl_breakdown': 'object',
+            'concentration_risks': 'array',
+            'crowded_exposures': 'array',
+            'manager_actions': 'array',
+        },
+    }
+    response = client.chat.completions.create(
+        model=model,
+        messages=[
+            {
+                'role': 'system',
+                'content': 'You are a professional portfolio manager. Review the portfolio snapshot and return only a valid JSON object matching the requested schema. Focus on risk, concentration, holding health, and concrete next actions.',
+            },
+            {
+                'role': 'user',
+                'content': json.dumps(prompt_payload, ensure_ascii=False),
+            },
+        ],
+        max_tokens=1800,
+        temperature=0.2,
+    )
+    raw_content = _extract_llm_message_content(response)
+    parsed_payload = _parse_account_analysis_payload(raw_content)
+    return _normalize_account_analysis_payload(parsed_payload)
+
+
+@app.route('/api/stage2-workspace', methods=['GET'])
+def get_stage2_workspace():
+    try:
+        workspace_name = (request.args.get('workspace_name') or 'default').strip() or 'default'
+        stored_workspace = db_manager.get_stage2_workspace(workspace_name)
+        if stored_workspace:
+            return jsonify({"success": True, "workspace": _build_stage2_workspace_response(
+                workspace=stored_workspace,
+                workspace_name=stored_workspace.get('workspace_name', workspace_name),
+                created_at=stored_workspace.get('created_at'),
+                updated_at=stored_workspace.get('updated_at'),
+            )})
+
+        return jsonify({"success": True, "workspace": _build_stage2_workspace_response(workspace_name=workspace_name)})
+    except Exception as e:
+        return jsonify({"success": False, "error": safe_str(e)}), 500
+
+
+@app.route('/api/stage2-workspace', methods=['POST'])
+def save_stage2_workspace():
+    try:
+        payload = request.get_json() or {}
+        workspace_name = str(payload.get('workspace_name', 'default')).strip() or 'default'
+        normalized_workspace = normalize_workspace_payload(payload)
+        saved_workspace = db_manager.save_stage2_workspace(normalized_workspace, workspace_name=workspace_name)
+        return jsonify({"success": True, "workspace": _build_stage2_workspace_response(
+            workspace=saved_workspace,
+            workspace_name=saved_workspace.get('workspace_name', workspace_name),
+            created_at=saved_workspace.get('created_at'),
+            updated_at=saved_workspace.get('updated_at'),
+        )})
+    except Exception as e:
+        return jsonify({"success": False, "error": safe_str(e)}), 500
+
+
+@app.route('/api/account-analysis', methods=['POST'])
+def run_account_analysis():
+    try:
+        payload = request.get_json() or {}
+        workspace_name = str(payload.get('workspace_name', 'default')).strip() or 'default'
+        market_data_source = payload.get('market_data_source')
+
+        stored_workspace = db_manager.get_stage2_workspace(workspace_name)
+        if not stored_workspace:
+            return jsonify({"success": False, "error": f"Workspace not found: {workspace_name}"}), 404
+
+        refreshed_workspace, price_refresh = _refresh_workspace_prices_for_account_analysis(
+            stored_workspace,
+            market_data_source=market_data_source,
+        )
+        saved_workspace = db_manager.save_stage2_workspace(refreshed_workspace, workspace_name=workspace_name)
+
+        analysis_payload = _run_account_analysis_llm(workspace_name, saved_workspace)
+        created_at = _utc_now_iso()
+        markdown_body = _format_account_analysis_markdown(workspace_name, created_at, analysis_payload)
+        artifacts = save_account_analysis_artifacts(
+            output_dir=_account_analysis_output_dir(workspace_name),
+            workspace_name=workspace_name,
+            analysis_payload=analysis_payload,
+            markdown_body=markdown_body,
+            created_at=created_at,
+        )
+
+        return jsonify({
+            "success": True,
+            "workspace_name": workspace_name,
+            "workspace": _build_stage2_workspace_response(
+                workspace=saved_workspace,
+                workspace_name=saved_workspace.get('workspace_name', workspace_name),
+                created_at=saved_workspace.get('created_at'),
+                updated_at=saved_workspace.get('updated_at'),
+            ),
+            "price_refresh": price_refresh,
+            "analysis": analysis_payload,
+            "analysis_markdown": markdown_body,
+            "artifacts": artifacts,
+        })
+    except Exception as e:
+        return jsonify({"success": False, "error": safe_str(e)}), 500
+
+
+@app.route('/api/account-analysis/history', methods=['GET'])
+def get_account_analysis_history():
+    try:
+        workspace_name = (request.args.get('workspace_name') or '').strip()
+        if workspace_name:
+            history = list_account_analysis_history(_account_analysis_output_dir(workspace_name))
+        else:
+            history = _list_all_account_analysis_history()
+        return jsonify({"success": True, "history": history})
+    except Exception as e:
+        return jsonify({"success": False, "error": safe_str(e)}), 500
+
+
 # Keep other routes unchanged
 @app.route('/')
 def index():
@@ -1019,37 +1337,6 @@ def index():
 @app.route('/QuantAgent')
 def QuantAgent():
     return render_template('demo_new.html')
-
-@app.route('/api/stage2-workspace', methods=['GET'])
-def get_stage2_workspace():
-    try:
-        workspace_name = request.args.get('workspace_name', 'default')
-        workspace = db_manager.get_stage2_workspace(workspace_name) or dict(STAGE2_DEFAULT_WORKSPACE)
-        return jsonify({"success": True, "workspace": workspace})
-    except Exception as e:
-        error_msg = safe_str(e)
-        print(f"获取 Stage 2 工作区失败: {error_msg}")
-        return jsonify({"success": False, "error": error_msg}), 500
-
-@app.route('/api/stage2-workspace', methods=['POST'])
-def save_stage2_workspace():
-    try:
-        data = request.get_json() or {}
-        normalized_workspace = normalize_stage2_workspace_payload(data)
-        workspace = db_manager.save_stage2_workspace(
-            workspace_name=normalized_workspace["workspace_name"],
-            account_state=normalized_workspace["account_state"],
-            positions=normalized_workspace["positions"],
-            candidates=normalized_workspace["candidates"],
-            notes=normalized_workspace["notes"],
-        )
-        return jsonify({"success": True, "workspace": workspace})
-    except ValueError as e:
-        return jsonify({"success": False, "error": safe_str(e)}), 400
-    except Exception as e:
-        error_msg = safe_str(e)
-        print(f"保存 Stage 2 工作区失败: {error_msg}")
-        return jsonify({"success": False, "error": error_msg}), 500
 
 @app.route('/output')
 def output():
@@ -1292,7 +1579,8 @@ def analyze():
                 return jsonify({"error": error_message})
             
             display_name = analyzer.asset_mapping.get(asset, asset)
-            
+            latest_price = _latest_close_price(df)
+
             if existing_high:
                 print(f"✅ [Dual Mode] 高频策略有缓存，仅执行低频分析")
                 id_high = existing_high['id']
@@ -1309,7 +1597,11 @@ def analyze():
                     positions=positions,
                     candidates=candidates,
                 )
-                formatted_high = analyzer.extract_analysis_results(results_high)
+                formatted_high_base = analyzer.extract_analysis_results(results_high)
+                formatted_high = analyzer.extract_analysis_results(
+                    results_high,
+                    workspace_writeback=_attempt_workspace_writeback(asset, latest_price, formatted_high_base)
+                )
                 id_high = db_manager.save_analysis_history(
                     asset=asset, timeframe=timeframe, start_date=start_date, end_date=end_date,
                     start_time=start_time, end_time=end_time, generate_charts=generate_charts,
@@ -1317,7 +1609,7 @@ def analyze():
                     analysis_params=analysis_params,
                     result_details=formatted_high, status='completed', session_id=session_id, user_ip=request.remote_addr
                 )
-            
+
             if existing_low:
                 print(f"✅ [Dual Mode] 低频策略有缓存，仅执行高频分析")
                 id_low = existing_low['id']
@@ -1334,7 +1626,11 @@ def analyze():
                     positions=positions,
                     candidates=candidates,
                 )
-                formatted_low = analyzer.extract_analysis_results(results_low)
+                formatted_low_base = analyzer.extract_analysis_results(results_low)
+                formatted_low = analyzer.extract_analysis_results(
+                    results_low,
+                    workspace_writeback=_attempt_workspace_writeback(asset, latest_price, formatted_low_base)
+                )
                 id_low = db_manager.save_analysis_history(
                     asset=asset, timeframe=timeframe, start_date=start_date, end_date=end_date,
                     start_time=start_time, end_time=end_time, generate_charts=generate_charts,
@@ -1393,6 +1689,7 @@ def analyze():
                 "pattern_image_filename": formatted_results.get('pattern_image_filename', ''),
                 "trend_image_filename": formatted_results.get('trend_image_filename', ''),
                 "final_decision": formatted_results.get('final_decision', {}),
+                "workspace_writeback": formatted_results.get('workspace_writeback', {"updated": False, "message": "No workspace writeback metadata available from cached result."}),
                 "cached": True,
                 "cache_id": existing_analysis['id'],
                 "cache_timestamp": existing_analysis['created_at'],
@@ -1440,6 +1737,7 @@ def analyze():
             return jsonify({"error": error_message})
         
         display_name = analyzer.asset_mapping.get(asset, asset)
+        latest_price = _latest_close_price(df)
         print(f"📊 [DEBUG] 调用 run_analysis, generate_charts={generate_charts}")
         results = analyzer.run_analysis(
             df,
@@ -1451,7 +1749,9 @@ def analyze():
             positions=positions,
             candidates=candidates,
         )  # 传递generate_charts、trading_strategy和组合上下文参数
-        formatted_results = analyzer.extract_analysis_results(results)
+        formatted_results_base = analyzer.extract_analysis_results(results)
+        workspace_writeback = _attempt_workspace_writeback(asset, latest_price, formatted_results_base)
+        formatted_results = analyzer.extract_analysis_results(results, workspace_writeback=workspace_writeback)
         
         # 保存分析结果到数据库
         history_id = None
