@@ -86,6 +86,7 @@ def _collect_account_analysis_history(output_dir: Path) -> list[dict]:
                 "created_at": created_at,
                 "workspace_name": workspace_name,
                 "summary": _coerce_summary(payload),
+                "core_skill_block": payload.get("core_skill_block", {}),
                 "json_path": str(json_path),
                 "markdown_path": str(markdown_path),
             }

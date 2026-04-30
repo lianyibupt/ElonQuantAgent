@@ -1637,6 +1637,52 @@
                                     <textarea class="form-control" id="workspaceNotes" rows="8" placeholder="Optional notes about your book, risk posture, or watchlist."></textarea>
                                 </div>
 
+                                <div class="panel" id="workspaceCoreSkillPanel">
+                                    <h4 class="panel-title">
+                                        <i class="fas fa-layer-group"></i> Core Skill 组合洞察
+                                    </h4>
+                                    <div id="workspaceCoreSkillSummary" class="text-muted mb-3">暂无 Core Skill 分析结果。</div>
+
+                                    <div class="row g-3 mb-3">
+                                        <div class="col-md-4">
+                                            <div class="card card-body h-100">
+                                                <h6 class="mb-2">加仓</h6>
+                                                <ul id="workspaceCoreSkillActionsAdd" class="mb-0 ps-3"></ul>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-4">
+                                            <div class="card card-body h-100">
+                                                <h6 class="mb-2">减仓</h6>
+                                                <ul id="workspaceCoreSkillActionsTrim" class="mb-0 ps-3"></ul>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-4">
+                                            <div class="card card-body h-100">
+                                                <h6 class="mb-2">观察</h6>
+                                                <ul id="workspaceCoreSkillActionsHold" class="mb-0 ps-3"></ul>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div class="table-responsive">
+                                        <table class="table table-sm align-middle" id="workspaceCoreSkillScoreTable">
+                                            <thead>
+                                                <tr>
+                                                    <th>Ticker</th>
+                                                    <th>Decision</th>
+                                                    <th>Action</th>
+                                                    <th>Trend</th>
+                                                    <th>Entry</th>
+                                                    <th>Volatility</th>
+                                                    <th>R/R</th>
+                                                    <th>Position</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody id="workspaceCoreSkillScoreTableBody"></tbody>
+                                        </table>
+                                    </div>
+                                </div>
+
                                 <div class="panel">
                                     <div class="d-flex flex-column flex-lg-row gap-3 align-items-start">
                                         <div class="flex-grow-1 w-100">
@@ -2236,6 +2282,64 @@
             status.textContent = message;
         }
 
+        function renderCoreSkillBlock(coreSkillBlock) {
+            const summaryEl = document.getElementById('workspaceCoreSkillSummary');
+            const addEl = document.getElementById('workspaceCoreSkillActionsAdd');
+            const trimEl = document.getElementById('workspaceCoreSkillActionsTrim');
+            const holdEl = document.getElementById('workspaceCoreSkillActionsHold');
+            const tableBody = document.getElementById('workspaceCoreSkillScoreTableBody');
+            if (!summaryEl || !addEl || !trimEl || !holdEl || !tableBody) return;
+
+            const block = coreSkillBlock || {};
+            const summary = block.summary || {};
+            summaryEl.textContent = block.enabled
+                ? `已处理 ${summary.processed_positions || 0}/${summary.total_positions || 0} 持仓（${summary.timeframe || '1d'}，${summary.lookback_days || 90}天）`
+                : '暂无 Core Skill 分析结果。';
+
+            const renderActionList = (target, items) => {
+                target.innerHTML = '';
+                const list = Array.isArray(items) ? items : [];
+                if (!list.length) {
+                    const li = document.createElement('li');
+                    li.className = 'text-muted';
+                    li.textContent = '无';
+                    target.appendChild(li);
+                    return;
+                }
+                list.forEach(item => {
+                    const li = document.createElement('li');
+                    li.textContent = `${item.ticker || 'N/A'}：${item.reason || item.action || '—'}`;
+                    target.appendChild(li);
+                });
+            };
+
+            const actions = block.actions || {};
+            renderActionList(addEl, actions.add);
+            renderActionList(trimEl, actions.trim);
+            renderActionList(holdEl, actions.hold);
+
+            tableBody.innerHTML = '';
+            const rows = Array.isArray(block.score_table) ? block.score_table : [];
+            rows.forEach(row => {
+                const tr = document.createElement('tr');
+                [
+                    row.ticker,
+                    row.decision,
+                    row.recommended_action,
+                    row.trend_score,
+                    row.entry_score,
+                    row.volatility_score,
+                    row.risk_reward_ratio,
+                    row.suggested_position_range,
+                ].forEach(value => {
+                    const td = document.createElement('td');
+                    td.textContent = value ?? '—';
+                    tr.appendChild(td);
+                });
+                tableBody.appendChild(tr);
+            });
+        }
+
         function renderAccountAnalysisHistory(history = []) {
             workspaceAnalysisHistory = Array.isArray(history) ? history : [];
             const historyList = document.getElementById('workspaceAnalysisHistoryList');
@@ -2247,6 +2351,7 @@
                 emptyItem.className = 'list-group-item text-muted';
                 emptyItem.textContent = 'No account analysis snapshots yet.';
                 historyList.appendChild(emptyItem);
+                renderCoreSkillBlock(null);
                 return;
             }
 
@@ -2272,6 +2377,9 @@
                 item.appendChild(createdAt);
                 historyList.appendChild(item);
             });
+
+            const latest = workspaceAnalysisHistory[0] || {};
+            renderCoreSkillBlock(latest.core_skill_block || null);
         }
 
         async function loadAccountAnalysisHistory() {
@@ -2312,6 +2420,7 @@
                 }
 
                 renderAccountAnalysisHistory([data.artifacts, ...workspaceAnalysisHistory]);
+                renderCoreSkillBlock(data.core_skill_block || (data.artifacts && data.artifacts.core_skill_block) || null);
                 if (data.workspace && Array.isArray(data.workspace.positions)) {
                     stage2WorkspaceState.positions = data.workspace.positions.map(position => ({
                         ...position,

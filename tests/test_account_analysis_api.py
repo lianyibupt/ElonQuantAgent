@@ -101,8 +101,24 @@ class AccountAnalysisApiTests(unittest.TestCase):
             },
         )()
 
+        fake_core_skill_block = {
+            "enabled": True,
+            "summary": {
+                "total_positions": 2,
+                "processed_positions": 2,
+                "timeframe": "1d",
+                "lookback_days": 90,
+            },
+            "actions": {"add": [], "trim": [], "hold": []},
+            "score_table": [
+                {"ticker": "AAPL", "recommended_action": "观察", "trend_score": 70, "entry_score": 60, "volatility_score": 40, "risk_reward_ratio": "1.5:1", "suggested_position_range": "3%-5%", "decision": "持有", "justification": "结构正常"},
+                {"ticker": "MSFT", "recommended_action": "观察", "trend_score": 68, "entry_score": 58, "volatility_score": 42, "risk_reward_ratio": "1.4:1", "suggested_position_range": "2%-4%", "decision": "持有", "justification": "趋势稳定"},
+            ],
+        }
+
         with patch.object(web_interface_new.analyzer, "fetch_market_data", return_value=market_df), \
-             patch.object(web_interface_new.analyzer.llm_provider, "get_client") as mock_get_client:
+             patch.object(web_interface_new.analyzer.llm_provider, "get_client") as mock_get_client, \
+             patch.object(web_interface_new, "_run_core_skill_account_block", return_value=fake_core_skill_block, create=True):
             mock_client = mock_get_client.return_value
             mock_client.chat.completions.create.return_value = fake_response
 
@@ -118,11 +134,18 @@ class AccountAnalysisApiTests(unittest.TestCase):
         self.assertEqual(payload["workspace_name"], "default")
         self.assertEqual(payload["analysis"]["summary"], llm_payload["summary"])
         self.assertEqual(payload["analysis"]["portfolio_health_score"], 78.0)
+        self.assertIn("core_skill_block", payload)
+        self.assertEqual(payload["core_skill_block"]["summary"]["timeframe"], "1d")
+        self.assertEqual(payload["core_skill_block"]["summary"]["lookback_days"], 90)
+        self.assertEqual(payload["core_skill_block"]["summary"]["processed_positions"], 2)
+        self.assertIn("score_table", payload["core_skill_block"])
+        request_kwargs = mock_client.chat.completions.create.call_args.kwargs
+        self.assertIn("中文", request_kwargs["messages"][0]["content"])
         self.assertEqual(payload["price_refresh"]["updated_count"], 2)
         self.assertEqual(len(payload["price_refresh"]["updated_positions"]), 2)
         self.assertEqual(payload["artifacts"]["workspace_name"], "default")
         self.assertEqual(payload["artifacts"]["summary"], llm_payload["summary"])
-        self.assertIn("# Account Analysis", payload["analysis_markdown"])
+        self.assertIn("# 账户分析", payload["analysis_markdown"])
         self.assertIn("Trim AAPL", payload["analysis_markdown"])
 
         with open(payload["artifacts"]["json_path"], "r", encoding="utf-8") as handle:
@@ -193,8 +216,16 @@ class AccountAnalysisApiTests(unittest.TestCase):
             },
         )()
 
+        fake_core_skill_block = {
+            "enabled": True,
+            "summary": {"total_positions": 1, "processed_positions": 1, "timeframe": "1d", "lookback_days": 90},
+            "actions": {"add": [], "trim": [], "hold": []},
+            "score_table": [{"ticker": "AAPL", "recommended_action": "观察", "trend_score": 70, "entry_score": 60, "volatility_score": 40, "risk_reward_ratio": "1.5:1", "suggested_position_range": "3%-5%", "decision": "持有", "justification": "结构正常"}],
+        }
+
         with patch.object(web_interface_new.analyzer, "fetch_market_data", return_value=market_df), \
-             patch.object(web_interface_new.analyzer.llm_provider, "get_client") as mock_get_client:
+             patch.object(web_interface_new.analyzer.llm_provider, "get_client") as mock_get_client, \
+             patch.object(web_interface_new, "_run_core_skill_account_block", return_value=fake_core_skill_block, create=True):
             mock_client = mock_get_client.return_value
             mock_client.chat.completions.create.return_value = bad_response
 
@@ -269,8 +300,16 @@ class AccountAnalysisApiTests(unittest.TestCase):
             },
         )()
 
+        fake_core_skill_block = {
+            "enabled": True,
+            "summary": {"total_positions": 1, "processed_positions": 1, "timeframe": "1d", "lookback_days": 90},
+            "actions": {"add": [], "trim": [], "hold": []},
+            "score_table": [{"ticker": "AAPL", "recommended_action": "观察", "trend_score": 70, "entry_score": 60, "volatility_score": 40, "risk_reward_ratio": "1.5:1", "suggested_position_range": "3%-5%", "decision": "持有", "justification": "结构正常"}],
+        }
+
         with patch.object(web_interface_new.analyzer, "fetch_market_data", return_value=market_df), \
              patch.object(web_interface_new.analyzer.llm_provider, "get_client") as mock_get_client, \
+             patch.object(web_interface_new, "_run_core_skill_account_block", return_value=fake_core_skill_block, create=True), \
              patch.object(web_interface_new, "_utc_now_iso", side_effect=[
                  "2026-04-28T10:15:00Z",
                  "2026-04-28T10:15:01Z",
@@ -292,6 +331,7 @@ class AccountAnalysisApiTests(unittest.TestCase):
         self.assertEqual(payload["history"][0]["summary"], "Second snapshot")
         self.assertEqual(payload["history"][1]["summary"], "First snapshot")
         self.assertEqual(payload["history"][0]["workspace_name"], "default")
+        self.assertIn("core_skill_block", payload["history"][0])
 
     def test_get_account_analysis_history_filters_workspace_name(self):
         for workspace_name, summary in (("alpha", "Alpha snapshot"), ("beta", "Beta snapshot")):

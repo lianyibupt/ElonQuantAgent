@@ -38,6 +38,7 @@ from dotenv import load_dotenv
 import yfinance as yf
 
 from services.account_analysis import list_account_analysis_history, save_account_analysis_artifacts
+from services.core_skill_account_bridge import build_core_skill_block
 from services.stage2_workspace import (
     PRICE_SOURCE_ANALYSIS_REFRESH,
     build_default_workspace,
@@ -1108,39 +1109,39 @@ def _normalize_account_analysis_payload(payload):
 
 
 def _format_account_analysis_markdown(workspace_name, created_at, analysis_payload):
-    summary = safe_str(analysis_payload.get('summary', '')).strip() or 'No summary provided.'
+    summary = safe_str(analysis_payload.get('summary', '')).strip() or '未提供摘要。'
     score = analysis_payload.get('portfolio_health_score', 0)
 
     lines = [
-        '# Account Analysis',
+        '# 账户分析',
         '',
-        f'- Workspace: {safe_str(workspace_name)}',
-        f'- Created At: {safe_str(created_at)}',
-        f'- Portfolio Health Score: {score}',
+        f'- 工作区: {safe_str(workspace_name)}',
+        f'- 生成时间: {safe_str(created_at)}',
+        f'- 组合健康分: {score}',
         '',
-        '## Summary',
+        '## 摘要',
         summary,
     ]
 
     manager_actions = analysis_payload.get('manager_actions') or []
-    lines.extend(['', '## Manager Actions'])
+    lines.extend(['', '## 经理动作'])
     if manager_actions:
         for action in manager_actions:
             if isinstance(action, dict):
-                label = safe_str(action.get('action') or action.get('title') or action.get('ticker') or 'Action').strip()
+                label = safe_str(action.get('action') or action.get('title') or action.get('ticker') or '动作').strip()
                 detail = safe_str(action.get('reason') or action.get('summary') or action.get('notes') or '').strip()
                 lines.append(f'- {label}: {detail}' if detail else f'- {label}')
             else:
                 lines.append(f'- {safe_str(action)}')
     else:
-        lines.append('- None')
+        lines.append('- 无')
 
     holding_health = analysis_payload.get('holding_health') or []
-    lines.extend(['', '## Holding Health'])
+    lines.extend(['', '## 持仓健康度'])
     if holding_health:
         for item in holding_health:
             if isinstance(item, dict):
-                ticker = safe_str(item.get('ticker') or item.get('symbol') or 'UNKNOWN').strip()
+                ticker = safe_str(item.get('ticker') or item.get('symbol') or '未知').strip()
                 status = safe_str(item.get('status') or item.get('health') or '').strip()
                 detail = safe_str(item.get('summary') or item.get('reason') or item.get('notes') or '').strip()
                 base_line = f'- {ticker}'
@@ -1152,32 +1153,32 @@ def _format_account_analysis_markdown(workspace_name, created_at, analysis_paylo
             else:
                 lines.append(f'- {safe_str(item)}')
     else:
-        lines.append('- None')
+        lines.append('- 无')
 
     for section_title, field_name in (
-        ('Concentration Risks', 'concentration_risks'),
-        ('Crowded Exposures', 'crowded_exposures'),
+        ('集中度风险', 'concentration_risks'),
+        ('拥挤暴露', 'crowded_exposures'),
     ):
         items = analysis_payload.get(field_name) or []
         lines.extend(['', f'## {section_title}'])
         if items:
             for item in items:
                 if isinstance(item, dict):
-                    label = safe_str(item.get('ticker') or item.get('name') or item.get('risk') or 'Item').strip()
+                    label = safe_str(item.get('ticker') or item.get('name') or item.get('risk') or '条目').strip()
                     detail = safe_str(item.get('summary') or item.get('reason') or item.get('notes') or '').strip()
                     lines.append(f'- {label}: {detail}' if detail else f'- {label}')
                 else:
                     lines.append(f'- {safe_str(item)}')
         else:
-            lines.append('- None')
+            lines.append('- 无')
 
     pnl_breakdown = analysis_payload.get('pnl_breakdown') or {}
-    lines.extend(['', '## PnL Breakdown'])
+    lines.extend(['', '## 盈亏拆解'])
     if pnl_breakdown:
         for key, value in pnl_breakdown.items():
             lines.append(f'- {safe_str(key)}: {safe_str(value)}')
     else:
-        lines.append('- None')
+        lines.append('- 无')
 
     return '\n'.join(lines)
 
@@ -1239,6 +1240,32 @@ def _list_all_account_analysis_history():
     return history[:10]
 
 
+def _run_single_position_core_skill(ticker, df, workspace):
+    result = analyzer.run_analysis(
+        df=df,
+        asset_name=ticker,
+        timeframe='1d',
+        generate_charts=False,
+        trading_strategy='high_frequency',
+        account_state=workspace.get('account_state', {}),
+        positions=workspace.get('positions', []),
+        candidates=workspace.get('candidates', []),
+    )
+    if not result.get('success'):
+        raise ValueError(f"Core skill run failed for {ticker}: {safe_str(result.get('error'))}")
+    return analyzer.extract_analysis_results(result)
+
+
+def _run_core_skill_account_block(workspace_name, workspace, market_data_source=None):
+    return build_core_skill_block(
+        workspace_name=workspace_name,
+        workspace=workspace,
+        fetch_market_data=analyzer.fetch_market_data,
+        analyze_position=_run_single_position_core_skill,
+        market_data_source=market_data_source,
+    )
+
+
 def _run_account_analysis_llm(workspace_name, workspace):
     provider_config = analyzer.llm_provider.providers.get(analyzer.llm_provider.current_provider, {})
     model = provider_config.get('models', ['gpt-4o-mini'])[0]
@@ -1263,7 +1290,7 @@ def _run_account_analysis_llm(workspace_name, workspace):
         messages=[
             {
                 'role': 'system',
-                'content': 'You are a professional portfolio manager. Review the portfolio snapshot and return only a valid JSON object matching the requested schema. Focus on risk, concentration, holding health, and concrete next actions.',
+                'content': '你是一名专业的组合经理。请基于账户快照进行组合级复盘，并且仅返回符合给定 schema 的合法 JSON 对象。所有文本字段（如 summary、reason、notes、action）必须使用简体中文。重点关注风险、集中度、持仓健康度和可执行的下一步动作。',
             },
             {
                 'role': 'user',
@@ -1331,6 +1358,12 @@ def run_account_analysis():
         saved_workspace = db_manager.save_stage2_workspace(refreshed_workspace, workspace_name=workspace_name)
 
         analysis_payload = _run_account_analysis_llm(workspace_name, saved_workspace)
+        core_skill_block = _run_core_skill_account_block(
+            workspace_name=workspace_name,
+            workspace=saved_workspace,
+            market_data_source=market_data_source,
+        )
+        analysis_payload['core_skill_block'] = core_skill_block
         created_at = _utc_now_iso()
         markdown_body = _format_account_analysis_markdown(workspace_name, created_at, analysis_payload)
         artifacts = save_account_analysis_artifacts(
@@ -1353,6 +1386,7 @@ def run_account_analysis():
             "price_refresh": price_refresh,
             "analysis": analysis_payload,
             "analysis_markdown": markdown_body,
+            "core_skill_block": core_skill_block,
             "artifacts": artifacts,
         })
     except Exception as e:
