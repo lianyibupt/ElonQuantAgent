@@ -621,6 +621,57 @@
              grid-template-columns: 1fr;
          }
 
+         #workspacePositionsTable {
+             min-width: 1450px;
+             table-layout: fixed;
+         }
+
+         #workspacePositionsTable th,
+         #workspacePositionsTable td {
+             font-size: 0.78rem;
+             padding: 0.45rem 0.35rem !important;
+             vertical-align: middle !important;
+             line-height: 1.2;
+         }
+
+         #workspacePositionsTable thead th {
+             font-size: 0.72rem;
+             font-weight: 700 !important;
+             letter-spacing: 0.01em;
+             white-space: nowrap;
+             padding: 0.4rem 0.32rem !important;
+         }
+
+         #workspacePositionsTable th.ws-col-manual,
+         #workspacePositionsTable td.ws-col-manual {
+             min-width: 126px;
+         }
+
+         #workspacePositionsTable td.ws-col-manual .form-control {
+             min-width: 118px;
+             font-size: 0.84rem;
+             padding: 0.42rem 0.45rem;
+         }
+
+         #workspacePositionsTable td.ws-col-manual.ws-col-tags .form-control {
+             min-width: 165px;
+         }
+
+         #workspacePositionsTable th.ws-col-auto,
+         #workspacePositionsTable td.ws-col-auto {
+             width: 82px;
+             max-width: 90px;
+             font-size: 0.72rem;
+             color: var(--gray-600);
+             white-space: nowrap;
+             text-align: center;
+         }
+
+         #workspacePositionsTable th.ws-col-actions,
+         #workspacePositionsTable td.ws-col-actions {
+             width: 72px;
+         }
+
          @media (max-width: 768px) {
              .workspace-status-grid {
                  grid-template-columns: 1fr;
@@ -636,6 +687,26 @@
                  display: flex;
                  flex-direction: column;
                  border-radius: 16px;
+             }
+
+             #workspacePositionsTable th,
+             #workspacePositionsTable td {
+                 font-size: 0.72rem;
+                 padding: 0.35rem 0.28rem !important;
+             }
+
+             #workspacePositionsTable thead th {
+                 font-size: 0.66rem;
+                 letter-spacing: 0;
+             }
+
+             #workspacePositionsTable td.ws-col-manual .form-control {
+                 min-width: 100px;
+                 font-size: 0.78rem;
+             }
+
+             #workspacePositionsTable td.ws-col-manual.ws-col-tags .form-control {
+                 min-width: 130px;
              }
          }
          
@@ -1580,19 +1651,19 @@
                                         <table class="table table-sm align-middle" id="workspacePositionsTable">
                                             <thead>
                                                 <tr>
-                                                    <th>Ticker</th>
-                                                    <th>Book Type</th>
-                                                    <th>cost_basis</th>
-                                                    <th>shares</th>
-                                                    <th>tracking_status</th>
-                                                    <th>Factor Tags</th>
-                                                    <th>Latest Price</th>
-                                                    <th>Market Value</th>
-                                                    <th>Position Weight</th>
-                                                    <th>Unrealized PnL</th>
-                                                    <th>Unrealized PnL %</th>
-                                                    <th>Updated</th>
-                                                    <th style="width: 88px;">Action</th>
+                                                    <th class="ws-col-manual">Ticker</th>
+                                                    <th class="ws-col-manual">Book</th>
+                                                    <th class="ws-col-manual" title="cost_basis">Cost</th>
+                                                    <th class="ws-col-manual">Shares</th>
+                                                    <th class="ws-col-manual" title="tracking_status">Status</th>
+                                                    <th class="ws-col-manual ws-col-tags">Tags</th>
+                                                    <th class="ws-col-auto" title="Latest Price">Last</th>
+                                                    <th class="ws-col-auto" title="Market Value">Mkt Val</th>
+                                                    <th class="ws-col-auto" title="Position Weight">Weight</th>
+                                                    <th class="ws-col-auto" title="Unrealized PnL">UPnL</th>
+                                                    <th class="ws-col-auto" title="Unrealized PnL %">UPnL %</th>
+                                                    <th class="ws-col-auto">Upd</th>
+                                                    <th class="ws-col-actions">Act</th>
                                                 </tr>
                                             </thead>
                                             <tbody id="workspacePositionsTableBody"></tbody>
@@ -1832,19 +1903,19 @@
 
             tableBody.innerHTML = positions.map((position, index) => `
                 <tr>
-                    <td><input type="text" class="form-control" value="${escapeHtml(position.ticker || '')}" onchange="updatePositionField(${index}, 'ticker', this.value)" placeholder="AAPL"></td>
-                    <td><input type="text" class="form-control" value="${escapeHtml(position.book_type || '')}" onchange="updatePositionField(${index}, 'book_type', this.value)" placeholder="core / tactical"></td>
-                    <td><input type="number" step="0.01" class="form-control" value="${position.cost_basis ?? 0}" onchange="updatePositionField(${index}, 'cost_basis', this.value)" placeholder="cost_basis"></td>
-                    <td><input type="number" step="0.0001" class="form-control" value="${position.shares ?? 0}" onchange="updatePositionField(${index}, 'shares', this.value)" placeholder="shares"></td>
-                    <td><input type="text" class="form-control" value="${escapeHtml(position.tracking_status || '')}" onchange="updatePositionField(${index}, 'tracking_status', this.value)" placeholder="tracking_status"></td>
-                    <td><input type="text" class="form-control" value="${escapeHtml((position.factor_tags || []).join(', '))}" onchange="updatePositionField(${index}, 'factor_tags', this.value)" placeholder="crypto, momentum"></td>
-                    <td>${position.latest_price || '—'}</td>
-                    <td>${position.market_value || '—'}</td>
-                    <td>${position.position_weight || '—'}</td>
-                    <td>${position.unrealized_pnl || '—'}</td>
-                    <td>${position.unrealized_pnl_pct || '—'}</td>
-                    <td>${position.updated_at || '—'}</td>
-                    <td><div class="workspace-row-actions"><button type="button" class="btn btn-outline-danger btn-sm" onclick="removePositionRow(${index})"><i class="fas fa-trash"></i></button></div></td>
+                    <td class="ws-col-manual"><input type="text" class="form-control" value="${escapeHtml(position.ticker || '')}" onchange="updatePositionField(${index}, 'ticker', this.value)" placeholder="AAPL"></td>
+                    <td class="ws-col-manual"><input type="text" class="form-control" value="${escapeHtml(position.book_type || '')}" onchange="updatePositionField(${index}, 'book_type', this.value)" placeholder="core / tactical"></td>
+                    <td class="ws-col-manual"><input type="number" step="0.01" class="form-control" value="${position.cost_basis ?? 0}" onchange="updatePositionField(${index}, 'cost_basis', this.value)" placeholder="cost_basis"></td>
+                    <td class="ws-col-manual"><input type="number" step="0.0001" class="form-control" value="${position.shares ?? 0}" onchange="updatePositionField(${index}, 'shares', this.value)" placeholder="shares"></td>
+                    <td class="ws-col-manual"><input type="text" class="form-control" value="${escapeHtml(position.tracking_status || '')}" onchange="updatePositionField(${index}, 'tracking_status', this.value)" placeholder="tracking_status"></td>
+                    <td class="ws-col-manual ws-col-tags"><input type="text" class="form-control" value="${escapeHtml((position.factor_tags || []).join(', '))}" onchange="updatePositionField(${index}, 'factor_tags', this.value)" placeholder="crypto, momentum"></td>
+                    <td class="ws-col-auto">${position.latest_price || '—'}</td>
+                    <td class="ws-col-auto">${position.market_value || '—'}</td>
+                    <td class="ws-col-auto">${position.position_weight || '—'}</td>
+                    <td class="ws-col-auto">${position.unrealized_pnl || '—'}</td>
+                    <td class="ws-col-auto">${position.unrealized_pnl_pct || '—'}</td>
+                    <td class="ws-col-auto">${position.updated_at || '—'}</td>
+                    <td class="ws-col-actions"><div class="workspace-row-actions"><button type="button" class="btn btn-outline-danger btn-sm" onclick="removePositionRow(${index})"><i class="fas fa-trash"></i></button></div></td>
                 </tr>
             `).join('');
         }
