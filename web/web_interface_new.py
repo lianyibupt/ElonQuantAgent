@@ -1028,7 +1028,7 @@ def _parse_account_analysis_payload(raw_text):
             raise ValueError('Account analysis response JSON must be an object.')
         return parsed_payload
 
-    def _repair_single_missing_comma(payload_text, error):
+    def _insert_missing_comma(payload_text, error):
         if 'Expecting' not in safe_str(error) or 'delimiter' not in safe_str(error):
             return None
 
@@ -1055,32 +1055,34 @@ def _parse_account_analysis_payload(raw_text):
         if left_char not in left_candidates or right_char not in right_candidates:
             return None
 
-        repaired = payload_text[:right] + ',' + payload_text[right:]
-        try:
-            return _load_or_raise(repaired)
-        except (json.JSONDecodeError, ValueError):
-            return None
+        return payload_text[:right] + ',' + payload_text[right:]
+
+    def _load_with_missing_comma_repairs(payload_text, max_repairs=6):
+        current_text = payload_text
+        seen_texts = {current_text}
+
+        for _ in range(max_repairs + 1):
+            try:
+                return _load_or_raise(current_text)
+            except json.JSONDecodeError as parse_error:
+                repaired_text = _insert_missing_comma(current_text, parse_error)
+                if repaired_text is None or repaired_text in seen_texts:
+                    raise
+                current_text = repaired_text
+                seen_texts.add(current_text)
+
+        return _load_or_raise(current_text)
 
     try:
-        return _load_or_raise(text)
-    except json.JSONDecodeError as first_error:
-        repaired = _repair_single_missing_comma(text, first_error)
-        if repaired is not None:
-            return repaired
+        return _load_with_missing_comma_repairs(text)
+    except json.JSONDecodeError:
+        start = text.find('{')
+        end = text.rfind('}') + 1
+        if start == -1 or end <= start:
+            raise ValueError('Account analysis response did not contain JSON output.')
 
-    start = text.find('{')
-    end = text.rfind('}') + 1
-    if start == -1 or end <= start:
-        raise ValueError('Account analysis response did not contain JSON output.')
-
-    sliced = text[start:end]
-    try:
-        return _load_or_raise(sliced)
-    except json.JSONDecodeError as sliced_error:
-        repaired = _repair_single_missing_comma(sliced, sliced_error)
-        if repaired is not None:
-            return repaired
-        raise
+        sliced = text[start:end]
+        return _load_with_missing_comma_repairs(sliced)
 
 
 def _normalize_account_analysis_payload(payload):
@@ -1301,7 +1303,24 @@ def _run_account_analysis_llm(workspace_name, workspace):
         temperature=0.2,
     )
     raw_content = _extract_llm_message_content(response)
-    parsed_payload = _parse_account_analysis_payload(raw_content)
+    try:
+        parsed_payload = _parse_account_analysis_payload(raw_content)
+    except (json.JSONDecodeError, ValueError) as parse_error:
+        raw_text = safe_str(raw_content).strip()
+        fallback_summary = (
+            f"模型输出未返回JSON，已按文本回退。原始输出：{raw_text}"
+            if raw_text
+            else f"模型输出未返回JSON，解析失败：{safe_str(parse_error)}"
+        )
+        parsed_payload = {
+            'summary': fallback_summary[:1200],
+            'portfolio_health_score': 0,
+            'holding_health': [],
+            'pnl_breakdown': {},
+            'concentration_risks': [],
+            'crowded_exposures': [],
+            'manager_actions': [],
+        }
     return _normalize_account_analysis_payload(parsed_payload)
 
 

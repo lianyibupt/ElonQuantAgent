@@ -237,6 +237,129 @@ class AccountAnalysisApiTests(unittest.TestCase):
         self.assertEqual(payload["analysis"]["summary"], "Portfolio check")
         self.assertEqual(payload["analysis"]["portfolio_health_score"], 80.0)
 
+    def test_post_account_analysis_recovers_when_llm_output_has_multiple_json_comma_errors(self):
+        self.test_db_manager.save_stage2_workspace(
+            {
+                "account_state": {"nav": 1000, "cash": 500},
+                "positions": [{"ticker": "AAPL", "book_type": "core", "cost_basis": 100, "shares": 1}],
+            },
+            workspace_name="default",
+        )
+
+        market_df = pd.DataFrame(
+            {
+                "Datetime": pd.to_datetime(["2026-04-28"]),
+                "Open": [119.0],
+                "High": [123.0],
+                "Low": [118.0],
+                "Close": [125.0],
+                "Volume": [1200],
+            }
+        )
+
+        malformed_with_multiple_missing_commas = """{
+  \"summary\": \"Portfolio check\",
+  \"portfolio_health_score\": 80,
+  \"holding_health\": [
+    {\"ticker\": \"AAPL\", \"status\": \"healthy\"}
+    {\"ticker\": \"MSFT\", \"status\": \"watch\"}
+  ],
+  \"pnl_breakdown\": {}
+  \"concentration_risks\": [],
+  \"crowded_exposures\": [],
+  \"manager_actions\": []
+}"""
+
+        bad_response = type(
+            "FakeResponse",
+            (),
+            {
+                "choices": [
+                    type(
+                        "FakeChoice",
+                        (),
+                        {"message": type("FakeMessage", (), {"content": malformed_with_multiple_missing_commas})()},
+                    )
+                ]
+            },
+        )()
+
+        fake_core_skill_block = {
+            "enabled": True,
+            "summary": {"total_positions": 1, "processed_positions": 1, "timeframe": "1d", "lookback_days": 90},
+            "actions": {"add": [], "trim": [], "hold": []},
+            "score_table": [{"ticker": "AAPL", "recommended_action": "观察", "trend_score": 70, "entry_score": 60, "volatility_score": 40, "risk_reward_ratio": "1.5:1", "suggested_position_range": "3%-5%", "decision": "持有", "justification": "结构正常"}],
+        }
+
+        with patch.object(web_interface_new.analyzer, "fetch_market_data", return_value=market_df), \
+             patch.object(web_interface_new.analyzer.llm_provider, "get_client") as mock_get_client, \
+             patch.object(web_interface_new, "_run_core_skill_account_block", return_value=fake_core_skill_block, create=True):
+            mock_client = mock_get_client.return_value
+            mock_client.chat.completions.create.return_value = bad_response
+
+            response = self.client.post("/api/account-analysis", json={"workspace_name": "default"})
+
+        self.assertEqual(response.status_code, 200)
+        payload = response.get_json()
+        self.assertTrue(payload["success"])
+        self.assertEqual(payload["analysis"]["summary"], "Portfolio check")
+        self.assertEqual(payload["analysis"]["portfolio_health_score"], 80.0)
+
+    def test_post_account_analysis_falls_back_when_llm_output_has_no_json(self):
+        self.test_db_manager.save_stage2_workspace(
+            {
+                "account_state": {"nav": 1000, "cash": 500, "current_drawdown": 6.2},
+                "positions": [{"ticker": "AAPL", "book_type": "core", "cost_basis": 100, "shares": 1}],
+            },
+            workspace_name="default",
+        )
+
+        market_df = pd.DataFrame(
+            {
+                "Datetime": pd.to_datetime(["2026-04-28"]),
+                "Open": [119.0],
+                "High": [123.0],
+                "Low": [118.0],
+                "Close": [125.0],
+                "Volume": [1200],
+            }
+        )
+
+        non_json_response = type(
+            "FakeResponse",
+            (),
+            {
+                "choices": [
+                    type(
+                        "FakeChoice",
+                        (),
+                        {"message": type("FakeMessage", (), {"content": "组合风险偏高，建议降低集中度并控制回撤。"})()},
+                    )
+                ]
+            },
+        )()
+
+        fake_core_skill_block = {
+            "enabled": True,
+            "summary": {"total_positions": 1, "processed_positions": 1, "timeframe": "1d", "lookback_days": 90},
+            "actions": {"add": [], "trim": [], "hold": []},
+            "score_table": [{"ticker": "AAPL", "recommended_action": "观察", "trend_score": 70, "entry_score": 60, "volatility_score": 40, "risk_reward_ratio": "1.5:1", "suggested_position_range": "3%-5%", "decision": "持有", "justification": "结构正常"}],
+        }
+
+        with patch.object(web_interface_new.analyzer, "fetch_market_data", return_value=market_df), \
+             patch.object(web_interface_new.analyzer.llm_provider, "get_client") as mock_get_client, \
+             patch.object(web_interface_new, "_run_core_skill_account_block", return_value=fake_core_skill_block, create=True):
+            mock_client = mock_get_client.return_value
+            mock_client.chat.completions.create.return_value = non_json_response
+
+            response = self.client.post("/api/account-analysis", json={"workspace_name": "default"})
+
+        self.assertEqual(response.status_code, 200)
+        payload = response.get_json()
+        self.assertTrue(payload["success"])
+        self.assertIn("模型输出未返回JSON", payload["analysis"]["summary"])
+        self.assertEqual(payload["analysis"]["portfolio_health_score"], 0.0)
+
     def test_get_account_analysis_history_returns_latest_entries(self):
         self.test_db_manager.save_stage2_workspace(
             {

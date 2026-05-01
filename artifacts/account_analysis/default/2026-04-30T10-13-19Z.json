@@ -1,0 +1,163 @@
+{
+  "summary": "组合当前总净值13.24万，持仓4只，最大仓位SBET占比31.7%且深度亏损54.3%，导致整体回撤28.7%。现金占比18.6%，有一定缓冲。主要风险集中在SBET单一标的过度集中及中国相关股票（30.8%）的暴露。建议降低SBET仓位，控制集中度风险。",
+  "portfolio_health_score": 45.0,
+  "holding_health": [
+    {
+      "ticker": "SBET",
+      "health": "critical",
+      "reason": "仓位过重（31.7%），未实现亏损-54.3%，无最新分析更新，存在基本面恶化风险。"
+    },
+    {
+      "ticker": "MSTR",
+      "health": "good",
+      "reason": "盈利14.88%，仓位适中（17.9%），跟踪正常。"
+    },
+    {
+      "ticker": "PDD",
+      "health": "warning",
+      "reason": "微亏-2.84%，仓位合理（14.75%），但受中国政策不确定性影响。"
+    },
+    {
+      "ticker": "MPNGY",
+      "health": "warning",
+      "reason": "亏损-31.2%，仓位16.04%偏高，需关注基本面变化。"
+    }
+  ],
+  "pnl_breakdown": {
+    "total_unrealized_pnl": -57030.74,
+    "total_unrealized_pnl_pct": -43.06,
+    "positions": [
+      {
+        "ticker": "SBET",
+        "unrealized_pnl": -49902.0,
+        "unrealized_pnl_pct": -54.3
+      },
+      {
+        "ticker": "MSTR",
+        "unrealized_pnl": 3073.5,
+        "unrealized_pnl_pct": 14.88
+      },
+      {
+        "ticker": "PDD",
+        "unrealized_pnl": -570.8,
+        "unrealized_pnl_pct": -2.84
+      },
+      {
+        "ticker": "MPNGY",
+        "unrealized_pnl": -9631.44,
+        "unrealized_pnl_pct": -31.2
+      }
+    ]
+  },
+  "concentration_risks": [
+    "SBET单一持仓占比31.7%，远超单一个股安全阈值（通常20%）。",
+    "前两大持仓（SBET+MSTR）合计49.6%，集中度较高，组合受少数标的波动影响大。"
+  ],
+  "crowded_exposures": [
+    "基于因子标签，ETH暴露由SBET承载，占总比31.7%。",
+    "中国暴露（PDD+MPNGY）合计30.8%，易受地缘和政策风险冲击。"
+  ],
+  "manager_actions": [
+    {
+      "action": "减仓SBET至15%以下",
+      "reason": "集中度风险高，深度亏损需主动控制风险，避免单一标的拖累组合净值。",
+      "priority": "high"
+    },
+    {
+      "action": "评估MPNGY基本面与止损线",
+      "reason": "亏损31.2%且仓位较重，若基本面持续恶化或跌破关键支撑，应果断减仓。",
+      "priority": "medium"
+    },
+    {
+      "action": "利用现金增加分散配置",
+      "reason": "现金占比18.6%，可考虑增持与现有持仓低相关的资产（如防御性板块或另类ETF），降低总波动。",
+      "priority": "medium"
+    }
+  ],
+  "core_skill_block": {
+    "enabled": true,
+    "generated_at": "2026-04-30T10:06:13Z",
+    "workspace_name": "default",
+    "summary": {
+      "total_positions": 4,
+      "processed_positions": 4,
+      "timeframe": "1d",
+      "lookback_days": 90
+    },
+    "actions": {
+      "add": [],
+      "trim": [
+        {
+          "ticker": "SBET",
+          "action": "减仓",
+          "reason": "技术面MACD柱翻绿、RSI跌破50、随机死叉、ROC转负，威廉指标偏空，所有指标一致发出空头信号；形态上确认头肩顶顶部反转并跌破颈线，理论目标已超跌，但仍有持续下行空间；趋势上短期明确看跌，价格跌破SMA20且加速下跌，动量强劲。当前价格7.00接近短期支撑6.87，若有效跌破将打开至6.27-5.98区域。建议顺势做空，止损设于7.15上方，目标6.87减仓，6.65-6.36清仓。"
+        },
+        {
+          "ticker": "MSTR",
+          "action": "减仓",
+          "reason": "技术指标共振强烈看空：MACD柱萎缩，RSI从超买区回落，随机指标高位死叉，ROC动量急剧衰减。短期价格跌破5日均线，连续阴线显示空头动能增强。虽然形态上存在看涨旗形的可能，但尚未突破确认，且当前价格已接近旗面下沿支撑，一旦跌破156.11将打开回调空间。中期上升趋势未被破坏，但短期回调压力显著，优先采用空头策略。建议在反弹至165-167区域遇阻时做空，或直接于当前158附近轻仓入场，止损设于170.50上方，目标看148-150。若价格放量跌破156，则加仓做空。"
+        }
+      ],
+      "hold": [
+        {
+          "ticker": "PDD",
+          "action": "观察",
+          "reason": "综合技术、形态与趋势分析：头肩顶形态明确，已跌破颈线并完成回抽，理论目标89.77附近；MACD与趋势指标维持空头排列，中期下跌动能未衰竭。虽随机指标与威廉指标进入深度超卖区域，短期存在技术性反弹需求，但反弹幅度可能受限于99-100阻力区域。高频交易应顺应主趋势，建议在反弹至阻力位（99-100）时逢高做空，或等待价格有效跌破96.67支撑后追空。当前直接入场风险较高，需耐心等待更佳入场时机。"
+        },
+        {
+          "ticker": "MPNGY",
+          "action": "观察",
+          "reason": "综合技术指标（MACD死叉、RSI跌破50、ROC负值扩大）、形态分析（双顶+岛形顶部确认）和趋势分析（SMA5下穿SMA20死叉、价格连续下跌创低）均指向短期强烈看空。虽然随机指标和威廉指标进入超卖区提示反弹风险，但趋势信号权重更高，建议逢高做空而非追空。当前价格接近前期支撑20.23，直接追空风险收益比不佳，等待反弹至20.78附近或跌破20.23后顺势入场更优。"
+        }
+      ]
+    },
+    "score_table": [
+      {
+        "ticker": "SBET",
+        "decision": "卖出",
+        "recommended_action": "减仓",
+        "trend_score": 20,
+        "entry_score": 75,
+        "volatility_score": 60,
+        "risk_reward_ratio": "1:2.5",
+        "suggested_position_range": "3% - 5%",
+        "justification": "技术面MACD柱翻绿、RSI跌破50、随机死叉、ROC转负，威廉指标偏空，所有指标一致发出空头信号；形态上确认头肩顶顶部反转并跌破颈线，理论目标已超跌，但仍有持续下行空间；趋势上短期明确看跌，价格跌破SMA20且加速下跌，动量强劲。当前价格7.00接近短期支撑6.87，若有效跌破将打开至6.27-5.98区域。建议顺势做空，止损设于7.15上方，目标6.87减仓，6.65-6.36清仓。"
+      },
+      {
+        "ticker": "MSTR",
+        "decision": "卖出",
+        "recommended_action": "减仓",
+        "trend_score": 45,
+        "entry_score": 60,
+        "volatility_score": 65,
+        "risk_reward_ratio": "1:2",
+        "suggested_position_range": "3% - 5%",
+        "justification": "技术指标共振强烈看空：MACD柱萎缩，RSI从超买区回落，随机指标高位死叉，ROC动量急剧衰减。短期价格跌破5日均线，连续阴线显示空头动能增强。虽然形态上存在看涨旗形的可能，但尚未突破确认，且当前价格已接近旗面下沿支撑，一旦跌破156.11将打开回调空间。中期上升趋势未被破坏，但短期回调压力显著，优先采用空头策略。建议在反弹至165-167区域遇阻时做空，或直接于当前158附近轻仓入场，止损设于170.50上方，目标看148-150。若价格放量跌破156，则加仓做空。"
+      },
+      {
+        "ticker": "PDD",
+        "decision": "卖出",
+        "recommended_action": "观察",
+        "trend_score": 30,
+        "entry_score": 20,
+        "volatility_score": 70,
+        "risk_reward_ratio": "1:3",
+        "suggested_position_range": "3% - 5%",
+        "justification": "综合技术、形态与趋势分析：头肩顶形态明确，已跌破颈线并完成回抽，理论目标89.77附近；MACD与趋势指标维持空头排列，中期下跌动能未衰竭。虽随机指标与威廉指标进入深度超卖区域，短期存在技术性反弹需求，但反弹幅度可能受限于99-100阻力区域。高频交易应顺应主趋势，建议在反弹至阻力位（99-100）时逢高做空，或等待价格有效跌破96.67支撑后追空。当前直接入场风险较高，需耐心等待更佳入场时机。"
+      },
+      {
+        "ticker": "MPNGY",
+        "decision": "卖出",
+        "recommended_action": "观察",
+        "trend_score": 75,
+        "entry_score": 40,
+        "volatility_score": 70,
+        "risk_reward_ratio": "1:2.5",
+        "suggested_position_range": "3% - 5%",
+        "justification": "综合技术指标（MACD死叉、RSI跌破50、ROC负值扩大）、形态分析（双顶+岛形顶部确认）和趋势分析（SMA5下穿SMA20死叉、价格连续下跌创低）均指向短期强烈看空。虽然随机指标和威廉指标进入超卖区提示反弹风险，但趋势信号权重更高，建议逢高做空而非追空。当前价格接近前期支撑20.23，直接追空风险收益比不佳，等待反弹至20.78附近或跌破20.23后顺势入场更优。"
+      }
+    ]
+  },
+  "created_at": "2026-04-30T10:13:19Z",
+  "workspace_name": "default"
+}
