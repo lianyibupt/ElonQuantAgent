@@ -393,7 +393,8 @@ class DatabaseManager:
                 user_ip
             ))
             history_id = cursor.lastrowid
-            
+            conn.commit()
+
             # 打印详细的存储日志
             print(f"📝 历史记录存储成功 - ID: {history_id}")
             print(f"   📊 资产: {asset}, 时间周期: {timeframe}")
@@ -407,7 +408,7 @@ class DatabaseManager:
                 print(f"   📋 结果摘要: {result_summary[:100]}...")
             if result_details:
                 print(f"   📊 详细结果: 已保存 {len(str(result_details))} 字符")
-            
+
             return history_id
     
     def update_analysis_history(

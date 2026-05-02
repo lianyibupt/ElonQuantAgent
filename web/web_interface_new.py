@@ -1287,6 +1287,31 @@ def _run_account_analysis_llm(workspace_name, workspace):
             'manager_actions': 'array',
         },
     }
+
+    def _request_structured_repair(raw_output_text):
+        repair_payload = {
+            'task': 'convert_to_valid_json',
+            'output_schema': prompt_payload['output_schema'],
+            'raw_output': safe_str(raw_output_text),
+        }
+        repair_response = client.chat.completions.create(
+            model=model,
+            messages=[
+                {
+                    'role': 'system',
+                    'content': '你是JSON修复器。请将输入文本修复或改写为一个合法JSON对象，且严格遵循给定schema；不要输出解释、不要输出Markdown代码块。所有文本字段必须使用简体中文。',
+                },
+                {
+                    'role': 'user',
+                    'content': json.dumps(repair_payload, ensure_ascii=False),
+                },
+            ],
+            max_tokens=1800,
+            temperature=0,
+        )
+        repaired_raw = _extract_llm_message_content(repair_response)
+        return _parse_account_analysis_payload(repaired_raw)
+
     response = client.chat.completions.create(
         model=model,
         messages=[
@@ -1307,20 +1332,23 @@ def _run_account_analysis_llm(workspace_name, workspace):
         parsed_payload = _parse_account_analysis_payload(raw_content)
     except (json.JSONDecodeError, ValueError) as parse_error:
         raw_text = safe_str(raw_content).strip()
-        fallback_summary = (
-            f"模型输出未返回JSON，已按文本回退。原始输出：{raw_text}"
-            if raw_text
-            else f"模型输出未返回JSON，解析失败：{safe_str(parse_error)}"
-        )
-        parsed_payload = {
-            'summary': fallback_summary[:1200],
-            'portfolio_health_score': 0,
-            'holding_health': [],
-            'pnl_breakdown': {},
-            'concentration_risks': [],
-            'crowded_exposures': [],
-            'manager_actions': [],
-        }
+        try:
+            parsed_payload = _request_structured_repair(raw_text or safe_str(parse_error))
+        except (json.JSONDecodeError, ValueError, Exception):
+            fallback_summary = (
+                f"模型输出未返回JSON，已按文本回退。原始输出：{raw_text}"
+                if raw_text
+                else f"模型输出未返回JSON，解析失败：{safe_str(parse_error)}"
+            )
+            parsed_payload = {
+                'summary': fallback_summary[:1200],
+                'portfolio_health_score': 0,
+                'holding_health': [],
+                'pnl_breakdown': {},
+                'concentration_risks': [],
+                'crowded_exposures': [],
+                'manager_actions': [],
+            }
     return _normalize_account_analysis_payload(parsed_payload)
 
 
@@ -1476,11 +1504,9 @@ def output():
         if result_id:
             try:
                 print(f"📊 [DEBUG] 从数据库加载结果，ID: {result_id}")
-                # 从数据库获取分析结果
                 history_record = db_manager.get_analysis_history_by_id(int(result_id))
                 if history_record:
                     results = history_record.get('result_details', {})
-                    # 添加缓存标记信息
                     results['cache_info'] = {
                         'cache_id': result_id,
                         'cache_timestamp': history_record.get('created_at'),
@@ -1488,12 +1514,48 @@ def output():
                     }
                     print(f"✅ [DEBUG] 成功从数据库加载结果")
                     return render_template('output.html', results=results)
-                else:
-                    print(f"⚠️ [DEBUG] 未找到ID为 {result_id} 的记录")
-                    # 如果找不到记录，继续尝试其他方式
+
+                error_msg = f"Analysis record not found for id {result_id}"
+                print(f"⚠️ [DEBUG] {error_msg}")
+                missing_result = {
+                    "success": False,
+                    "error": error_msg,
+                    "asset_name": "Unknown",
+                    "timeframe": "Unknown",
+                    "data_length": 0,
+                    "technical_indicators": error_msg,
+                    "pattern_analysis": "",
+                    "trend_analysis": "",
+                    "final_decision": {
+                        "decision": "HOLD",
+                        "risk_reward_ratio": "N/A",
+                        "forecast_horizon": "N/A",
+                        "justification": error_msg,
+                    },
+                    "cache_info": {"is_cached": False},
+                }
+                return render_template('output.html', results=missing_result)
             except Exception as e:
-                print(f"❌ [DEBUG] 从数据库加载结果失败: {safe_str(e)}")
-                # 如果加载失败，继续尝试其他方式
+                error_msg = f"Failed to load analysis record id {result_id}: {safe_str(e)}"
+                print(f"❌ [DEBUG] {error_msg}")
+                load_error_result = {
+                    "success": False,
+                    "error": error_msg,
+                    "asset_name": "Unknown",
+                    "timeframe": "Unknown",
+                    "data_length": 0,
+                    "technical_indicators": error_msg,
+                    "pattern_analysis": "",
+                    "trend_analysis": "",
+                    "final_decision": {
+                        "decision": "HOLD",
+                        "risk_reward_ratio": "N/A",
+                        "forecast_horizon": "N/A",
+                        "justification": error_msg,
+                    },
+                    "cache_info": {"is_cached": False},
+                }
+                return render_template('output.html', results=load_error_result)
         
         # Get results from URL parameters (后备方案)
         results_param = request.args.get('results')

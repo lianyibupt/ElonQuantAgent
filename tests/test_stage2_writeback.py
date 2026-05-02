@@ -196,5 +196,33 @@ class Stage2WritebackApiTests(unittest.TestCase):
         self.assertEqual(position['latest_price'], 0.0)
 
 
+    def test_save_analysis_history_persists_record_for_output_lookup(self):
+        history_id = self.test_db_manager.save_analysis_history(
+            asset='AAPL',
+            timeframe='1d',
+            start_date='2026-04-01',
+            end_date='2026-04-28',
+            trading_strategy='high_frequency',
+            status='completed',
+            result_summary='AAPL 1d 分析结果',
+            result_details={'success': True, 'asset_name': 'Apple Inc.', 'timeframe': '1day'}
+        )
+
+        loaded = self.test_db_manager.get_analysis_history_by_id(history_id)
+
+        self.assertIsNotNone(loaded)
+        self.assertEqual(loaded['asset'], 'AAPL')
+        self.assertEqual(loaded['timeframe'], '1d')
+
+    def test_output_route_returns_error_state_when_result_id_missing(self):
+        response = self.client.get('/output?id=999999')
+
+        self.assertEqual(response.status_code, 200)
+        html = response.get_data(as_text=True)
+        self.assertIn('Analysis record not found for id 999999', html)
+        self.assertNotIn('No analysis data available', html)
+        self.assertNotIn('>1h<', html)
+
+
 if __name__ == '__main__':
     unittest.main()

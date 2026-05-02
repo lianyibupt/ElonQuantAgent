@@ -360,6 +360,84 @@ class AccountAnalysisApiTests(unittest.TestCase):
         self.assertIn("模型输出未返回JSON", payload["analysis"]["summary"])
         self.assertEqual(payload["analysis"]["portfolio_health_score"], 0.0)
 
+    def test_post_account_analysis_repairs_truncated_json_with_second_llm_pass(self):
+        self.test_db_manager.save_stage2_workspace(
+            {
+                "account_state": {"nav": 1000, "cash": 500, "current_drawdown": 6.2},
+                "positions": [{"ticker": "AAPL", "book_type": "core", "cost_basis": 100, "shares": 1}],
+            },
+            workspace_name="default",
+        )
+
+        market_df = pd.DataFrame(
+            {
+                "Datetime": pd.to_datetime(["2026-04-28"]),
+                "Open": [119.0],
+                "High": [123.0],
+                "Low": [118.0],
+                "Close": [125.0],
+                "Volume": [1200],
+            }
+        )
+
+        truncated_json_response = type(
+            "FakeResponse",
+            (),
+            {
+                "choices": [
+                    type(
+                        "FakeChoice",
+                        (),
+                        {"message": type("FakeMessage", (), {"content": '{"summary":"组合偏弱","portfolio_health_score":45,"holding_health":[]'})()},
+                    )
+                ]
+            },
+        )()
+
+        repaired_json_response = type(
+            "FakeResponse",
+            (),
+            {
+                "choices": [
+                    type(
+                        "FakeChoice",
+                        (),
+                        {"message": type("FakeMessage", (), {"content": json.dumps({
+                            "summary": "修复后结构化输出",
+                            "portfolio_health_score": 45,
+                            "holding_health": [],
+                            "pnl_breakdown": {},
+                            "concentration_risks": [],
+                            "crowded_exposures": [],
+                            "manager_actions": []
+                        }, ensure_ascii=False)})()},
+                    )
+                ]
+            },
+        )()
+
+        fake_core_skill_block = {
+            "enabled": True,
+            "summary": {"total_positions": 1, "processed_positions": 1, "timeframe": "1d", "lookback_days": 90},
+            "actions": {"add": [], "trim": [], "hold": []},
+            "score_table": [{"ticker": "AAPL", "recommended_action": "观察", "trend_score": 70, "entry_score": 60, "volatility_score": 40, "risk_reward_ratio": "1.5:1", "suggested_position_range": "3%-5%", "decision": "持有", "justification": "结构正常"}],
+        }
+
+        with patch.object(web_interface_new.analyzer, "fetch_market_data", return_value=market_df), \
+             patch.object(web_interface_new.analyzer.llm_provider, "get_client") as mock_get_client, \
+             patch.object(web_interface_new, "_run_core_skill_account_block", return_value=fake_core_skill_block, create=True):
+            mock_client = mock_get_client.return_value
+            mock_client.chat.completions.create.side_effect = [truncated_json_response, repaired_json_response]
+
+            response = self.client.post("/api/account-analysis", json={"workspace_name": "default"})
+
+        self.assertEqual(response.status_code, 200)
+        payload = response.get_json()
+        self.assertTrue(payload["success"])
+        self.assertEqual(payload["analysis"]["summary"], "修复后结构化输出")
+        self.assertEqual(payload["analysis"]["portfolio_health_score"], 45.0)
+        self.assertEqual(mock_client.chat.completions.create.call_count, 2)
+
     def test_get_account_analysis_history_returns_latest_entries(self):
         self.test_db_manager.save_stage2_workspace(
             {
