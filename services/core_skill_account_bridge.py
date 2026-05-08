@@ -44,28 +44,39 @@ def build_core_skill_block(
     positions = (workspace or {}).get("positions", []) or []
     actions = {"add": [], "trim": [], "hold": []}
     score_table: List[Dict[str, Any]] = []
+    errors: List[Dict[str, str]] = []
 
     for position in positions:
         ticker = str((position or {}).get("ticker", "")).strip().upper()
         if not ticker:
-            raise ValueError("Core skill analysis failed: empty ticker in workspace positions")
+            errors.append({"ticker": "UNKNOWN", "error": "empty ticker in workspace position"})
+            continue
 
-        df = fetch_market_data(ticker, "1d", start_dt, current, market_data_source=market_data_source)
-        if df is None or getattr(df, "empty", True):
-            raise ValueError(f"Core skill analysis failed for {ticker}: no market data")
+        try:
+            df = fetch_market_data(ticker, "1d", start_dt, current, market_data_source=market_data_source)
+            if df is None or getattr(df, "empty", True):
+                errors.append({"ticker": ticker, "error": "no market data"})
+                continue
 
-        result = analyze_position(ticker, df, workspace)
-        row = _score_row_from_result(ticker, result)
-        score_table.append(row)
+            result = analyze_position(ticker, df, workspace)
+            row = _score_row_from_result(ticker, result)
+            score_table.append(row)
 
-        bucket = _normalize_action(row.get("recommended_action", ""))
-        actions[bucket].append(
-            {
-                "ticker": ticker,
-                "action": row.get("recommended_action", "观察"),
-                "reason": row.get("justification", ""),
-            }
-        )
+            bucket = _normalize_action(row.get("recommended_action", ""))
+            actions[bucket].append(
+                {
+                    "ticker": ticker,
+                    "action": row.get("recommended_action", "观察"),
+                    "reason": row.get("justification", ""),
+                }
+            )
+        except Exception as exc:
+            errors.append({"ticker": ticker, "error": str(exc)})
+            continue
+
+    if not score_table and errors:
+        error_summary = "; ".join(f"{e['ticker']}: {e['error']}" for e in errors)
+        raise ValueError(f"Core skill analysis failed for all positions: {error_summary}")
 
     return {
         "enabled": True,
@@ -74,9 +85,11 @@ def build_core_skill_block(
         "summary": {
             "total_positions": len(positions),
             "processed_positions": len(score_table),
+            "error_count": len(errors),
             "timeframe": "1d",
             "lookback_days": 90,
         },
         "actions": actions,
         "score_table": score_table,
+        "errors": errors,
     }

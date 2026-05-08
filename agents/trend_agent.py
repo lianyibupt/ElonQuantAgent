@@ -189,18 +189,33 @@ def create_trend_agent_text_only(llm, tools):
         recent_highs = price_data["high_prices"][-20:] if len(price_data["high_prices"]) > 20 else price_data["high_prices"]
         recent_lows = price_data["low_prices"][-20:] if len(price_data["low_prices"]) > 20 else price_data["low_prices"]
         
-        # 计算简单移动平均线
-        sma_short = sum(recent_closes[-5:]) / 5 if len(recent_closes) >= 5 else None
-        sma_long = sum(recent_closes[-20:]) / 20 if len(recent_closes) >= 20 else None
-        
-        # 计算价格变化
+        # 使用 TA-Lib 计算 EMA 和趋势指标
+        import talib
+        import pandas as pd
+        df = pd.DataFrame(kline_data)
+        ema20 = talib.EMA(df["Close"], timeperiod=20).fillna(0).round(2).tolist()
+        ema50 = talib.EMA(df["Close"], timeperiod=50).fillna(0).round(2).tolist()
+        ema200 = talib.EMA(df["Close"], timeperiod=200).fillna(0).round(2).tolist()
+        adx_series = talib.ADX(df["High"], df["Low"], df["Close"], timeperiod=14).fillna(0).round(2).tolist()
+        plus_di = talib.PLUS_DI(df["High"], df["Low"], df["Close"], timeperiod=14).fillna(0).round(2).tolist()
+        minus_di = talib.MINUS_DI(df["High"], df["Low"], df["Close"], timeperiod=14).fillna(0).round(2).tolist()
+        atr_series = talib.ATR(df["High"], df["Low"], df["Close"], timeperiod=14).fillna(0).round(4).tolist()
+
+        ema20_val = ema20[-1] if ema20 else 0
+        ema50_val = ema50[-1] if ema50 else 0
+        ema200_val = ema200[-1] if ema200 else 0
+        adx_val = adx_series[-1] if adx_series else 0
+        pdi_val = plus_di[-1] if plus_di else 0
+        mdi_val = minus_di[-1] if minus_di else 0
+        atr_val = atr_series[-1] if atr_series else 0
+
         price_change = ((recent_closes[-1] - recent_closes[0]) / recent_closes[0] * 100) if recent_closes and recent_closes[0] != 0 else 0
-        
-        # 计算支撑阻力位（简化版本）
+
         support_level = min(recent_lows) if recent_lows else None
         resistance_level = max(recent_highs) if recent_highs else None
-        
+
         print(f"📊 [TrendAgent-Text] 准备进行文本趋势分析，数据长度: {len(price_data['close_prices'])}")
+        print(f"  ADX={adx_val:.1f}, +DI={pdi_val:.1f}, -DI={mdi_val:.1f}, ATR={atr_val:.2f}")
         
         # 添加价格数据日志
         print(f"\n📊 [TrendAgent-Text] 传递给LLM的价格数据:")
@@ -216,7 +231,6 @@ def create_trend_agent_text_only(llm, tools):
         trading_strategy = state.get('trading_strategy', 'high_frequency')
         
         if trading_strategy == 'low_frequency':
-            # 低频交易策略提示词
             system_prompt = (
                 "你是低频交易的趋势分析专家，专注于长期趋势和价格行为分析。请用中文回答。"
                 f"股票代码: {state.get('stock_name', 'Unknown')}\n"
@@ -227,15 +241,19 @@ def create_trend_agent_text_only(llm, tools):
                 "- 最低价: {low_prices}\n"
                 "- 收盘价: {close_prices}\n"
                 "- 时间戳: {datetimes}\n\n"
-                "技术统计信息:\n"
+                "趋势与波动率统计:\n"
                 "- 近期价格变化: {price_change:.2f}%\n"
-                "- 短期均线(SMA5): {sma_short:.2f}\n"
-                "- 长期均线(SMA20): {sma_long:.2f}\n"
-                "- 支撑位: {support_level:.2f}\n"
-                "- 阻力位: {resistance_level:.2f}\n\n"
+                "- EMA20: {ema20:.2f}\n"
+                "- EMA50: {ema50:.2f}\n"
+                "- EMA200: {ema200:.2f}\n"
+                "- 均线排列: {ema_alignment}\n"
+                "- ADX(14): {adx:.1f}, +DI: {pdi:.1f}, -DI: {mdi:.1f}\n"
+                "- ATR(14): {atr:.2f}\n"
+                "- 近期支撑位: {support_level:.2f}\n"
+                "- 近期阻力位: {resistance_level:.2f}\n\n"
                 "请提供全面的中文趋势分析报告，包括:\n"
-                "1. 长期整体趋势方向（看涨、看跌或横盘）\n"
-                "2. 长期关键支撑和阻力位分析\n"
+                "1. 长期整体趋势方向（看涨、看跌或横盘），结合ADX和均线排列判断\n"
+                "2. 长期关键支撑和阻力位分析，结合EMA和ATR评估关键价位\n"
                 "3. 长期趋势强度和动量评估\n"
                 "4. 长期潜在突破或跌破点\n"
                 "5. 基于长期趋势分析的交易建议\n"
@@ -243,7 +261,6 @@ def create_trend_agent_text_only(llm, tools):
                 "专注于为低频交易决策提供可操作的中文见解，重点关注长期趋势。"
             )
         else:
-            # 高频交易策略提示词
             system_prompt = (
                 "你是高频交易的趋势分析专家。请用中文回答。"
                 f"股票代码: {state.get('stock_name', 'Unknown')}\n"
@@ -254,15 +271,19 @@ def create_trend_agent_text_only(llm, tools):
                 "- 最低价: {low_prices}\n"
                 "- 收盘价: {close_prices}\n"
                 "- 时间戳: {datetimes}\n\n"
-                "技术统计信息:\n"
+                "趋势与波动率统计:\n"
                 "- 近期价格变化: {price_change:.2f}%\n"
-                "- 短期均线(SMA5): {sma_short:.2f}\n"
-                "- 长期均线(SMA20): {sma_long:.2f}\n"
-                "- 支撑位: {support_level:.2f}\n"
-                "- 阻力位: {resistance_level:.2f}\n\n"
+                "- EMA20: {ema20:.2f}\n"
+                "- EMA50: {ema50:.2f}\n"
+                "- EMA200: {ema200:.2f}\n"
+                "- 均线排列: {ema_alignment}\n"
+                "- ADX(14): {adx:.1f}, +DI: {pdi:.1f}, -DI: {mdi:.1f}\n"
+                "- ATR(14): {atr:.2f}\n"
+                "- 近期支撑位: {support_level:.2f}\n"
+                "- 近期阻力位: {resistance_level:.2f}\n\n"
                 "请提供全面的中文趋势分析报告，包括:\n"
-                "1. 整体趋势方向（看涨、看跌或横盘）\n"
-                "2. 关键支撑和阻力位分析\n"
+                "1. 整体趋势方向（看涨、看跌或横盘），结合ADX和均线排列判断\n"
+                "2. 关键支撑和阻力位分析，结合EMA和ATR评估关键价位\n"
                 "3. 趋势强度和动量评估\n"
                 "4. 潜在突破或跌破点\n"
                 "5. 基于趋势分析的交易建议\n\n"
@@ -287,6 +308,12 @@ def create_trend_agent_text_only(llm, tools):
             close_prices_str = str(price_data["close_prices"][-20:]).encode('utf-8', errors='replace').decode('utf-8')
             datetimes_str = str(price_data["datetimes"][-20:]).encode('utf-8', errors='replace').decode('utf-8')
             
+            ema_alignment = "交织"
+            if ema20_val > ema50_val > ema200_val:
+                ema_alignment = "多头排列"
+            elif ema20_val < ema50_val < ema200_val:
+                ema_alignment = "空头排列"
+
             final_response = (analysis_prompt | llm).invoke({
                 "open_prices": open_prices_str,
                 "high_prices": high_prices_str,
@@ -294,10 +321,16 @@ def create_trend_agent_text_only(llm, tools):
                 "close_prices": close_prices_str,
                 "datetimes": datetimes_str,
                 "price_change": price_change,
-                "sma_short": sma_short if sma_short is not None else "N/A",
-                "sma_long": sma_long if sma_long is not None else "N/A",
+                "ema20": f"{ema20_val:.2f}" if ema20_val else "N/A",
+                "ema50": f"{ema50_val:.2f}" if ema50_val else "N/A",
+                "ema200": f"{ema200_val:.2f}" if ema200_val else "N/A",
+                "ema_alignment": ema_alignment,
+                "adx": f"{adx_val:.1f}" if adx_val else "N/A",
+                "pdi": f"{pdi_val:.1f}" if pdi_val else "N/A",
+                "mdi": f"{mdi_val:.1f}" if mdi_val else "N/A",
+                "atr": f"{atr_val:.2f}" if atr_val else "N/A",
                 "support_level": support_level if support_level is not None else "N/A",
-                "resistance_level": resistance_level if resistance_level is not None else "N/A"
+                "resistance_level": resistance_level if resistance_level is not None else "N/A",
             })
             
             trend_report = final_response.content if hasattr(final_response, 'content') else str(final_response)

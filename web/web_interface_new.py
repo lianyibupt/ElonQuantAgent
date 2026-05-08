@@ -749,6 +749,7 @@ class WebTradingAnalyzer:
             "volatility_score": single_name_score.get("volatility_score", 0),
             "suggested_position_range": safe_str(single_name_score.get("suggested_position_range", "N/A")),
             "invalidation_price": safe_str(single_name_score.get("invalidation_price", "N/A")),
+            "checklist_summary": single_name_score.get("checklist_summary", {}),
         }
         dashboard_payload = final_state.get("dashboard_payload", {}) or {}
         account_summary = dashboard_payload.get("account_summary", {}) or {}
@@ -1306,7 +1307,7 @@ def _run_account_analysis_llm(workspace_name, workspace):
                     'content': json.dumps(repair_payload, ensure_ascii=False),
                 },
             ],
-            max_tokens=1800,
+            max_tokens=3200,
             temperature=0,
         )
         repaired_raw = _extract_llm_message_content(repair_response)
@@ -1324,7 +1325,7 @@ def _run_account_analysis_llm(workspace_name, workspace):
                 'content': json.dumps(prompt_payload, ensure_ascii=False),
             },
         ],
-        max_tokens=1800,
+        max_tokens=3200,
         temperature=0.2,
     )
     raw_content = _extract_llm_message_content(response)
@@ -1341,7 +1342,7 @@ def _run_account_analysis_llm(workspace_name, workspace):
                 else f"模型输出未返回JSON，解析失败：{safe_str(parse_error)}"
             )
             parsed_payload = {
-                'summary': fallback_summary[:1200],
+                'summary': fallback_summary[:4000],
                 'portfolio_health_score': 0,
                 'holding_health': [],
                 'pnl_breakdown': {},

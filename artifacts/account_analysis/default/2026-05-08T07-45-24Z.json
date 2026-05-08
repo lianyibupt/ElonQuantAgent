@@ -1,0 +1,169 @@
+{
+  "summary": "当前账户净值为135,911元，总市值为97,410.98元，现金占比29.03%，处于较高水平。持仓仅4只个股，集中度极高，其中SBET（权重32.89%）亏损超50%，成为最大风险源；中国主题（PDD+MPNGY）合计占比34.81%，暴露过度。整体回撤28.7%，组合健康度偏低，需优先处理亏损大头并分散风险。",
+  "portfolio_health_score": 45.0,
+  "holding_health": [
+    {
+      "ticker": "SBET",
+      "status": "风险高",
+      "reason": "权重32.89%且亏损51.36%，为组合最大拖累；关联ETH因子，波动剧烈。需立即采取减仓或止损措施。"
+    },
+    {
+      "ticker": "MSTR",
+      "status": "需关注",
+      "reason": "成本记录异常（负数），但当前盈利6,835.2元，权重仅3.97%。建议核实成本数据，若为做空或套利头寸需明确策略。"
+    },
+    {
+      "ticker": "PDD",
+      "status": "良好",
+      "reason": "微盈1.69%，权重18.67%尚可，但与中国主题重叠，需注意集中度。"
+    },
+    {
+      "ticker": "MPNGY",
+      "status": "需关注",
+      "reason": "亏损28.93%，权重16.14%，属于中国主题。建议观察趋势，若持续走弱可考虑部分减仓。"
+    }
+  ],
+  "pnl_breakdown": {
+    "total_unrealized_pnl": -48875.77,
+    "detail": [
+      {
+        "ticker": "SBET",
+        "unrealized_pnl": -47202.0,
+        "weight": 32.89
+      },
+      {
+        "ticker": "MSTR",
+        "unrealized_pnl": 6835.2,
+        "weight": 3.97
+      },
+      {
+        "ticker": "PDD",
+        "unrealized_pnl": 422.75,
+        "weight": 18.67
+      },
+      {
+        "ticker": "MPNGY",
+        "unrealized_pnl": -8931.72,
+        "weight": 16.14
+      }
+    ]
+  },
+  "concentration_risks": [
+    "单只持仓SBET权重32.89%，远超20%警戒线，且深度亏损，对净值和回撤冲击大。",
+    "中国主题（PDD+MPNGY）合计34.81%，叠加候选池中多个中国股，将进一步加剧区域集中风险。",
+    "因子暴露集中：ETH（SBET）与BTC（MSTR）均为数字资产相关，总权重36.86%，受加密市场波动影响大。"
+  ],
+  "crowded_exposures": [
+    "中国因子：PDD（18.67%）、MPNGY（16.14%），候选池中还有BILI、TCEHY、BABA，若加仓可能形成拥挤。",
+    "数字资产因子：SBET（ETH）、MSTR（BTC），尽管MSTR权重低，但两者合计36.86%。"
+  ],
+  "manager_actions": [
+    {
+      "action": "减仓SBET",
+      "reason": "SBET权重过高且亏损严重，建议分批减仓至15%以下，降低单一风险暴露。",
+      "notes": "可设置止损单，当日亏损扩大时优先执行。若看好ETH长期，保留小仓位观察。"
+    },
+    {
+      "action": "分散中国主题",
+      "reason": "PDD和MPNGY合计已超30%，候选池中中国股过多，应避免继续加仓中国。",
+      "notes": "可考虑对MPNGY进行部分止盈或止损，释放资金配置其他因子。"
+    },
+    {
+      "action": "引入低相关资产",
+      "reason": "现金占比29%，可逐步建仓候选池中的非中国主题（如CRCL金融科技、ARKK高科技、CRWV/ORCL AI），提升组合分散度。",
+      "notes": "建议先小仓位试探，每次不超过5%，避免追高。"
+    },
+    {
+      "action": "核实MSTR成本",
+      "reason": "MSTR成本为-48.0，可能导致收益计算异常，需确认是否为做空或其他特殊头寸。",
+      "notes": "若为数据错误，应联系数据源修正；若为做空，需明确风险管理规则。"
+    }
+  ],
+  "core_skill_block": {
+    "enabled": true,
+    "generated_at": "2026-05-08T07:37:26Z",
+    "workspace_name": "default",
+    "summary": {
+      "total_positions": 4,
+      "processed_positions": 4,
+      "error_count": 0,
+      "timeframe": "1d",
+      "lookback_days": 90
+    },
+    "actions": {
+      "add": [],
+      "trim": [],
+      "hold": [
+        {
+          "ticker": "SBET",
+          "action": "观察",
+          "reason": "技术指标因数据错误（缺少成交量）无法计算，趋势评分极低（0/4），入场维度仅满足RSI中性（1/4），风控维度因盈亏比不足1:2不通过（1/3）。形态分析显示短线方向不明，结构被破坏，建议观望。"
+        },
+        {
+          "ticker": "MSTR",
+          "action": "观察",
+          "reason": "技术指标因缺少成交量数据而失败，形态分析显示下降结构（近期低点175.72），当前价格179.84距阻力184.41约2.5%，距支撑175.72约2.3%，盈亏比接近1:1，无明确入场信号。清单判定：趋势质量低（0/4）、入场质量低（0/4）、风险控制不通过（1/3），因此建议观望。"
+        },
+        {
+          "ticker": "PDD",
+          "action": "观察",
+          "reason": "技术指标因数据缺失无法有效分析，形态分析显示中期下降趋势，短期反弹形成看跌孕线，关键阻力103.81未突破，当前价格在支撑与阻力之间盈亏比不佳，且无明确入场信号，故决定观察。"
+        },
+        {
+          "ticker": "MPNGY",
+          "action": "观察",
+          "reason": "趋势维度：技术指标显示震荡盘整(ADX=0, EMA交织)，形态分析确认下降后底部盘整，无上升结构，0/3项通过。入场维度：RSI=0（缺失但未超买），价格距支撑20.45约0.87但ATR缺失无法计算比例，MACD无信号，形态分析无结构突破或确认，0/4项通过。风险维度：ATR缺失无法计算盈亏比，价格距阻力21.87空间2.6%但盈亏比不对称，invalidation_price设置为20.45（未留余地），0/3项通过。催化剂无。综合决策为观察，建议等待价格回踩20.80-20.90区域或突破21.87后再考虑入场。"
+        }
+      ]
+    },
+    "score_table": [
+      {
+        "ticker": "SBET",
+        "decision": "观察",
+        "recommended_action": "观察",
+        "trend_score": 0,
+        "entry_score": 1,
+        "volatility_score": 0,
+        "risk_reward_ratio": "0.69:1",
+        "suggested_position_range": "0%",
+        "justification": "技术指标因数据错误（缺少成交量）无法计算，趋势评分极低（0/4），入场维度仅满足RSI中性（1/4），风控维度因盈亏比不足1:2不通过（1/3）。形态分析显示短线方向不明，结构被破坏，建议观望。"
+      },
+      {
+        "ticker": "MSTR",
+        "decision": "观察",
+        "recommended_action": "观察",
+        "trend_score": 0,
+        "entry_score": 0,
+        "volatility_score": 0,
+        "risk_reward_ratio": "1:1",
+        "suggested_position_range": "0% - 0%",
+        "justification": "技术指标因缺少成交量数据而失败，形态分析显示下降结构（近期低点175.72），当前价格179.84距阻力184.41约2.5%，距支撑175.72约2.3%，盈亏比接近1:1，无明确入场信号。清单判定：趋势质量低（0/4）、入场质量低（0/4）、风险控制不通过（1/3），因此建议观望。"
+      },
+      {
+        "ticker": "PDD",
+        "decision": "观察",
+        "recommended_action": "观察",
+        "trend_score": 0,
+        "entry_score": 0,
+        "volatility_score": 0,
+        "risk_reward_ratio": "1:1",
+        "suggested_position_range": "0%",
+        "justification": "技术指标因数据缺失无法有效分析，形态分析显示中期下降趋势，短期反弹形成看跌孕线，关键阻力103.81未突破，当前价格在支撑与阻力之间盈亏比不佳，且无明确入场信号，故决定观察。"
+      },
+      {
+        "ticker": "MPNGY",
+        "decision": "持有",
+        "recommended_action": "观察",
+        "trend_score": 0,
+        "entry_score": 0,
+        "volatility_score": 50,
+        "risk_reward_ratio": "未评估",
+        "suggested_position_range": "0% - 0%",
+        "justification": "趋势维度：技术指标显示震荡盘整(ADX=0, EMA交织)，形态分析确认下降后底部盘整，无上升结构，0/3项通过。入场维度：RSI=0（缺失但未超买），价格距支撑20.45约0.87但ATR缺失无法计算比例，MACD无信号，形态分析无结构突破或确认，0/4项通过。风险维度：ATR缺失无法计算盈亏比，价格距阻力21.87空间2.6%但盈亏比不对称，invalidation_price设置为20.45（未留余地），0/3项通过。催化剂无。综合决策为观察，建议等待价格回踩20.80-20.90区域或突破21.87后再考虑入场。"
+      }
+    ],
+    "errors": []
+  },
+  "created_at": "2026-05-08T07:45:24Z",
+  "workspace_name": "default"
+}

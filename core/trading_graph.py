@@ -154,17 +154,52 @@ class TradingGraph:
         if not decision_text:
             return {}
 
-        try:
-            return json.loads(decision_text)
-        except json.JSONDecodeError:
-            start = decision_text.find("{")
-            end = decision_text.rfind("}") + 1
-            if start != -1 and end > start:
-                try:
-                    return json.loads(decision_text[start:end])
-                except json.JSONDecodeError:
-                    return {}
-        return {}
+        def _try_parse(text: str) -> Dict[str, Any]:
+            try:
+                return json.loads(text)
+            except json.JSONDecodeError as e:
+                repaired = self._repair_missing_comma(text, e)
+                if repaired is not None:
+                    try:
+                        return json.loads(repaired)
+                    except json.JSONDecodeError:
+                        pass
+                start = text.find("{")
+                end = text.rfind("}") + 1
+                if start != -1 and end > start:
+                    try:
+                        return json.loads(text[start:end])
+                    except json.JSONDecodeError as e2:
+                        repaired2 = self._repair_missing_comma(text[start:end], e2)
+                        if repaired2 is not None:
+                            try:
+                                return json.loads(repaired2)
+                            except json.JSONDecodeError:
+                                pass
+                return {}
+
+        return _try_parse(decision_text)
+
+    @staticmethod
+    def _repair_missing_comma(payload_text: str, error: json.JSONDecodeError):
+        if 'Expecting' not in str(error) or 'delimiter' not in str(error):
+            return None
+        insert_at = getattr(error, 'pos', None)
+        if not isinstance(insert_at, int) or insert_at < 0 or insert_at > len(payload_text):
+            return None
+        left = insert_at - 1
+        while left >= 0 and payload_text[left].isspace():
+            left -= 1
+        right = insert_at
+        while right < len(payload_text) and payload_text[right].isspace():
+            right += 1
+        if left < 0 or right >= len(payload_text):
+            return None
+        left_char = payload_text[left]
+        right_char = payload_text[right]
+        if left_char not in set(']}"0123456789eE') or right_char not in set('{["-0123456789tfn'):
+            return None
+        return payload_text[:right] + ',' + payload_text[right:]
 
     def _normalize_scorecard(self, payload: Dict[str, Any]) -> Dict[str, Any]:
         def clamp_score(value: Any) -> int:
@@ -173,6 +208,8 @@ class TradingGraph:
             except (TypeError, ValueError):
                 numeric = 0
             return max(0, min(100, numeric))
+
+        checklist = payload.get("checklist_summary", {}) or {}
 
         return {
             "decision": safe_str(payload.get("decision", "持有")),
@@ -189,6 +226,14 @@ class TradingGraph:
             "volatility_score": clamp_score(payload.get("volatility_score", 0)),
             "suggested_position_range": safe_str(payload.get("suggested_position_range", "0% - 0%")),
             "invalidation_price": safe_str(payload.get("invalidation_price", "待确认")),
+            "checklist_summary": {
+                "trend_checks_passed": int(checklist.get("trend_checks_passed", 0)),
+                "entry_checks_passed": int(checklist.get("entry_checks_passed", 0)),
+                "risk_checks_passed": int(checklist.get("risk_checks_passed", 0)),
+                "trend_quality": safe_str(checklist.get("trend_quality", "低")),
+                "entry_quality": safe_str(checklist.get("entry_quality", "低")),
+                "risk_pass": bool(checklist.get("risk_pass", False)),
+            },
         }
 
     def _coerce_float(self, value: Any, default: float = 0.0) -> float:
@@ -204,6 +249,72 @@ class TradingGraph:
 
     def _format_amount(self, value: float) -> str:
         return f"{value:,.2f}"
+
+    def _validate_position_size(
+        self,
+        suggested_range: str,
+        kline_data: Dict[str, Any],
+        nav: float,
+        max_risk_pct: float = 2.0,
+    ) -> Dict[str, Any]:
+        """Validate position size against ATR-based risk limits.
+
+        Rule: single trade max loss <= max_risk_pct% of NAV,
+        assuming a 2*ATR stop distance.
+        """
+        result = {
+            "original_range": suggested_range,
+            "adjusted_range": suggested_range,
+            "atr_pct": 0.0,
+            "implied_risk_pct": 0.0,
+            "capped": False,
+            "warning": "",
+        }
+        if not suggested_range or nav <= 0:
+            return result
+
+        try:
+            import numpy as np
+            import pandas as pd
+
+            parts = suggested_range.replace("%", "").split("-")
+            upper_pct = float(parts[-1].strip()) if len(parts) >= 2 else float(parts[0].strip())
+            if upper_pct <= 0:
+                return result
+
+            df = pd.DataFrame(kline_data)
+            if "High" not in df.columns or "Low" not in df.columns or "Close" not in df.columns:
+                return result
+            tr = np.maximum(
+                df["High"] - df["Low"],
+                np.maximum(
+                    abs(df["High"] - df["Close"].shift(1)),
+                    abs(df["Low"] - df["Close"].shift(1)),
+                ),
+            )
+            atr = tr.rolling(14).mean().iloc[-1]
+            price = df["Close"].iloc[-1]
+            if pd.isna(atr) or atr <= 0 or price <= 0:
+                return result
+
+            atr_pct = (atr / price) * 100
+            stop_distance_pct = 2.0 * atr_pct
+            implied_risk = (upper_pct / 100) * stop_distance_pct
+
+            result["atr_pct"] = round(atr_pct, 2)
+            result["implied_risk_pct"] = round(implied_risk, 2)
+
+            if implied_risk > max_risk_pct:
+                capped_pct = (max_risk_pct / stop_distance_pct) * 100
+                result["capped"] = True
+                result["adjusted_range"] = f"0% - {capped_pct:.1f}%"
+                result["warning"] = (
+                    f"建议仓位 {suggested_range} 在 2×ATR 止损下隐含风险 {implied_risk:.1f}% NAV，"
+                    f"超过 {max_risk_pct}% 上限，已调整为 {result['adjusted_range']}"
+                )
+        except Exception:
+            pass
+        return result
 
     def _normalize_ticker(self, value: Any) -> str:
         return safe_str(value or "").strip().upper()
@@ -378,13 +489,25 @@ class TradingGraph:
                 f"候选标的与已拥挤暴露重合: {', '.join(crowded_candidate_tags)}。",
             )
 
+        position_validation = {}
+        if is_add_risk and not blocked_reasons:
+            position_validation = self._validate_position_size(
+                suggested_range=safe_str(single_name_score.get("suggested_position_range", "0% - 0%")),
+                kline_data=state.get("kline_data", {}),
+                nav=nav,
+            )
+
         manager_actions = []
         if blocked_reasons:
             manager_actions.append(f"暂停新增 {asset_symbol} 风险：{'；'.join(blocked_reasons)}")
         elif is_add_risk:
-            manager_actions.append(
-                f"可按 {single_name_score.get('suggested_position_range', '0% - 0%')} 评估 {asset_symbol} 的新增仓位。"
+            action_text = (
+                f"可按 {position_validation.get('adjusted_range', single_name_score.get('suggested_position_range', '0% - 0%'))} "
+                f"评估 {asset_symbol} 的新增仓位。"
             )
+            if position_validation.get("capped"):
+                action_text += f" ⚠️ {position_validation.get('warning', '')}"
+            manager_actions.append(action_text)
         if is_trim_risk:
             manager_actions.append(f"{asset_symbol} 进入减仓/退出观察列表，优先核对失效价与仓位来源。")
         if current_drawdown >= 15:
@@ -440,6 +563,7 @@ class TradingGraph:
                 "existing_position": existing_position,
                 "candidate_factor_tags": candidate_tags,
                 "blocked_reasons": blocked_reasons,
+                "position_validation": position_validation,
             },
             "manager_actions": manager_actions,
         }

@@ -514,14 +514,123 @@ class TechnicalTools:
         willr = talib.WILLR(df["High"], df["Low"], df["Close"], timeperiod=period)
         return {"willr": willr.fillna(0).round(2).tolist()}
 
+    @staticmethod
+    @tool
+    def compute_adx(
+        kline_data: Annotated[
+            dict,
+            "Dictionary with 'High', 'Low', and 'Close' keys containing float lists.",
+        ],
+        period: Annotated[int, "Lookback period for ADX"] = 14,
+    ) -> dict:
+        """Compute Average Directional Index (ADX) with +DI/-DI using TA-Lib."""
+        df = pd.DataFrame(kline_data)
+        adx = talib.ADX(df["High"], df["Low"], df["Close"], timeperiod=period)
+        plus_di = talib.PLUS_DI(df["High"], df["Low"], df["Close"], timeperiod=period)
+        minus_di = talib.MINUS_DI(df["High"], df["Low"], df["Close"], timeperiod=period)
+        return {
+            "adx": adx.fillna(0).round(2).tolist(),
+            "plus_di": plus_di.fillna(0).round(2).tolist(),
+            "minus_di": minus_di.fillna(0).round(2).tolist(),
+        }
+
+    @staticmethod
+    @tool
+    def compute_atr(
+        kline_data: Annotated[
+            dict,
+            "Dictionary with 'High', 'Low', and 'Close' keys containing float lists.",
+        ],
+        period: Annotated[int, "Lookback period for ATR"] = 14,
+    ) -> dict:
+        """Compute Average True Range (ATR) using TA-Lib."""
+        df = pd.DataFrame(kline_data)
+        atr = talib.ATR(df["High"], df["Low"], df["Close"], timeperiod=period)
+        return {"atr": atr.fillna(0).round(4).tolist()}
+
+    @staticmethod
+    @tool
+    def compute_mfi(
+        kline_data: Annotated[
+            dict,
+            "Dictionary with 'High', 'Low', 'Close', and 'Volume' keys containing float lists.",
+        ],
+        period: Annotated[int, "Lookback period for MFI"] = 14,
+    ) -> dict:
+        """Compute Money Flow Index (volume-weighted RSI) using TA-Lib."""
+        df = pd.DataFrame(kline_data)
+        mfi = talib.MFI(df["High"], df["Low"], df["Close"], df["Volume"], timeperiod=period)
+        return {"mfi": mfi.fillna(0).round(2).tolist()}
+
+    @staticmethod
+    @tool
+    def compute_bb(
+        kline_data: Annotated[
+            dict,
+            "Dictionary with a 'Close' key containing float lists.",
+        ],
+        period: Annotated[int, "Bollinger Bands period"] = 20,
+        nbdev: Annotated[int, "Standard deviation multiplier"] = 2,
+    ) -> dict:
+        """Compute Bollinger Bands (upper/middle/lower) and bandwidth using TA-Lib."""
+        df = pd.DataFrame(kline_data)
+        upper, middle, lower = talib.BBANDS(
+            df["Close"], timeperiod=period, nbdevup=nbdev, nbdevdn=nbdev, matype=0
+        )
+        bandwidth = ((upper - lower) / middle * 100).fillna(0).round(2)
+        return {
+            "bb_upper": upper.fillna(0).round(2).tolist(),
+            "bb_middle": middle.fillna(0).round(2).tolist(),
+            "bb_lower": lower.fillna(0).round(2).tolist(),
+            "bb_bandwidth": bandwidth.tolist(),
+        }
+
+    @staticmethod
+    @tool
+    def compute_obv(
+        kline_data: Annotated[
+            dict,
+            "Dictionary with 'Close' and 'Volume' keys containing float lists.",
+        ],
+    ) -> dict:
+        """Compute On-Balance Volume (OBV) using TA-Lib."""
+        df = pd.DataFrame(kline_data)
+        obv = talib.OBV(df["Close"], df["Volume"])
+        return {"obv": obv.fillna(0).round(2).tolist()}
+
+    @staticmethod
+    @tool
+    def compute_ema(
+        kline_data: Annotated[
+            dict,
+            "Dictionary with a 'Close' key containing float lists.",
+        ],
+    ) -> dict:
+        """Compute multi-period EMA (20, 50, 200) using TA-Lib."""
+        df = pd.DataFrame(kline_data)
+        ema20 = talib.EMA(df["Close"], timeperiod=20)
+        ema50 = talib.EMA(df["Close"], timeperiod=50)
+        ema200 = talib.EMA(df["Close"], timeperiod=200)
+        return {
+            "ema20": ema20.fillna(0).round(2).tolist(),
+            "ema50": ema50.fillna(0).round(2).tolist(),
+            "ema200": ema200.fillna(0).round(2).tolist(),
+        }
+
     def get_indicator_tools(self):
-        """Get technical indicator tools"""
+        """Get all technical indicator tools"""
         return [
             self.compute_rsi,
             self.compute_macd,
             self.compute_stoch,
             self.compute_roc,
-            self.compute_willr
+            self.compute_willr,
+            self.compute_adx,
+            self.compute_atr,
+            self.compute_mfi,
+            self.compute_bb,
+            self.compute_obv,
+            self.compute_ema,
         ]
     
     def get_pattern_tools(self):
