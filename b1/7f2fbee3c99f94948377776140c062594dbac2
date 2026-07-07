@@ -1,0 +1,22 @@
+.gitignore
+  s_4a1dcb61124426::t_637eae5444756f 18
+  s_4a1dcb61124426::t_96d93d956a68dc 16-17
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.5",
+  "base_commit_sha": "b17f2fbee3c99f94948377776140c062594dbac2",
+  "prompts": {},
+  "sessions": {
+    "s_4a1dcb61124426": {
+      "agent_id": {
+        "tool": "trae-cue",
+        "id": "ai_tab-icr-50943bed-7a62-4e36-988f-dc565053c5fc",
+        "model": "default"
+      },
+      "human_author": "yilian <yilian@bytedance.com>"
+    }
+  },
+  "attestation_metadata": {},
+  "remote_transcripts": {}
+}
