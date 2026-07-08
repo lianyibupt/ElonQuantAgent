@@ -1,0 +1,64 @@
+.gitignore
+  h_672ff0a0629db1 17 gitai:{"mixed_line_ranges":[{"Single":17}],"operations":[]}
+  s_62f20b770f2e6d::t_6f2710e7893376 16
+agents/decision_agent.py
+  s_62f20b770f2e6d::t_7dab64b5551a4c 10-12,32-47,58-68,81,84-86,91-92,127-129,137-144,157-161
+agents/indicator_agent.py
+  s_62f20b770f2e6d::t_6205d32dcb2cb0 100-109,115-116,119,121,127-128,131,133,159-160
+agents/pattern_agent.py
+  s_62f20b770f2e6d::t_abd29c1b340d6a 94-102,122,124,126,135,137,139,162,359
+agents/trend_agent.py
+  s_62f20b770f2e6d::t_b88f4fda16f521 53-62,82,84,86,95,97,99,121-122,219-228,248-249,269-270,301-302
+core/serenity_layer.py
+  s_62f20b770f2e6d::t_020d4af4ccdcb0 1-138
+core/signal_layer.py
+  s_62f20b770f2e6d::t_67b8ba179cb4b0 1-406
+tests/test_custom_asset_delete.py
+  s_62f20b770f2e6d::t_40f0c81afed083 1-25
+tests/test_decision_agent_rule_layer.py
+  s_62f20b770f2e6d::t_df725f208c2376 1-94
+tests/test_serenity_layer.py
+  s_62f20b770f2e6d::t_c11b46a3165aa6 1-66
+tests/test_signal_layer.py
+  s_62f20b770f2e6d::t_e82a274ea31696 1-95
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.10",
+  "base_commit_sha": "fa542bca57784968b16d6bbd1f7e2caa7182bebb",
+  "prompts": {},
+  "humans": {
+    "h_672ff0a0629db1": {
+      "author": "yilian <yilian@bytedance.com>"
+    }
+  },
+  "sessions": {
+    "s_62f20b770f2e6d": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019f3bd9-f28b-7900-9604-9b19a118208d",
+        "model": "unknown"
+      },
+      "human_author": "yilian <yilian@bytedance.com>"
+    }
+  },
+  "attestation_metadata": {
+    ".gitignore": [
+      {
+        "hash": "h_672ff0a0629db1",
+        "line_ranges": [
+          {
+            "Single": 17
+          }
+        ],
+        "mixed_line_ranges": [
+          {
+            "Single": 17
+          }
+        ],
+        "operations": []
+      }
+    ]
+  },
+  "remote_transcripts": {}
+}
