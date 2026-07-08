@@ -8,6 +8,12 @@ import pandas as pd
 import yfinance as yf
 
 from core.trading_graph import TradingGraph, safe_str
+from services.analysis_formatting import (
+    format_decision_strategy_context,
+    format_agent_report_for_display,
+    format_serenity_lens_for_display,
+    format_structured_signal_bundle_for_display,
+)
 
 
 def fetch_yfinance_data(symbol: str, interval: str, start: datetime, end: datetime) -> pd.DataFrame:
@@ -94,6 +100,14 @@ def render_markdown(symbol: str, interval: str, start: datetime, end: datetime, 
     factor_exposure_summary = dashboard_payload.get("factor_exposure_summary", {}) or {}
     manager_actions = dashboard_payload.get("manager_actions", []) or []
     candidate_summary = dashboard_payload.get("candidate_summary", {}) or {}
+    structured_signal_bundle = final_state.get("structured_signal_bundle", {}) or {}
+    serenity_lens = final_state.get("serenity_lens", {}) or {}
+    signal_snapshot = format_structured_signal_bundle_for_display(structured_signal_bundle)
+    indicator_display = "\n\n".join(
+        part for part in [signal_snapshot, format_agent_report_for_display(indicator_report, "指标分析")] if part
+    )
+    pattern_display = format_agent_report_for_display(pattern_report, "形态分析")
+    trend_display = format_agent_report_for_display(trend_report, "趋势分析")
 
     manager_lines = []
     if account_summary or portfolio_directive or portfolio_checks or manager_actions:
@@ -159,6 +173,7 @@ def render_markdown(symbol: str, interval: str, start: datetime, end: datetime, 
             manager_lines.append("")
 
     score_lines = [
+        f"- 策略画像: {format_decision_strategy_context(score) or 'N/A'}",
         f"- 决策: {score.get('decision', 'N/A')}",
         f"- 推荐账本: {score.get('recommended_book', 'N/A')}",
         f"- 推荐动作: {score.get('recommended_action', 'N/A')}",
@@ -189,13 +204,16 @@ def render_markdown(symbol: str, interval: str, start: datetime, end: datetime, 
             *score_lines,
             "",
             "## 指标分析",
-            indicator_report or "(空)",
+            indicator_display or "(空)",
             "",
             "## 形态分析",
-            pattern_report or "(空)",
+            pattern_display or "(空)",
             "",
             "## 趋势分析",
-            trend_report or "(空)",
+            trend_display or "(空)",
+            "",
+            "## Serenity Research Lens",
+            format_serenity_lens_for_display(serenity_lens) or "(空)",
             "",
             "## 最终决策",
             "```json",

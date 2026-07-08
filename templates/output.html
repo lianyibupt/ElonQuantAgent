@@ -557,8 +557,8 @@
         </div>
     </div>
 
-    <!-- Trend Agent -->
-    <div class="large-panel">
+        <!-- Trend Agent -->
+        <div class="large-panel">
         <h3 class="large-panel-title">
             <i class="fas fa-chart-line"></i> Trend Agent
         </h3>
@@ -589,6 +589,22 @@
                 </div>
             </div>
         </div>
+
+        {% if results.serenity_analysis %}
+        <div class="large-panel">
+            <h3 class="large-panel-title">
+                <i class="fas fa-compass"></i> Serenity Research Lens
+            </h3>
+            <div class="large-panel-content">
+                <div class="panel">
+                    <h4 class="panel-title">
+                        <i class="fas fa-search-dollar"></i> US Equity Research Context
+                    </h4>
+                    <div class="auto-beautify">{{ results.serenity_analysis | safe }}</div>
+                </div>
+            </div>
+        </div>
+        {% endif %}
     </div>
     {% endmacro %}
 

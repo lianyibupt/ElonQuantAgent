@@ -426,10 +426,41 @@
              border: 2px dashed var(--gray-400);
          }
          
-         .custom-asset-btn:hover {
-             background: linear-gradient(135deg, var(--etrade-purple-light) 0%, var(--etrade-purple) 100%);
-             border-color: var(--etrade-purple-light);
+	         .custom-asset-btn:hover {
+	             background: linear-gradient(135deg, var(--etrade-purple-light) 0%, var(--etrade-purple) 100%);
+	             border-color: var(--etrade-purple-light);
+	             color: var(--white);
+	         }
+
+         .custom-asset-wrapper {
+             position: relative;
+             display: flex;
+         }
+
+         .custom-asset-wrapper .asset-btn {
+             width: 100%;
+         }
+
+         .custom-asset-remove-btn {
+             position: absolute;
+             top: -0.4rem;
+             right: -0.4rem;
+             width: 1.75rem;
+             height: 1.75rem;
+             border-radius: 999px;
+             background: #dc3545;
              color: var(--white);
+             border: 2px solid var(--white);
+             box-shadow: 0 4px 10px rgba(220, 53, 69, 0.3);
+             display: inline-flex;
+             align-items: center;
+             justify-content: center;
+             cursor: pointer;
+             z-index: 2;
+         }
+
+         .custom-asset-remove-btn i {
+             font-size: 0.8rem;
          }
          
          .input-group {
@@ -2128,6 +2159,10 @@
             const existing = Array.from(grid.querySelectorAll('.asset-btn')).some(btn => btn.dataset.asset === symbol);
             if (existing) return;
 
+            const wrapper = document.createElement('div');
+            wrapper.className = 'custom-asset-wrapper';
+            wrapper.dataset.asset = symbol;
+
             const btn = document.createElement('button');
             btn.type = 'button';
             btn.className = 'asset-btn';
@@ -2135,12 +2170,27 @@
             btn.innerHTML = `<i class="fas fa-tag"></i> ${symbol}`;
             btn.addEventListener('click', () => selectAsset(btn, symbol));
 
+            const removeBtn = document.createElement('button');
+            removeBtn.type = 'button';
+            removeBtn.className = 'custom-asset-remove-btn';
+            removeBtn.title = `Remove ${symbol}`;
+            removeBtn.setAttribute('aria-label', `Remove ${symbol}`);
+            removeBtn.innerHTML = '<i class="fas fa-times"></i>';
+            removeBtn.addEventListener('click', (event) => {
+                event.preventDefault();
+                event.stopPropagation();
+                removeCustomAsset(symbol);
+            });
+
+            wrapper.appendChild(btn);
+            wrapper.appendChild(removeBtn);
+
             // Insert before the "Custom" button if present
             const customBtn = document.getElementById('customAssetBtn');
             if (customBtn && customBtn.parentNode === grid) {
-                grid.insertBefore(btn, customBtn);
+                grid.insertBefore(wrapper, customBtn);
             } else {
-                grid.appendChild(btn);
+                grid.appendChild(wrapper);
             }
 
             // If loaded from server or localStorage, do not auto-select unless it matches stored selection
@@ -2149,6 +2199,40 @@
                 // mimic click to set active and store
                 btn.click();
             }
+        }
+
+        function removeCustomAsset(symbol) {
+            if (!symbol) return;
+
+            try {
+                const listRaw = localStorage.getItem(STORAGE_KEYS.CUSTOM_ASSETS);
+                const list = listRaw ? JSON.parse(listRaw) : [];
+                const nextList = list.filter(item => item !== symbol);
+                localStorage.setItem(STORAGE_KEYS.CUSTOM_ASSETS, JSON.stringify(nextList));
+
+                if (localStorage.getItem(STORAGE_KEYS.SELECTED_ASSET) === symbol) {
+                    localStorage.removeItem(STORAGE_KEYS.SELECTED_ASSET);
+                    selectedAsset = '';
+                }
+            } catch (e) {
+                console.warn('Could not remove custom asset from localStorage', e);
+            }
+
+            const escapedSymbol = window.CSS && CSS.escape ? CSS.escape(symbol) : symbol.replace(/"/g, '\\"');
+            document.querySelectorAll(`.custom-asset-wrapper[data-asset="${escapedSymbol}"]`).forEach(node => node.remove());
+
+            fetch('/api/delete-custom-asset', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ symbol })
+            }).then(r => r.json())
+              .then(resp => {
+                  if (!resp.success) {
+                      console.warn('Server did not delete custom asset', resp);
+                  }
+              }).catch(err => {
+                  console.warn('Error deleting custom asset from server', err);
+              });
         }
 
         // Load custom assets from localStorage and server, render them
@@ -3796,6 +3880,10 @@
                 // 形态分析
                 if (details.pattern_analysis) {
                     detailsHtml += `<div class="mb-3"><h6 style="color: var(--etrade-purple);"><i class="fas fa-brain me-2"></i>形态分析</h6><div class="p-3 bg-light rounded">${details.pattern_analysis}</div></div>`;
+                }
+
+                if (details.serenity_analysis) {
+                    detailsHtml += `<div class="mb-3"><h6 style="color: var(--etrade-purple);"><i class="fas fa-compass me-2"></i>Serenity Research Lens</h6><div class="p-3 bg-light rounded">${details.serenity_analysis}</div></div>`;
                 }
                 
                 // 最终决策

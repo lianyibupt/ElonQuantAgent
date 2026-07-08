@@ -38,6 +38,12 @@ from dotenv import load_dotenv
 import yfinance as yf
 
 from services.account_analysis import list_account_analysis_history, save_account_analysis_artifacts
+from services.analysis_formatting import (
+    format_decision_strategy_context,
+    format_agent_report_for_display,
+    format_serenity_lens_for_display,
+    format_structured_signal_bundle_for_display,
+)
 from services.core_skill_account_bridge import build_core_skill_block
 from services.stage2_workspace import (
     PRICE_SOURCE_ANALYSIS_REFRESH,
@@ -702,6 +708,19 @@ class WebTradingAnalyzer:
             print(f"Failed to save custom asset: {safe_str(e)}")
             return False
 
+    def delete_custom_asset(self, symbol: str) -> bool:
+        try:
+            symbol = safe_str(symbol).strip()
+            if not symbol:
+                return False
+            self.custom_assets = [asset for asset in self.load_custom_assets() if asset != symbol]
+            with open(self.custom_assets_file, 'w', encoding='utf-8') as f:
+                json.dump(self.custom_assets, f, indent=2, ensure_ascii=False)
+            return True
+        except Exception as e:
+            print(f"Failed to delete custom asset: {safe_str(e)}")
+            return False
+
     def extract_analysis_results(self, results: Dict[str, Any], workspace_writeback: Dict[str, Any] = None) -> Dict[str, Any]:
         """Extract and format analysis results for web display."""
         if not results["success"]:
@@ -710,9 +729,14 @@ class WebTradingAnalyzer:
         final_state = results["final_state"]
 
         # Extract analysis results from state fields with safe string conversion
-        technical_indicators = safe_str(final_state.get("indicator_report", ""))
-        pattern_analysis = safe_str(final_state.get("pattern_report", ""))
-        trend_analysis = safe_str(final_state.get("trend_report", ""))
+        structured_signal_bundle = final_state.get("structured_signal_bundle", {}) or {}
+        serenity_lens = final_state.get("serenity_lens", {}) or {}
+        signal_snapshot = format_structured_signal_bundle_for_display(structured_signal_bundle)
+        serenity_display = format_serenity_lens_for_display(serenity_lens)
+        indicator_summary = format_agent_report_for_display(final_state.get("indicator_report", ""), "指标分析")
+        technical_indicators = "\n\n".join(part for part in [signal_snapshot, indicator_summary] if part)
+        pattern_analysis = format_agent_report_for_display(final_state.get("pattern_report", ""), "形态分析")
+        trend_analysis = format_agent_report_for_display(final_state.get("trend_report", ""), "趋势分析")
         final_decision_raw = safe_str(final_state.get("final_trade_decision", ""))
         decision_payload = final_state.get("decision_payload", {}) or {}
         single_name_score = final_state.get("single_name_score", {}) or {}
@@ -723,11 +747,19 @@ class WebTradingAnalyzer:
         trend_image_filename = safe_str(final_state.get("trend_image_filename", ""))
 
         if decision_payload:
+            decision_justification = (
+                decision_payload.get('llm_explanation')
+                or decision_payload.get('justification')
+                or 'N/A'
+            )
+            strategy_context = format_decision_strategy_context(decision_payload)
+            if strategy_context:
+                decision_justification = f"{strategy_context}\n\n{decision_justification}"
             final_decision = {
                 "decision": safe_str(decision_payload.get('decision', 'N/A')),
                 "risk_reward_ratio": safe_str(decision_payload.get('risk_reward_ratio', 'N/A')),
                 "forecast_horizon": safe_str(decision_payload.get('forecast_horizon', 'N/A')),
-                "justification": safe_str(decision_payload.get('justification', 'N/A'))
+                "justification": safe_str(decision_justification)
             }
         elif final_decision_raw:
             final_decision = {"raw": safe_str(final_decision_raw)}
@@ -779,6 +811,9 @@ class WebTradingAnalyzer:
             "final_decision": final_decision,
             "single_name_score": normalized_score,
             "decision_payload": decision_payload,
+            "structured_signal_bundle": structured_signal_bundle,
+            "serenity_lens": serenity_lens,
+            "serenity_analysis": serenity_display,
             "account_state": final_state.get("account_state", {}),
             "positions": final_state.get("positions", []),
             "candidates": final_state.get("candidates", []),
@@ -2126,9 +2161,37 @@ def custom_assets():
     """API endpoint to get custom assets"""
     try:
         custom_assets = analyzer.load_custom_assets()
-        return jsonify(custom_assets)
+        return jsonify({"custom_assets": custom_assets})
     except Exception as e:
         return jsonify({"error": safe_str(e)}), 500
+
+@app.route('/api/save-custom-asset', methods=['POST'])
+def save_custom_asset():
+    """API endpoint to save a custom asset"""
+    try:
+        data = request.get_json() or {}
+        symbol = safe_str(data.get("symbol", "")).strip()
+        if not symbol:
+            return jsonify({"success": False, "error": "Symbol required"}), 400
+        if not analyzer.save_custom_asset(symbol):
+            return jsonify({"success": False, "error": "Failed to save symbol"}), 500
+        return jsonify({"success": True, "symbol": symbol, "custom_assets": analyzer.load_custom_assets()})
+    except Exception as e:
+        return jsonify({"success": False, "error": safe_str(e)}), 500
+
+@app.route('/api/delete-custom-asset', methods=['POST'])
+def delete_custom_asset():
+    """API endpoint to delete a custom asset"""
+    try:
+        data = request.get_json() or {}
+        symbol = safe_str(data.get("symbol", "")).strip()
+        if not symbol:
+            return jsonify({"success": False, "error": "Symbol required"}), 400
+        if not analyzer.delete_custom_asset(symbol):
+            return jsonify({"success": False, "error": "Failed to delete symbol"}), 500
+        return jsonify({"success": True, "symbol": symbol, "custom_assets": analyzer.load_custom_assets()})
+    except Exception as e:
+        return jsonify({"success": False, "error": safe_str(e)}), 500
 
 @app.route('/api/images/<image_type>')
 def get_image(image_type):

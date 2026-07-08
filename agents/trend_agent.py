@@ -50,6 +50,16 @@ def create_trend_agent(llm, tools):
 
         # --- Step 2: 根据交易策略生成趋势分析报告 ---
         trading_strategy = state.get('trading_strategy', 'high_frequency')
+        structured_signal_bundle = state.get('structured_signal_bundle', {}) or {}
+        trend_signal_view = {
+            "price": structured_signal_bundle.get("price", {}),
+            "trend": structured_signal_bundle.get("trend", {}),
+            "levels": structured_signal_bundle.get("levels", {}),
+            "entry": structured_signal_bundle.get("entry", {}),
+            "volatility": structured_signal_bundle.get("volatility", {}),
+            "evidence": structured_signal_bundle.get("evidence", []),
+            "contradictions": structured_signal_bundle.get("contradictions", []),
+        }
         
         # 从kline_data提取实际价格范围,确保LLM使用真实数据
         kline_data = state["kline_data"]
@@ -69,16 +79,11 @@ def create_trend_agent(llm, tools):
                 f"股票代码: {state.get('stock_name', 'Unknown')}\\n"
                 f"趋势图表是基于{time_frame}间隔数据生成的。\\n"
                 f"{price_range_info}\\n"
+                "结构化信号层摘要: {trend_signal_view}\\n"
                 "图表生成结果: {trend_result}\\n\\n"
-                "分析趋势数据并提供全面的中文报告,包括:\\n"
-                "1. 长期整体趋势方向(看涨、看跌或横盘)\\n"
-                "2. 长期关键支撑和阻力位\\n"
-                "3. 长期趋势强度和动量\\n"
-                "4. 长期潜在突破或跌破点\\n"
-                "5. 基于长期趋势分析的交易建议\\n"
-                "6. 对未来1-6个月价格走势的预测\\n\\n"
+                "分析趋势数据并只输出JSON，字段包括：direction、strength_score、slope_state、support、resistance、evidence、contradictions、invalid_if、summary。\\n\\n"
                 "**注意: 请基于上述实际价格数据进行分析,不要仅凭图表视觉推断价格。**\\n"
-                "专注于为低频交易决策提供可操作的中文见解,重点关注长期趋势。"
+                "专注于为低频交易决策提供可操作证据,重点关注长期趋势。"
             )
         else:
             # 高频交易策略提示词
@@ -87,15 +92,11 @@ def create_trend_agent(llm, tools):
                 f"股票代码: {state.get('stock_name', 'Unknown')}\\n"
                 f"趋势图表是基于{time_frame}间隔数据生成的。\\n"
                 f"{price_range_info}\\n"
+                "结构化信号层摘要: {trend_signal_view}\\n"
                 "图表生成结果: {trend_result}\\n\\n"
-                "分析趋势数据并提供全面的中文报告,包括:\\n"
-                "1. 整体趋势方向(看涨、看跌或横盘)\\n"
-                "2. 关键支撑和阻力位\\n"
-                "3. 趋势强度和动量\\n"
-                "4. 潜在突破或跌破点\\n"
-                "5. 基于趋势分析的交易建议\\n\\n"
+                "分析趋势数据并只输出JSON，字段包括：direction、strength_score、slope_state、support、resistance、evidence、contradictions、invalid_if、summary。\\n\\n"
                 "**注意: 请基于上述实际价格数据进行分析,不要仅凭图表视觉推断价格。**\\n"
-                "专注于为高频交易决策提供可操作的中文见解。"
+                "专注于为高频交易决策提供可操作证据。"
             )
             
         # 创建提示词模板
@@ -117,7 +118,8 @@ def create_trend_agent(llm, tools):
             print(f"🤖 [TrendAgent] 调用LLM进行趋势分析，图表描述长度: {len(trend_description)}")
             
             final_response = (analysis_prompt | llm).invoke({
-                "trend_result": trend_description
+                "trend_result": trend_description,
+                "trend_signal_view": json.dumps(trend_signal_view, ensure_ascii=False),
             })
             
             trend_report = final_response.content if hasattr(final_response, 'content') else str(final_response)
@@ -214,6 +216,16 @@ def create_trend_agent_text_only(llm, tools):
 
         # --- Step 2: 根据交易策略生成趋势分析报告（文本模式）---
         trading_strategy = state.get('trading_strategy', 'high_frequency')
+        structured_signal_bundle = state.get('structured_signal_bundle', {}) or {}
+        trend_signal_view = {
+            "price": structured_signal_bundle.get("price", {}),
+            "trend": structured_signal_bundle.get("trend", {}),
+            "levels": structured_signal_bundle.get("levels", {}),
+            "entry": structured_signal_bundle.get("entry", {}),
+            "volatility": structured_signal_bundle.get("volatility", {}),
+            "evidence": structured_signal_bundle.get("evidence", []),
+            "contradictions": structured_signal_bundle.get("contradictions", []),
+        }
         
         if trading_strategy == 'low_frequency':
             # 低频交易策略提示词
@@ -233,14 +245,8 @@ def create_trend_agent_text_only(llm, tools):
                 "- 长期均线(SMA20): {sma_long:.2f}\n"
                 "- 支撑位: {support_level:.2f}\n"
                 "- 阻力位: {resistance_level:.2f}\n\n"
-                "请提供全面的中文趋势分析报告，包括:\n"
-                "1. 长期整体趋势方向（看涨、看跌或横盘）\n"
-                "2. 长期关键支撑和阻力位分析\n"
-                "3. 长期趋势强度和动量评估\n"
-                "4. 长期潜在突破或跌破点\n"
-                "5. 基于长期趋势分析的交易建议\n"
-                "6. 对未来1-6个月价格走势的预测\n\n"
-                "专注于为低频交易决策提供可操作的中文见解，重点关注长期趋势。"
+                "结构化信号层摘要: {trend_signal_view}\n\n"
+                "请只输出JSON，字段包括：direction、strength_score、slope_state、support、resistance、evidence、contradictions、invalid_if、summary。"
             )
         else:
             # 高频交易策略提示词
@@ -260,13 +266,8 @@ def create_trend_agent_text_only(llm, tools):
                 "- 长期均线(SMA20): {sma_long:.2f}\n"
                 "- 支撑位: {support_level:.2f}\n"
                 "- 阻力位: {resistance_level:.2f}\n\n"
-                "请提供全面的中文趋势分析报告，包括:\n"
-                "1. 整体趋势方向（看涨、看跌或横盘）\n"
-                "2. 关键支撑和阻力位分析\n"
-                "3. 趋势强度和动量评估\n"
-                "4. 潜在突破或跌破点\n"
-                "5. 基于趋势分析的交易建议\n\n"
-                "专注于为高频交易决策提供可操作的中文见解。"
+                "结构化信号层摘要: {trend_signal_view}\n\n"
+                "请只输出JSON，字段包括：direction、strength_score、slope_state、support、resistance、evidence、contradictions、invalid_if、summary。"
             )
             
         # 创建提示词模板
@@ -297,7 +298,8 @@ def create_trend_agent_text_only(llm, tools):
                 "sma_short": sma_short if sma_short is not None else "N/A",
                 "sma_long": sma_long if sma_long is not None else "N/A",
                 "support_level": support_level if support_level is not None else "N/A",
-                "resistance_level": resistance_level if resistance_level is not None else "N/A"
+                "resistance_level": resistance_level if resistance_level is not None else "N/A",
+                "trend_signal_view": json.dumps(trend_signal_view, ensure_ascii=False),
             })
             
             trend_report = final_response.content if hasattr(final_response, 'content') else str(final_response)

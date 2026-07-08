@@ -91,6 +91,15 @@ def create_pattern_agent(llm, tools):
 
         # --- Step 2: 根据交易策略生成形态分析报告 ---
         trading_strategy = state.get('trading_strategy', 'high_frequency')
+        structured_signal_bundle = state.get('structured_signal_bundle', {}) or {}
+        pattern_signal_view = {
+            "price": structured_signal_bundle.get("price", {}),
+            "entry": structured_signal_bundle.get("entry", {}),
+            "levels": structured_signal_bundle.get("levels", {}),
+            "volatility": structured_signal_bundle.get("volatility", {}),
+            "evidence": structured_signal_bundle.get("evidence", []),
+            "contradictions": structured_signal_bundle.get("contradictions", []),
+        }
         
         # 从kline_data提取实际价格范围,确保LLM使用真实数据
         kline_data = state["kline_data"]
@@ -110,16 +119,11 @@ def create_pattern_agent(llm, tools):
                 f"股票代码: {state.get('stock_name', 'Unknown')}\n"
                 f"K线图表是基于{time_frame}间隔数据生成的。\n"
                 f"{price_range_info}\n"
+                "结构化信号层摘要: {pattern_signal_view}\n"
                 "图表生成结果: {chart_result}\n\n"
-                "分析K线形态并提供全面的中文报告,包括:\n"
-                "1. 识别的长期经典K线形态(如头肩顶/底、双顶/底、三角形等)\n"
-                "2. 长期形态的完成度和可靠性\n"
-                "3. 长期形态的看涨/看跌含义\n"
-                "4. 长期形态的目标价位预测\n"
-                "5. 基于长期形态分析的交易建议\n"
-                "6. 长期形态失效的条件\n\n"
+                "分析K线形态并只输出JSON，字段包括：pattern、completion、direction、strength_score、target_zone、evidence、contradictions、invalid_if、summary。\n\n"
                 "**注意: 请基于上述实际价格数据进行分析,不要仅凭图表视觉推断价格。**\n"
-                "专注于为低频交易决策提供可操作的中文见解,重点关注长期形态。"
+                "专注于为低频交易决策提供可操作证据,重点关注长期形态。"
             )
         else:
             # 高频交易策略提示词
@@ -128,15 +132,11 @@ def create_pattern_agent(llm, tools):
                 f"股票代码: {state.get('stock_name', 'Unknown')}\n"
                 f"K线图表是基于{time_frame}间隔数据生成的。\n"
                 f"{price_range_info}\n"
+                "结构化信号层摘要: {pattern_signal_view}\n"
                 "图表生成结果: {chart_result}\n\n"
-                "分析K线形态并提供全面的中文报告,包括:\n"
-                "1. 识别的经典K线形态(如锤子线、吞没形态、十字星等)\n"
-                "2. 形态的完成度和可靠性\n"
-                "3. 形态的看涨/看跌含义\n"
-                "4. 形态的目标价位预测\n"
-                "5. 基于形态分析的交易建议\n\n"
+                "分析K线形态并只输出JSON，字段包括：pattern、completion、direction、strength_score、target_zone、evidence、contradictions、invalid_if、summary。\n\n"
                 "**注意: 请基于上述实际价格数据进行分析,不要仅凭图表视觉推断价格。**\n"
-                "专注于为高频交易决策提供可操作的中文见解。"
+                "专注于为高频交易决策提供可操作证据。"
             )
             
         # 创建提示词模板
@@ -159,6 +159,7 @@ def create_pattern_agent(llm, tools):
             
             final_response = (analysis_prompt | llm).invoke({
                 "chart_result": chart_description,
+                "pattern_signal_view": json.dumps(pattern_signal_view, ensure_ascii=False),
                 "pattern_descriptions": pattern_text
             })
             

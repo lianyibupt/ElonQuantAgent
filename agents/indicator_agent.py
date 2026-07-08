@@ -97,30 +97,40 @@ def create_indicator_agent(llm, toolkit):
 
         # --- Step 2: 根据交易策略生成分析报告 ---
         trading_strategy = state.get('trading_strategy', 'high_frequency')
+        structured_signal_bundle = state.get('structured_signal_bundle', {}) or {}
+        signal_view = {
+            "data_quality": structured_signal_bundle.get("data_quality", {}),
+            "price": structured_signal_bundle.get("price", {}),
+            "trend": structured_signal_bundle.get("trend", {}),
+            "momentum": structured_signal_bundle.get("momentum", {}),
+            "volatility": structured_signal_bundle.get("volatility", {}),
+            "evidence": structured_signal_bundle.get("evidence", []),
+            "contradictions": structured_signal_bundle.get("contradictions", []),
+        }
         
         if trading_strategy == 'low_frequency':
             # 低频交易策略提示词
             system_prompt = (
                 "你是一位专业的低频交易分析助手，专注于长期趋势和价格行为分析。"
-                "基于以下技术指标结果，提供一份全面的中文分析报告。"
-                "总结MACD、RSI、ROC、随机指标和威廉指标的关键发现，重点关注中长期趋势信号。"
-                "为低频交易决策提供可操作的中文见解，特别关注长期支撑位、阻力位和趋势变化。\n\n"
+                "基于以下技术指标结果和结构化信号层，输出机器可读的中文JSON。"
+                "重点检查中长期趋势、动能、波动和反方证据。\n\n"
                 f"股票代码: {state.get('stock_name', 'Unknown')}\n"
                 f"OHLC数据来自{time_frame}间隔，反映了市场行为。\n\n"
+                "结构化信号层摘要:\n{signal_view}\n\n"
                 "技术指标数值结果（JSON格式）:\n{indicator_data}\n\n"
-                "请用中文详细分析每个指标的含义和长期交易信号。"
+                "只输出JSON，字段包括：direction、strength_score、evidence、contradictions、key_levels、invalid_if、summary。"
             )
         else:
             # 高频交易策略提示词
             system_prompt = (
                 "你是一位在时间敏感条件下运作的高频交易(HFT)分析助手。"
-                "基于以下技术指标结果，提供一份全面的中文分析报告。"
-                "总结MACD、RSI、ROC、随机指标和威廉指标的关键发现。"
-                "为高频交易决策提供可操作的中文见解。\n\n"
+                "基于以下技术指标结果和结构化信号层，输出机器可读的中文JSON。"
+                "重点检查短中期趋势、入场质量、动能延续和波动风险。\n\n"
                 f"股票代码: {state.get('stock_name', 'Unknown')}\n"
                 f"OHLC数据来自{time_frame}间隔，反映了最近的市场行为。\n\n"
+                "结构化信号层摘要:\n{signal_view}\n\n"
                 "技术指标数值结果（JSON格式）:\n{indicator_data}\n\n"
-                "请用中文详细分析每个指标的含义和交易信号。"
+                "只输出JSON，字段包括：direction、strength_score、evidence、contradictions、key_levels、invalid_if、summary。"
             )
             
         # 创建提示词模板
@@ -146,7 +156,8 @@ def create_indicator_agent(llm, toolkit):
             print(f"  传递给LLM的数据长度: {len(indicator_data)}")
             
             final_response = (analysis_prompt | llm).invoke({
-                "indicator_data": indicator_data
+                "indicator_data": indicator_data,
+                "signal_view": json.dumps(signal_view, ensure_ascii=False),
             })
             
             indicator_report = final_response.content if hasattr(final_response, 'content') else str(final_response)

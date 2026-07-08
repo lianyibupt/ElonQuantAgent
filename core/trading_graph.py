@@ -8,6 +8,8 @@ from typing import Any, Dict, Optional
 from langchain_openai import ChatOpenAI
 
 from config.default_config import DEFAULT_CONFIG
+from core.serenity_layer import build_serenity_research_lens
+from core.signal_layer import build_structured_signal_bundle
 from utils.graph_util import TechnicalTools
 
 
@@ -108,9 +110,16 @@ class TradingGraph:
         positions: Optional[list] = None,
         candidates: Optional[list] = None,
     ) -> Dict[str, Any]:
+        structured_signal_bundle = build_structured_signal_bundle(
+            data,
+            trading_strategy=trading_strategy,
+        )
+        serenity_lens = self._build_serenity_lens(asset_symbol, structured_signal_bundle, candidates or [])
         return {
             "kline_data": data,
             "data": data,
+            "structured_signal_bundle": structured_signal_bundle,
+            "serenity_lens": serenity_lens,
             "asset_symbol": asset_symbol,
             "time_frame": time_frame,
             "stock_name": asset_symbol,
@@ -189,6 +198,14 @@ class TradingGraph:
             "volatility_score": clamp_score(payload.get("volatility_score", 0)),
             "suggested_position_range": safe_str(payload.get("suggested_position_range", "0% - 0%")),
             "invalidation_price": safe_str(payload.get("invalidation_price", "待确认")),
+            "rule_score": clamp_score(payload.get("rule_score", 0)),
+            "strategy_profile": safe_str(payload.get("strategy_profile", "")),
+            "strategy_weights": payload.get("strategy_weights", {}) if isinstance(payload.get("strategy_weights", {}), dict) else {},
+            "serenity_score": clamp_score(payload.get("serenity_score", 0)),
+            "serenity_weight": payload.get("serenity_weight", 0),
+            "scarcity_score": clamp_score(payload.get("scarcity_score", 0)),
+            "evidence_quality_score": clamp_score(payload.get("evidence_quality_score", 0)),
+            "serenity_summary": safe_str(payload.get("serenity_summary", "")),
         }
 
     def _coerce_float(self, value: Any, default: float = 0.0) -> float:
@@ -234,6 +251,19 @@ class TradingGraph:
             if candidate_symbol == normalized_symbol:
                 return candidate
         return {}
+
+    def _build_serenity_lens(
+        self,
+        asset_symbol: str,
+        structured_signal_bundle: Dict[str, Any],
+        candidates: list,
+    ) -> Dict[str, Any]:
+        candidate_context = self._find_candidate_context(asset_symbol, candidates or [])
+        return build_serenity_research_lens(
+            asset_symbol=asset_symbol,
+            structured_signal_bundle=structured_signal_bundle,
+            candidate_context=candidate_context,
+        )
 
     def _portfolio_targets(self, current_drawdown: float) -> Dict[str, float]:
         if current_drawdown >= 15:
@@ -456,6 +486,8 @@ class TradingGraph:
         state["dashboard_payload"] = dashboard_payload
 
         return {
+            "structured_signal_bundle": state.get("structured_signal_bundle", {}),
+            "serenity_lens": state.get("serenity_lens", {}),
             "indicator_report": state.get("indicator_report", ""),
             "pattern_report": state.get("pattern_report", ""),
             "trend_report": state.get("trend_report", ""),
