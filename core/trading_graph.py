@@ -409,14 +409,33 @@ class TradingGraph:
             )
 
         manager_actions = []
+        action_queue = []
         if blocked_reasons:
             manager_actions.append(f"暂停新增 {asset_symbol} 风险：{'；'.join(blocked_reasons)}")
+            action_queue.append({
+                "priority": "high" if is_add_risk else "medium",
+                "action_type": "do_not_add",
+                "ticker": asset_symbol,
+                "reason": "；".join(blocked_reasons),
+            })
         elif is_add_risk:
             manager_actions.append(
                 f"可按 {single_name_score.get('suggested_position_range', '0% - 0%')} 评估 {asset_symbol} 的新增仓位。"
             )
+            action_queue.append({
+                "priority": "medium",
+                "action_type": "add_allowed",
+                "ticker": asset_symbol,
+                "reason": f"可按 {single_name_score.get('suggested_position_range', '0% - 0%')} 评估新增仓位。",
+            })
         if is_trim_risk:
             manager_actions.append(f"{asset_symbol} 进入减仓/退出观察列表，优先核对失效价与仓位来源。")
+            action_queue.append({
+                "priority": "high",
+                "action_type": "trim_review",
+                "ticker": asset_symbol,
+                "reason": "单标的信号进入减仓/退出状态。",
+            })
         if current_drawdown >= 15:
             manager_actions.append("账户处于防守模式，优先降波动与保留现金。")
         elif current_drawdown >= 10:
@@ -428,11 +447,47 @@ class TradingGraph:
 
         largest_position = ""
         largest_position_value = 0.0
+        total_risk_to_stop = self._coerce_float(account_state.get("total_risk_to_stop"))
+        total_risk_to_stop_pct_nav = self._coerce_float(account_state.get("total_risk_to_stop_pct_nav"))
+        largest_risk_position = safe_str(account_state.get("largest_risk_position", ""))
+        largest_risk_position_pct_nav = self._coerce_float(account_state.get("largest_risk_position_pct_nav"))
         for position in normalized_positions:
             market_value = self._coerce_float(position.get("market_value"))
             if market_value > largest_position_value:
                 largest_position_value = market_value
                 largest_position = self._normalize_ticker(position.get("ticker") or position.get("symbol"))
+            position_ticker = self._normalize_ticker(position.get("ticker") or position.get("symbol"))
+            risk_to_stop = self._coerce_float(position.get("risk_to_stop"))
+            risk_to_stop_pct_nav = self._coerce_float(position.get("risk_to_stop_pct_nav"))
+            if risk_to_stop > 0 and total_risk_to_stop <= 0:
+                total_risk_to_stop += risk_to_stop
+            if risk_to_stop_pct_nav >= 5:
+                action_queue.append({
+                    "priority": "high",
+                    "action_type": "stop_review",
+                    "ticker": position_ticker,
+                    "reason": f"止损风险 {self._format_pct(risk_to_stop_pct_nav)} 已超过单票风险阈值，需优先复核 stop_price。",
+                })
+            elif risk_to_stop_pct_nav >= 2:
+                action_queue.append({
+                    "priority": "medium",
+                    "action_type": "risk_review",
+                    "ticker": position_ticker,
+                    "reason": f"止损风险 {self._format_pct(risk_to_stop_pct_nav)}，建议确认仓位是否符合计划。",
+                })
+            if risk_to_stop_pct_nav > largest_risk_position_pct_nav:
+                largest_risk_position_pct_nav = risk_to_stop_pct_nav
+                largest_risk_position = position_ticker
+
+        if total_risk_to_stop_pct_nav <= 0 and nav > 0 and total_risk_to_stop > 0:
+            total_risk_to_stop_pct_nav = (total_risk_to_stop / nav) * 100
+        if total_risk_to_stop_pct_nav >= 8:
+            action_queue.append({
+                "priority": "high",
+                "action_type": "portfolio_risk_review",
+                "ticker": "PORTFOLIO",
+                "reason": f"组合止损风险合计 {self._format_pct(total_risk_to_stop_pct_nav)}，接近或超过风险预算。",
+            })
 
         portfolio_directive = {
             "market_regime": targets["market_regime"],
@@ -445,6 +500,7 @@ class TradingGraph:
             "trim_candidates": [asset_symbol] if is_trim_risk else [],
             "blocked_candidates": [f"{asset_symbol}: {'；'.join(blocked_reasons)}"] if blocked_reasons else [],
             "manager_actions": manager_actions,
+            "action_queue": action_queue,
         }
 
         dashboard_payload = {
@@ -459,6 +515,10 @@ class TradingGraph:
                 "position_count": len(normalized_positions),
                 "largest_position": largest_position or "N/A",
                 "largest_position_value": round(largest_position_value, 2),
+                "total_risk_to_stop": round(total_risk_to_stop, 2),
+                "total_risk_to_stop_pct_nav": round(total_risk_to_stop_pct_nav, 2),
+                "largest_risk_position": largest_risk_position or "N/A",
+                "largest_risk_position_pct_nav": round(largest_risk_position_pct_nav, 2),
             },
             "portfolio_checks": portfolio_checks,
             "factor_exposure_summary": dict(sorted(factor_counter.items())),
@@ -472,6 +532,7 @@ class TradingGraph:
                 "blocked_reasons": blocked_reasons,
             },
             "manager_actions": manager_actions,
+            "action_queue": action_queue,
         }
         return portfolio_directive, dashboard_payload
 

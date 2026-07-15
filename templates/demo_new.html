@@ -1686,6 +1686,9 @@
                                                     <th class="ws-col-manual">Book</th>
                                                     <th class="ws-col-manual" title="cost_basis">Cost</th>
                                                     <th class="ws-col-manual">Shares</th>
+                                                    <th class="ws-col-manual" title="stop_price">Stop</th>
+                                                    <th class="ws-col-manual" title="target_price">Target</th>
+                                                    <th class="ws-col-manual" title="planned_action">Plan</th>
                                                     <th class="ws-col-manual" title="tracking_status">Status</th>
                                                     <th class="ws-col-manual ws-col-tags">Tags</th>
                                                     <th class="ws-col-auto" title="Latest Price">Last</th>
@@ -1693,6 +1696,8 @@
                                                     <th class="ws-col-auto" title="Position Weight">Weight</th>
                                                     <th class="ws-col-auto" title="Unrealized PnL">UPnL</th>
                                                     <th class="ws-col-auto" title="Unrealized PnL %">UPnL %</th>
+                                                    <th class="ws-col-auto" title="Risk to Stop % NAV">Risk %</th>
+                                                    <th class="ws-col-auto" title="Plan Risk/Reward">R/R</th>
                                                     <th class="ws-col-auto">Upd</th>
                                                     <th class="ws-col-actions">Act</th>
                                                 </tr>
@@ -1904,6 +1909,9 @@
                 book_type: '',
                 cost_basis: 0,
                 shares: 0,
+                stop_price: 0,
+                target_price: 0,
+                planned_action: '',
                 tracking_status: 'watch',
                 factor_tags: [],
                 latest_price: 0,
@@ -1911,6 +1919,10 @@
                 position_weight: 0,
                 unrealized_pnl: 0,
                 unrealized_pnl_pct: 0,
+                risk_to_stop: 0,
+                risk_to_stop_pct_nav: 0,
+                reward_to_target: 0,
+                risk_reward_to_plan: 'N/A',
                 updated_at: ''
             };
         }
@@ -1926,7 +1938,7 @@
             if (!positions.length) {
                 tableBody.innerHTML = `
                     <tr>
-                        <td colspan="13" class="text-muted text-center py-3">No holdings added yet.</td>
+                        <td colspan="18" class="text-muted text-center py-3">No holdings added yet.</td>
                     </tr>
                 `;
                 return;
@@ -1938,6 +1950,9 @@
                     <td class="ws-col-manual"><input type="text" class="form-control" value="${escapeHtml(position.book_type || '')}" onchange="updatePositionField(${index}, 'book_type', this.value)" placeholder="core / tactical"></td>
                     <td class="ws-col-manual"><input type="number" step="0.01" class="form-control" value="${position.cost_basis ?? 0}" onchange="updatePositionField(${index}, 'cost_basis', this.value)" placeholder="cost_basis"></td>
                     <td class="ws-col-manual"><input type="number" step="0.0001" class="form-control" value="${position.shares ?? 0}" onchange="updatePositionField(${index}, 'shares', this.value)" placeholder="shares"></td>
+                    <td class="ws-col-manual"><input type="number" step="0.01" class="form-control" value="${position.stop_price ?? 0}" onchange="updatePositionField(${index}, 'stop_price', this.value)" placeholder="stop_price"></td>
+                    <td class="ws-col-manual"><input type="number" step="0.01" class="form-control" value="${position.target_price ?? 0}" onchange="updatePositionField(${index}, 'target_price', this.value)" placeholder="target_price"></td>
+                    <td class="ws-col-manual"><input type="text" class="form-control" value="${escapeHtml(position.planned_action || '')}" onchange="updatePositionField(${index}, 'planned_action', this.value)" placeholder="add / trim / hold"></td>
                     <td class="ws-col-manual"><input type="text" class="form-control" value="${escapeHtml(position.tracking_status || '')}" onchange="updatePositionField(${index}, 'tracking_status', this.value)" placeholder="tracking_status"></td>
                     <td class="ws-col-manual ws-col-tags"><input type="text" class="form-control" value="${escapeHtml((position.factor_tags || []).join(', '))}" onchange="updatePositionField(${index}, 'factor_tags', this.value)" placeholder="crypto, momentum"></td>
                     <td class="ws-col-auto">${position.latest_price || '—'}</td>
@@ -1945,6 +1960,8 @@
                     <td class="ws-col-auto">${position.position_weight || '—'}</td>
                     <td class="ws-col-auto">${position.unrealized_pnl || '—'}</td>
                     <td class="ws-col-auto">${position.unrealized_pnl_pct || '—'}</td>
+                    <td class="ws-col-auto">${position.risk_to_stop_pct_nav || '—'}</td>
+                    <td class="ws-col-auto">${position.risk_reward_to_plan || '—'}</td>
                     <td class="ws-col-auto">${position.updated_at || '—'}</td>
                     <td class="ws-col-actions"><div class="workspace-row-actions"><button type="button" class="btn btn-outline-danger btn-sm" onclick="removePositionRow(${index})"><i class="fas fa-trash"></i></button></div></td>
                 </tr>
@@ -2000,6 +2017,9 @@
                     book_type: String(position.book_type || '').trim().toLowerCase(),
                     cost_basis: Number(position.cost_basis || 0),
                     shares: Number(position.shares || 0),
+                    stop_price: Number(position.stop_price || 0),
+                    target_price: Number(position.target_price || 0),
+                    planned_action: String(position.planned_action || '').trim(),
                     tracking_status: String(position.tracking_status || '').trim(),
                     factor_tags: Array.isArray(position.factor_tags) ? position.factor_tags.filter(Boolean) : [],
                     latest_price: Number(position.latest_price || 0),
@@ -2007,6 +2027,10 @@
                     position_weight: Number(position.position_weight || 0),
                     unrealized_pnl: Number(position.unrealized_pnl || 0),
                     unrealized_pnl_pct: Number(position.unrealized_pnl_pct || 0),
+                    risk_to_stop: Number(position.risk_to_stop || 0),
+                    risk_to_stop_pct_nav: Number(position.risk_to_stop_pct_nav || 0),
+                    reward_to_target: Number(position.reward_to_target || 0),
+                    risk_reward_to_plan: String(position.risk_reward_to_plan || 'N/A'),
                     updated_at: position.updated_at || ''
                 })).filter(position => position.ticker),
                 candidates: (stage2WorkspaceState.candidates || []).map(candidate => ({
@@ -2038,7 +2062,7 @@
             if (!stage2WorkspaceState.positions[index]) return;
             if (field === 'ticker') {
                 stage2WorkspaceState.positions[index][field] = String(value || '').trim().toUpperCase();
-            } else if (['cost_basis', 'shares'].includes(field)) {
+            } else if (['cost_basis', 'shares', 'stop_price', 'target_price'].includes(field)) {
                 const parsed = Number(value || 0);
                 stage2WorkspaceState.positions[index][field] = Number.isNaN(parsed) ? 0 : parsed;
             } else if (field === 'factor_tags') {

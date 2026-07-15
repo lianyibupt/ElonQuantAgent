@@ -795,6 +795,17 @@ class WebTradingAnalyzer:
             if isinstance(check, dict)
         ]
         candidate_summary = dashboard_payload.get("candidate_summary", {}) or {}
+        action_queue = dashboard_payload.get("action_queue", []) or []
+        normalized_action_queue = [
+            {
+                "priority": safe_str(item.get("priority", "N/A")),
+                "action_type": safe_str(item.get("action_type", "N/A")),
+                "ticker": safe_str(item.get("ticker", "N/A")),
+                "reason": safe_str(item.get("reason", "")),
+            }
+            for item in action_queue
+            if isinstance(item, dict)
+        ]
 
         return {
             "success": True,
@@ -821,6 +832,7 @@ class WebTradingAnalyzer:
             "dashboard_payload": {
                 "account_summary": account_summary,
                 "portfolio_checks": normalized_checks,
+                "action_queue": normalized_action_queue,
                 "factor_exposure_summary": dashboard_payload.get("factor_exposure_summary", {}),
                 "candidate_summary": (
                     {

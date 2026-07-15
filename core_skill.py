@@ -125,6 +125,9 @@ def render_markdown(symbol: str, interval: str, start: datetime, end: datetime, 
                 f"- 核心仓暴露: {account_summary.get('core_exposure', 'N/A')}%",
                 f"- 战术仓暴露: {account_summary.get('tactical_exposure', 'N/A')}%",
                 f"- 当前回撤: {account_summary.get('current_drawdown', 'N/A')}%",
+                f"- 止损风险合计: {account_summary.get('total_risk_to_stop', 'N/A')}",
+                f"- 止损风险占NAV: {account_summary.get('total_risk_to_stop_pct_nav', 'N/A')}%",
+                f"- 最大风险持仓: {account_summary.get('largest_risk_position', 'N/A')}",
                 f"- 持仓数量: {account_summary.get('position_count', 'N/A')}",
                 f"- 最大持仓: {account_summary.get('largest_position', 'N/A')}",
                 "",
@@ -170,6 +173,14 @@ def render_markdown(symbol: str, interval: str, start: datetime, end: datetime, 
             manager_lines.append("### 经理动作")
             for action in manager_actions:
                 manager_lines.append(f"- {action}")
+            manager_lines.append("")
+        action_queue = dashboard_payload.get("action_queue", []) or []
+        if action_queue:
+            manager_lines.append("### Action Queue")
+            for item in action_queue:
+                manager_lines.append(
+                    f"- [{item.get('priority', 'N/A')}] {item.get('action_type', 'N/A')} / {item.get('ticker', 'N/A')}: {item.get('reason', 'N/A')}"
+                )
             manager_lines.append("")
 
     score_lines = [

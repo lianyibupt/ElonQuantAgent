@@ -15,6 +15,9 @@ POSITION_MANUAL_DEFAULTS = {
     "book_type": "",
     "cost_basis": 0.0,
     "shares": 0.0,
+    "stop_price": 0.0,
+    "target_price": 0.0,
+    "planned_action": "",
     "tracking_status": "",
     "factor_tags": [],
     "notes": "",
@@ -26,6 +29,10 @@ POSITION_DERIVED_DEFAULTS = {
     "position_weight": 0.0,
     "unrealized_pnl": 0.0,
     "unrealized_pnl_pct": 0.0,
+    "risk_to_stop": 0.0,
+    "risk_to_stop_pct_nav": 0.0,
+    "reward_to_target": 0.0,
+    "risk_reward_to_plan": "N/A",
     "price_source": "",
     "last_price_update_at": None,
     "last_analyzed_at": None,
@@ -46,6 +53,10 @@ ACCOUNT_DERIVED_DEFAULTS = {
     "tactical_exposure": 0.0,
     "largest_position": "",
     "largest_position_weight": 0.0,
+    "total_risk_to_stop": 0.0,
+    "total_risk_to_stop_pct_nav": 0.0,
+    "largest_risk_position": "",
+    "largest_risk_position_pct_nav": 0.0,
     "position_count": 0,
     "last_aggregated_at": None,
 }
@@ -102,6 +113,9 @@ def normalize_workspace_payload(payload):
         normalized["book_type"] = str(raw_position.get("book_type", "")).strip().lower()
         normalized["cost_basis"] = _to_float(raw_position.get("cost_basis", 0.0))
         normalized["shares"] = _to_float(raw_position.get("shares", 0.0))
+        normalized["stop_price"] = _to_float(raw_position.get("stop_price", 0.0))
+        normalized["target_price"] = _to_float(raw_position.get("target_price", 0.0))
+        normalized["planned_action"] = str(raw_position.get("planned_action", "") or "").strip()
         normalized["tracking_status"] = str(raw_position.get("tracking_status", "")).strip()
         normalized["factor_tags"] = _normalize_factor_tags(raw_position.get("factor_tags", []))
         normalized["notes"] = str(raw_position.get("notes", "") or "")
@@ -151,24 +165,38 @@ def recalculate_account_state(workspace):
     tactical_market_value = 0.0
     largest_position = ""
     largest_market_value = 0.0
+    total_risk_to_stop = 0.0
+    largest_risk_position = ""
+    largest_risk_to_stop = 0.0
 
     for position in recalculated["positions"]:
         latest_price = _to_float(position.get("latest_price", 0.0))
         shares = _to_float(position.get("shares", 0.0))
         cost_basis = _to_float(position.get("cost_basis", 0.0))
+        stop_price = _to_float(position.get("stop_price", 0.0))
+        target_price = _to_float(position.get("target_price", 0.0))
 
         market_value = latest_price * shares
         unrealized_pnl = (latest_price - cost_basis) * shares
         cost_total = cost_basis * shares
         unrealized_pnl_pct = (unrealized_pnl / cost_total * 100.0) if cost_total else 0.0
         position_weight = (market_value / nav * 100.0) if nav else 0.0
+        risk_to_stop = max((latest_price - stop_price) * shares, 0.0) if stop_price and shares else 0.0
+        reward_to_target = max((target_price - latest_price) * shares, 0.0) if target_price and shares else 0.0
+        risk_to_stop_pct_nav = (risk_to_stop / nav * 100.0) if nav else 0.0
+        risk_reward_to_plan = f"{round(reward_to_target / risk_to_stop, 2)}:1" if risk_to_stop else "N/A"
 
         position["market_value"] = round(market_value, 4)
         position["unrealized_pnl"] = round(unrealized_pnl, 4)
         position["unrealized_pnl_pct"] = round(unrealized_pnl_pct, 4)
         position["position_weight"] = round(position_weight, 4)
+        position["risk_to_stop"] = round(risk_to_stop, 4)
+        position["risk_to_stop_pct_nav"] = round(risk_to_stop_pct_nav, 4)
+        position["reward_to_target"] = round(reward_to_target, 4)
+        position["risk_reward_to_plan"] = risk_reward_to_plan
 
         total_market_value += market_value
+        total_risk_to_stop += risk_to_stop
         if position["book_type"] == BOOK_TYPE_CORE:
             core_market_value += market_value
         if position["book_type"] == BOOK_TYPE_TACTICAL:
@@ -176,6 +204,9 @@ def recalculate_account_state(workspace):
         if market_value > largest_market_value:
             largest_market_value = market_value
             largest_position = position["ticker"]
+        if risk_to_stop > largest_risk_to_stop:
+            largest_risk_to_stop = risk_to_stop
+            largest_risk_position = position["ticker"]
 
     cash = _to_float(account_state.get("cash", 0.0))
     account_state["total_market_value"] = round(total_market_value, 4)
@@ -185,6 +216,10 @@ def recalculate_account_state(workspace):
     account_state["tactical_exposure"] = round((tactical_market_value / nav * 100.0) if nav else 0.0, 4)
     account_state["largest_position"] = largest_position
     account_state["largest_position_weight"] = round((largest_market_value / nav * 100.0) if nav else 0.0, 4)
+    account_state["total_risk_to_stop"] = round(total_risk_to_stop, 4)
+    account_state["total_risk_to_stop_pct_nav"] = round((total_risk_to_stop / nav * 100.0) if nav else 0.0, 4)
+    account_state["largest_risk_position"] = largest_risk_position
+    account_state["largest_risk_position_pct_nav"] = round((largest_risk_to_stop / nav * 100.0) if nav else 0.0, 4)
     account_state["position_count"] = len(recalculated["positions"])
     account_state["last_aggregated_at"] = _utc_now_iso()
     return recalculated

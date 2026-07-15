@@ -393,6 +393,7 @@
             {% set candidate_summary = results.dashboard_payload.candidate_summary if results.dashboard_payload.candidate_summary else {} %}
             {% set manager_actions = results.dashboard_payload.manager_actions if results.dashboard_payload.manager_actions else [] %}
             {% set portfolio_checks = results.dashboard_payload.portfolio_checks if results.dashboard_payload.portfolio_checks else [] %}
+            {% set action_queue = results.dashboard_payload.action_queue if results.dashboard_payload.action_queue else [] %}
             {% set factor_summary = results.dashboard_payload.factor_exposure_summary if results.dashboard_payload.factor_exposure_summary else {} %}
 
             {% if account_summary %}
@@ -442,6 +443,26 @@
                     </div>
                 </div>
             </div>
+            <div class="row align-items-stretch mb-4">
+                <div class="col-md-4 d-flex">
+                    <div class="stats-card w-100">
+                        <div class="stats-number">{{ account_summary.total_risk_to_stop_pct_nav if account_summary.total_risk_to_stop_pct_nav is not none else 'N/A' }}%</div>
+                        <div class="stats-label">Risk-to-Stop % NAV</div>
+                    </div>
+                </div>
+                <div class="col-md-4 d-flex">
+                    <div class="stats-card w-100">
+                        <div class="stats-number">{{ account_summary.total_risk_to_stop if account_summary.total_risk_to_stop is not none else 'N/A' }}</div>
+                        <div class="stats-label">Risk-to-Stop $</div>
+                    </div>
+                </div>
+                <div class="col-md-4 d-flex">
+                    <div class="stats-card w-100">
+                        <div class="stats-number">{{ account_summary.largest_risk_position if account_summary.largest_risk_position else 'N/A' }}</div>
+                        <div class="stats-label">Largest Risk</div>
+                    </div>
+                </div>
+            </div>
             {% endif %}
 
             {% if portfolio_directive %}
@@ -477,6 +498,17 @@
                 <ul>
                     {% for check in portfolio_checks %}
                     <li><strong>[{{ check.status if check.status else 'N/A' }}]</strong> {{ check.name if check.name else 'check' }} — {{ check.reason if check.reason else 'N/A' }}</li>
+                    {% endfor %}
+                </ul>
+            </div>
+            {% endif %}
+
+            {% if action_queue %}
+            <div class="mt-4">
+                <h5 style="color: var(--etrade-purple);">Action Queue</h5>
+                <ul>
+                    {% for item in action_queue %}
+                    <li><strong>[{{ item.priority }}]</strong> {{ item.action_type }} / {{ item.ticker }} — {{ item.reason }}</li>
                     {% endfor %}
                 </ul>
             </div>

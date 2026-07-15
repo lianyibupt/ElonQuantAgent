@@ -221,3 +221,45 @@ class RefreshPositionAfterAnalysisTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+class RiskToStopTests(unittest.TestCase):
+    def test_recalculate_account_state_computes_risk_to_stop_fields(self):
+        workspace = recalculate_account_state(
+            normalize_workspace_payload(
+                {
+                    "account_state": {"nav": 10000, "cash": 5000, "current_drawdown": 4.0},
+                    "positions": [
+                        {
+                            "ticker": "AAPL",
+                            "book_type": "core",
+                            "cost_basis": 100,
+                            "shares": 10,
+                            "latest_price": 120,
+                            "stop_price": 108,
+                            "target_price": 150,
+                        },
+                        {
+                            "ticker": "MSFT",
+                            "book_type": "tactical",
+                            "cost_basis": 200,
+                            "shares": 5,
+                            "latest_price": 190,
+                            "stop_price": 170,
+                        },
+                    ],
+                }
+            )
+        )
+
+        aapl, msft = workspace["positions"]
+        self.assertEqual(aapl["stop_price"], 108.0)
+        self.assertEqual(aapl["target_price"], 150.0)
+        self.assertEqual(aapl["risk_to_stop"], 120.0)
+        self.assertEqual(aapl["risk_to_stop_pct_nav"], 1.2)
+        self.assertEqual(aapl["reward_to_target"], 300.0)
+        self.assertEqual(aapl["risk_reward_to_plan"], "2.5:1")
+        self.assertEqual(msft["risk_to_stop"], 100.0)
+        self.assertEqual(workspace["account_state"]["total_risk_to_stop"], 220.0)
+        self.assertEqual(workspace["account_state"]["total_risk_to_stop_pct_nav"], 2.2)
+        self.assertEqual(workspace["account_state"]["largest_risk_position"], "AAPL")
+        self.assertEqual(workspace["account_state"]["largest_risk_position_pct_nav"], 1.2)
