@@ -1,0 +1,37 @@
+core/trading_graph.py
+  s_62f20b770f2e6d::t_4de67a78ce5e3a 412,415-420,425-430,433-438,450-453,459-490,503,518-521,535
+core_skill.py
+  s_62f20b770f2e6d::t_8edca2b55f9370 128-130,177-184
+services/stage2_workspace.py
+  s_62f20b770f2e6d::t_5d112aff776597 18-20,32-35,56-59,116-118,168-170,176-177,184-187,193-196,199,207-209,219-222
+templates/demo_new.html
+  s_62f20b770f2e6d::t_edd5fb08ce2b2e 1689-1691,1699-1700,1912-1914,1922-1925,1941,1953-1955,1963-1964,2020-2022,2030-2033,2065
+templates/output.html
+  s_62f20b770f2e6d::t_7658cd68c103e0 396,446-465,506-516
+tests/test_stage25_action_queue.py
+  s_62f20b770f2e6d::t_f83066e8834dbd 1-76
+tests/test_stage25_template.py
+  s_62f20b770f2e6d::t_ae49e02d666854 1-31
+tests/test_stage2_workspace_service.py
+  s_62f20b770f2e6d::t_5a5186fc6e6d56 224-265
+web/web_interface_new.py
+  s_62f20b770f2e6d::t_a213bf72563902 798-808,835
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.10",
+  "base_commit_sha": "29d9fdc2ece7aab913cbf8ac959c4c2889ce1bb0",
+  "prompts": {},
+  "sessions": {
+    "s_62f20b770f2e6d": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019f3bd9-f28b-7900-9604-9b19a118208d",
+        "model": "unknown"
+      },
+      "human_author": "yilian <yilian@bytedance.com>"
+    }
+  },
+  "attestation_metadata": {},
+  "remote_transcripts": {}
+}
