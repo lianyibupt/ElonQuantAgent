@@ -1,0 +1,221 @@
+<div class="panel mb-4" id="portfolioJournal">
+    <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3">
+        <h4 class="panel-title mb-0">交易与复盘</h4>
+        <button class="btn btn-outline-primary btn-sm" type="button" id="copyPortfolioContext">复制已保存持仓给 GPT</button>
+    </div>
+    <p id="portfolioJournalStatus" class="mb-3" role="status" aria-live="polite"></p>
+    <div class="row g-4">
+        <div class="col-lg-6">
+            <h5>登记成交</h5>
+            <p class="text-muted">登记流水后，可在上方按券商余额校准持仓。</p>
+            <form id="portfolioTradeForm" class="row g-2">
+                <label class="col-sm-6">成交日期<input class="form-control" type="date" name="date" required></label>
+                <label class="col-sm-6">交易账户<input class="form-control" name="account" maxlength="80" required placeholder="如 IBKR、富途"></label>
+                <label class="col-sm-6">标的<input class="form-control" name="ticker" maxlength="32" required></label>
+                <label class="col-sm-6">方向<select class="form-select" name="side"><option value="buy">买入</option><option value="sell">卖出</option></select></label>
+                <label class="col-sm-6">数量<input class="form-control" type="number" step="any" min="0.000000000001" name="quantity" required></label>
+                <label class="col-sm-6">成交单价<input class="form-control" type="number" step="any" min="0.000000000001" name="price" required></label>
+                <label class="col-sm-6">币种<input class="form-control" name="currency" pattern="[A-Za-z0-9]{2,8}" maxlength="8" required placeholder="如 USD、HKD、USDT"></label>
+                <label class="col-sm-6">手续费<input class="form-control" type="number" step="any" min="0" value="0" name="fee" required></label>
+                <label class="col-12">关联建议<select class="form-select" name="advice_id"><option value="">无</option></select></label>
+                <label class="col-12">交易理由或备注<textarea class="form-control" name="notes" rows="2" maxlength="4000"></textarea></label>
+                <div class="col-12"><button type="submit" class="btn btn-primary">保存成交</button></div>
+            </form>
+        </div>
+        <div class="col-lg-6">
+            <h5>保存 GPT 建议</h5>
+            <p class="text-muted">粘贴《持仓后市分析》等对话的要点。保存时会附上当前已保存的持仓快照。</p>
+            <form id="portfolioAdviceForm" class="row g-2">
+                <label class="col-sm-6">建议日期<input class="form-control" type="date" name="date" required></label>
+                <label class="col-sm-6">标题<input class="form-control" name="title" maxlength="160" required></label>
+                <label class="col-12">对话链接或来源<input class="form-control" name="source" maxlength="2000"></label>
+                <label class="col-12">建议内容<textarea class="form-control" name="content" rows="4" maxlength="20000" required placeholder="可保留逐股下行风险、上涨空间、触发条件和复核时间"></textarea></label>
+                <label class="col-12">我的判断<textarea class="form-control" name="decision" rows="2" maxlength="4000" placeholder="采纳、观望或放弃的理由"></textarea></label>
+                <div class="col-12"><button type="submit" class="btn btn-primary">保存建议</button></div>
+            </form>
+        </div>
+    </div>
+    <div class="mt-4">
+        <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-2">
+            <h5 class="mb-0">复盘记录</h5>
+            <label>搜索 <input type="search" id="portfolioJournalSearch" class="form-control form-control-sm d-inline-block w-auto" placeholder="账户、标的或建议标题"></label>
+            <label>查看 <select id="portfolioJournalFilter" class="form-select form-select-sm d-inline-block w-auto">
+                <option value="">全部</option><option value="trade">成交</option><option value="advice">GPT 建议</option>
+            </select></label>
+        </div>
+        <div id="portfolioJournalEntries" class="list-group"></div>
+    </div>
+</div>
+<script>
+(() => {
+    const status = document.getElementById('portfolioJournalStatus');
+    const list = document.getElementById('portfolioJournalEntries');
+    const filter = document.getElementById('portfolioJournalFilter');
+    const search = document.getElementById('portfolioJournalSearch');
+    const tradeForm = document.getElementById('portfolioTradeForm');
+    const adviceForm = document.getElementById('portfolioAdviceForm');
+    const adviceSelect = tradeForm.elements.namedItem('advice_id');
+    let entries = [];
+
+    function message(text, failed = false) {
+        status.textContent = text;
+        status.className = failed ? 'text-danger mb-3' : 'text-muted mb-3';
+    }
+
+    function setToday(form) {
+        const local = new Date();
+        local.setMinutes(local.getMinutes() - local.getTimezoneOffset());
+        form.elements.namedItem('date').value = local.toISOString().slice(0, 10);
+    }
+
+    function paragraph(parent, text) {
+        const node = document.createElement('p');
+        node.className = 'mb-2 text-break';
+        node.style.whiteSpace = 'pre-wrap';
+        node.textContent = text;
+        parent.append(node);
+    }
+
+    function render() {
+        const advice = new Map(entries.filter(entry => entry.kind === 'advice').map(entry => [entry.id, entry]));
+        const selected = adviceSelect.value;
+        adviceSelect.replaceChildren(new Option('无', ''));
+        advice.forEach(entry => adviceSelect.add(new Option(`${entry.date} · ${entry.title}`, entry.id)));
+        adviceSelect.value = advice.has(Number(selected)) ? selected : '';
+
+        list.replaceChildren();
+        const query = search.value.trim().toLowerCase();
+        const visible = entries.filter(entry => {
+            const matchesKind = !filter.value || entry.kind === filter.value;
+            const searchable = [entry.account, entry.ticker, entry.title, entry.content,
+                advice.get(entry.advice_id)?.title].join(' ').toLowerCase();
+            return matchesKind && searchable.includes(query);
+        });
+        if (!visible.length) paragraph(list, query || filter.value ? '没有匹配的记录。' : '暂无记录。');
+        visible.forEach(entry => {
+            const item = document.createElement('details');
+            item.className = 'list-group-item';
+            const heading = document.createElement('summary');
+            heading.className = 'fw-semibold text-break';
+            const description = entry.kind === 'advice' ? `GPT 建议 · ${entry.title}`
+                : `${entry.account} · ${entry.side === 'buy' ? '买入' : '卖出'} ${entry.ticker} · ${entry.quantity} × ${entry.currency} ${entry.price}`;
+            heading.textContent = `${entry.date} · ${description}`;
+            item.append(heading);
+            const body = document.createElement('div');
+            body.className = 'mt-2';
+            item.append(body);
+            if (entry.kind === 'advice') {
+                paragraph(body, entry.content);
+                if (entry.decision) paragraph(body, `我的判断　${entry.decision}`);
+                if (/^https?:\/\/\S+$/i.test(entry.source) || /^chatgpt-conversation:\/\/[a-f0-9-]{36}$/i.test(entry.source)) {
+                    const link = document.createElement('a');
+                    link.href = entry.source;
+                    link.target = '_blank';
+                    link.rel = 'noopener noreferrer';
+                    link.textContent = '打开原对话或来源';
+                    body.append(link);
+                } else if (entry.source) {
+                    paragraph(body, `来源　${entry.source}`);
+                }
+                if (entry.snapshot) {
+                    const snapshot = document.createElement('details');
+                    const label = document.createElement('summary');
+                    label.textContent = `存档时的持仓快照 · ${entry.workspace_updated_at} UTC`;
+                    snapshot.append(label);
+                    const state = entry.snapshot.account_state;
+                    paragraph(snapshot, `组合净值 ${state.nav} USD · 现金 ${state.cash} USD`);
+                    entry.snapshot.positions.forEach(position => {
+                        const asset = [position.account, position.ticker, position.name].filter(Boolean).join(' · ');
+                        paragraph(snapshot, `${asset}　${position.shares} 单位 · 成本 ${position.cost_basis} ${position.currency || ''} · 现价 ${position.latest_price || '待补'}${position.verification ? ' · ' + position.verification : ''}`);
+                    });
+                    if (entry.snapshot.notes) paragraph(snapshot, entry.snapshot.notes);
+                    body.append(snapshot);
+                } else {
+                    paragraph(body, '归档时尚无已保存持仓。');
+                }
+                const trades = entries.filter(trade => trade.advice_id === entry.id);
+                trades.forEach(trade => paragraph(body,
+                    `关联成交　${trade.date} · ${trade.account} · ${trade.ticker} · ${trade.side === 'buy' ? '买入' : '卖出'} ${trade.quantity}`));
+            } else {
+                paragraph(body, `手续费　${entry.currency} ${entry.fee}`);
+                if (entry.gross_amount != null) {
+                    paragraph(body, `成交金额　${entry.currency} ${entry.gross_amount}　·　净现金变动　${entry.currency} ${entry.cash_flow}`);
+                }
+                if (entry.notes) paragraph(body, entry.notes);
+                if (advice.has(entry.advice_id)) paragraph(body, `关联建议　${advice.get(entry.advice_id).title}`);
+            }
+            list.append(item);
+        });
+    }
+
+    async function load() {
+        const response = await fetch('/api/portfolio-journal', {cache: 'no-store'});
+        if (!response.ok) throw new Error('读取复盘记录失败，请刷新页面重试。');
+        entries = (await response.json()).entries.sort((a, b) => b.date.localeCompare(a.date) || b.id - a.id);
+        render();
+    }
+
+    async function save(event, kind) {
+        event.preventDefault();
+        const form = event.currentTarget;
+        const button = form.querySelector('button[type="submit"]');
+        if (button.disabled) return;
+        button.disabled = true;
+        const payload = Object.fromEntries(new FormData(form));
+        if (kind === 'trade') payload.advice_id = payload.advice_id ? Number(payload.advice_id) : null;
+        try {
+            const response = await fetch(`/api/portfolio-journal/${kind}`, {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify(payload)
+            });
+            if (!response.ok) {
+                const data = await response.json().catch(() => ({}));
+                throw new Error(data.error || '保存失败，请重试。');
+            }
+            form.reset();
+            setToday(form);
+            filter.value = '';
+            message('已保存。');
+            await load();
+        } catch (error) {
+            message(error.message, true);
+        } finally {
+            button.disabled = false;
+        }
+    }
+
+    document.getElementById('copyPortfolioContext').addEventListener('click', async () => {
+        try {
+            const response = await fetch('/api/stage2-workspace', {cache: 'no-store'});
+            if (!response.ok) throw new Error('读取已保存持仓失败。');
+            const {workspace} = await response.json();
+            if (!workspace.updated_at) throw new Error('请先保存持仓。');
+            const context = {
+                saved_at: workspace.updated_at,
+                account: {nav: workspace.account_state.nav, cash: workspace.account_state.cash},
+                positions: workspace.positions.map(({ticker, account, name, asset_type, market, currency, fx_to_usd,
+                    verification, shares, cost_basis, latest_price, last_price_update_at, notes}) => ({
+                    ticker, account, name, asset_type, market, currency, fx_to_usd: currency === 'USD' ? 1 : fx_to_usd || null,
+                    verification, shares, cost_basis, latest_price, last_price_update_at, notes
+                })),
+                notes: workspace.notes
+            };
+            await navigator.clipboard.writeText(
+                '请基于以下持仓分析每只标的的下行风险、上涨空间和验证条件。请标注核对状态、价格时点与估值假设，并在合并敞口前统一币种。\n\n' +
+                JSON.stringify(context, null, 2));
+            message('已复制持仓和分析提问，可粘贴到 ChatGPT 对话。');
+        } catch (error) {
+            message(error.message, true);
+        }
+    });
+    setToday(tradeForm);
+    setToday(adviceForm);
+    tradeForm.addEventListener('submit', event => save(event, 'trade'));
+    adviceForm.addEventListener('submit', event => save(event, 'advice'));
+    filter.addEventListener('change', render);
+    search.addEventListener('input', render);
+    document.getElementById('stage2TabBtn').addEventListener('click', () => load().catch(error => message(error.message, true)));
+    load().catch(error => message(error.message, true));
+})();
+</script>

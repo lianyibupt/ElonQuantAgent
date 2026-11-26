@@ -174,6 +174,14 @@ class DatabaseManager:
                     updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
                 )
             """)
+            conn.execute("""
+                CREATE TABLE IF NOT EXISTS portfolio_journal (
+                    id INTEGER PRIMARY KEY,
+                    kind TEXT NOT NULL CHECK (kind IN ('trade', 'advice')),
+                    entry_data TEXT NOT NULL,
+                    created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+                )
+            """)
 
             # 创建索引提高查询性能
             conn.execute("CREATE INDEX IF NOT EXISTS idx_query_records_timestamp ON query_records(timestamp)")
@@ -194,6 +202,43 @@ class DatabaseManager:
 
             conn.commit()
     
+    def list_portfolio_journal(self) -> List[Dict[str, Any]]:
+        with self.get_connection() as conn:
+            rows = conn.execute(
+                "SELECT id, kind, entry_data, created_at FROM portfolio_journal ORDER BY id DESC"
+            )
+            return [
+                {"id": row["id"], "kind": row["kind"], "created_at": row["created_at"],
+                 **json.loads(row["entry_data"])}
+                for row in rows
+            ]
+
+    def add_portfolio_journal_entry(self, kind: str, entry: Dict[str, Any]) -> int:
+        with self.get_connection() as conn, conn:
+            conn.execute("BEGIN IMMEDIATE")
+            if kind == "advice":
+                row = conn.execute(
+                    "SELECT workspace_data, updated_at FROM stage2_workspaces WHERE workspace_name = ?",
+                    ("default",),
+                ).fetchone()
+                entry = {
+                    **entry,
+                    "snapshot": json.loads(row["workspace_data"]) if row else None,
+                    "workspace_updated_at": row["updated_at"] if row else None,
+                }
+            elif entry["advice_id"] is not None:
+                advice = conn.execute(
+                    "SELECT id FROM portfolio_journal WHERE id = ? AND kind = 'advice'",
+                    (entry["advice_id"],),
+                ).fetchone()
+                if not advice:
+                    raise ValueError("关联的 GPT 建议不存在。")
+            cursor = conn.execute(
+                "INSERT INTO portfolio_journal (kind, entry_data) VALUES (?, ?)",
+                (kind, json.dumps(entry, ensure_ascii=False)),
+            )
+            return cursor.lastrowid
+
     def get_stage2_workspace(self, workspace_name: str = 'default') -> Optional[Dict[str, Any]]:
         with self.get_connection() as conn:
             cursor = conn.execute(

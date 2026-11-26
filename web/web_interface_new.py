@@ -45,10 +45,12 @@ from services.analysis_formatting import (
     format_structured_signal_bundle_for_display,
 )
 from services.core_skill_account_bridge import build_core_skill_block
+from services.portfolio_journal import parse_journal_entry
 from services.stage2_workspace import (
     PRICE_SOURCE_ANALYSIS_REFRESH,
     build_default_workspace,
     normalize_workspace_payload,
+    position_fx_to_usd,
     recalculate_account_state,
     refresh_position_after_analysis,
 )
@@ -1423,6 +1425,8 @@ def save_stage2_workspace():
         payload = request.get_json() or {}
         workspace_name = str(payload.get('workspace_name', 'default')).strip() or 'default'
         normalized_workspace = normalize_workspace_payload(payload)
+        if any(position["currency"] for position in normalized_workspace["positions"]):
+            normalized_workspace = recalculate_account_state(normalized_workspace)
         saved_workspace = db_manager.save_stage2_workspace(normalized_workspace, workspace_name=workspace_name)
         return jsonify({"success": True, "workspace": _build_stage2_workspace_response(
             workspace=saved_workspace,
@@ -1444,6 +1448,9 @@ def run_account_analysis():
         stored_workspace = db_manager.get_stage2_workspace(workspace_name)
         if not stored_workspace:
             return jsonify({"success": False, "error": f"Workspace not found: {workspace_name}"}), 404
+
+        if any(position["shares"] and not position_fx_to_usd(position) for position in stored_workspace["positions"]):
+            return jsonify(success=False, error="请先补齐非美元持仓的折美元汇率。"), 400
 
         refreshed_workspace, price_refresh = _refresh_workspace_prices_for_account_analysis(
             stored_workspace,
@@ -1500,7 +1507,23 @@ def get_account_analysis_history():
         return jsonify({"success": False, "error": safe_str(e)}), 500
 
 
-# Keep other routes unchanged
+@app.get('/api/portfolio-journal')
+def get_portfolio_journal():
+    return jsonify(entries=db_manager.list_portfolio_journal())
+
+
+@app.post('/api/portfolio-journal/<kind>')
+def add_portfolio_journal_entry(kind):
+    if kind not in ('trade', 'advice'):
+        return jsonify(error="未知的记录类型。"), 404
+    try:
+        entry = parse_journal_entry(kind, request.get_json(silent=True))
+        entry_id = db_manager.add_portfolio_journal_entry(kind, entry)
+    except ValueError as error:
+        return jsonify(error=str(error)), 400
+    return jsonify(id=entry_id), 201
+
+
 @app.route('/')
 def index():
     return render_template('demo_new.html')

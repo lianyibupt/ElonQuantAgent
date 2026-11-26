@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from copy import deepcopy
 from datetime import datetime, timezone
+from math import isfinite
 
 
 BOOK_TYPE_CORE = "core"
@@ -12,6 +13,13 @@ CANDIDATE_TIMESTAMP_FIELDS = ("last_screened_at",)
 
 POSITION_MANUAL_DEFAULTS = {
     "ticker": "",
+    "account": "",
+    "currency": "",
+    "name": "",
+    "asset_type": "",
+    "market": "",
+    "fx_to_usd": 0.0,
+    "verification": "",
     "book_type": "",
     "cost_basis": 0.0,
     "shares": 0.0,
@@ -110,6 +118,13 @@ def normalize_workspace_payload(payload):
         raw_position = raw_position if isinstance(raw_position, dict) else {}
         normalized = {**POSITION_MANUAL_DEFAULTS, **POSITION_DERIVED_DEFAULTS}
         normalized["ticker"] = str(raw_position.get("ticker", "")).strip().upper()
+        normalized["account"] = str(raw_position.get("account") or "").strip()
+        normalized["currency"] = str(raw_position.get("currency") or "").strip().upper()
+        normalized["verification"] = str(raw_position.get("verification") or "").strip()
+        for field in ("name", "asset_type", "market"):
+            normalized[field] = str(raw_position.get(field) or "").strip()
+        rate = _to_float(raw_position.get("fx_to_usd"))
+        normalized["fx_to_usd"] = rate if isfinite(rate) and rate > 0 else 0.0
         normalized["book_type"] = str(raw_position.get("book_type", "")).strip().lower()
         normalized["cost_basis"] = _to_float(raw_position.get("cost_basis", 0.0))
         normalized["shares"] = _to_float(raw_position.get("shares", 0.0))
@@ -155,6 +170,10 @@ def normalize_workspace_payload(payload):
     return workspace
 
 
+def position_fx_to_usd(position):
+    return 1.0 if position["currency"] in ("", "USD") else position["fx_to_usd"]
+
+
 def recalculate_account_state(workspace):
     recalculated = normalize_workspace_payload(deepcopy(workspace))
     account_state = recalculated["account_state"]
@@ -169,21 +188,27 @@ def recalculate_account_state(workspace):
     largest_risk_position = ""
     largest_risk_to_stop = 0.0
 
-    for position in recalculated["positions"]:
+    positions = recalculated["positions"]
+    missing_fx = any(
+        position["shares"] and not position_fx_to_usd(position) for position in positions
+    )
+    for position in positions:
         latest_price = _to_float(position.get("latest_price", 0.0))
         shares = _to_float(position.get("shares", 0.0))
         cost_basis = _to_float(position.get("cost_basis", 0.0))
         stop_price = _to_float(position.get("stop_price", 0.0))
         target_price = _to_float(position.get("target_price", 0.0))
 
-        market_value = latest_price * shares
-        unrealized_pnl = (latest_price - cost_basis) * shares
+        fx = position_fx_to_usd(position)
+        market_value = latest_price * shares * fx
+        raw_pnl = (latest_price - cost_basis) * shares if latest_price and cost_basis else 0.0
+        unrealized_pnl = raw_pnl * fx
         cost_total = cost_basis * shares
-        unrealized_pnl_pct = (unrealized_pnl / cost_total * 100.0) if cost_total else 0.0
-        position_weight = (market_value / nav * 100.0) if nav else 0.0
-        risk_to_stop = max((latest_price - stop_price) * shares, 0.0) if stop_price and shares else 0.0
-        reward_to_target = max((target_price - latest_price) * shares, 0.0) if target_price and shares else 0.0
-        risk_to_stop_pct_nav = (risk_to_stop / nav * 100.0) if nav else 0.0
+        unrealized_pnl_pct = (raw_pnl / cost_total * 100.0) if cost_total else 0.0
+        position_weight = (market_value / nav * 100.0) if nav and not missing_fx else 0.0
+        risk_to_stop = max((latest_price - stop_price) * shares * fx, 0.0) if stop_price and shares else 0.0
+        reward_to_target = max((target_price - latest_price) * shares * fx, 0.0) if target_price and shares else 0.0
+        risk_to_stop_pct_nav = (risk_to_stop / nav * 100.0) if nav and not missing_fx else 0.0
         risk_reward_to_plan = f"{round(reward_to_target / risk_to_stop, 2)}:1" if risk_to_stop else "N/A"
 
         position["market_value"] = round(market_value, 4)
@@ -207,6 +232,10 @@ def recalculate_account_state(workspace):
         if risk_to_stop > largest_risk_to_stop:
             largest_risk_to_stop = risk_to_stop
             largest_risk_position = position["ticker"]
+
+    if missing_fx:
+        account_state.update({**ACCOUNT_DERIVED_DEFAULTS, "position_count": len(positions)})
+        return recalculated
 
     cash = _to_float(account_state.get("cash", 0.0))
     account_state["total_market_value"] = round(total_market_value, 4)
@@ -281,7 +310,8 @@ def _normalize_timestamp(value):
 
 def _to_float(value):
     try:
-        return float(value)
+        number = float(value)
+        return number if isfinite(number) else 0.0
     except (TypeError, ValueError):
         return 0.0
 
